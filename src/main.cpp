@@ -2,10 +2,8 @@
 #include <WiFiUdp.h>
 #include <IPAddress.h>
 #include <Arduino.h>
+#include "credentials.h"
 
-// ============= Wi-Fi Configuration ============
-const char* ssid     = "MyESP32AccessPoint";
-const char* password = "securepassword123";
 
 // We won't have a single "targetIP" and "targetPort" now.
 // We'll define a port to send to for all attacks:

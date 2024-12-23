@@ -2,101 +2,93 @@
 
 Welcome to the **Botnet Detection Project** repository! This repository contains the tools, scripts, and logic necessary to identify malicious network activity and perform analysis to detect botnet-related anomalies. This project is organized to ensure simplicity and efficiency while leveraging Python for real-time packet capture and analysis.
 
----
+## About the Project
 
-## Project Background 🛠️
+We are two students from **OTH-Regensburg** giving this project a try to build a tool that helps detect malicious clients in your own network that could be part of a botnet. The tool analyzes traffic running *through* your own machine. To achieve this, you can:
 
-This is a collaborative project by two students of **OTH Regensburg**, designed to build a tool that helps detect malicious clients within your own network that could potentially be part of a botnet. 
+- **Set up an Access Point (AP)**: Use Windows settings to create an AP where your network devices connect.
+- **Mirror network traffic**: Mirror the entire network traffic through a switch or router to your PC.
 
-### Key Features:
-1. **Real-Time Packet Analysis:** Capture and analyze network packets flowing through your own machine.
-2. **Protocol and Port Monitoring:** Flag unsafe or suspicious protocols and ports based on custom configurations.
-3. **Malicious IP Detection:** Identify connections to IPs flagged in known blocklists.
-4. **Temporal Analysis:** Visualize network traffic trends over time to spot anomalies.
+This setup ensures all network traffic is visible to the tool, allowing it to analyze and detect anomalies effectively.
 
----
+## ESP32 Script Credentials
 
-## Important Note ⚠️
+For the ESP32 script to work, you need to create a `credentials.h` file to store your Wi-Fi credentials. This ensures that sensitive information like your SSID and password is not exposed in the repository.
 
-This tool only analyzes the traffic running **through your own machine**. To monitor all devices in your network, you would need to:
-- Create an **Access Point (AP)** where your network devices connect.
-- Alternatively, mirror the entire network traffic through a **switch or router** to your PC.
+### Example `credentials.h` File
 
----
-
-## Repository Structure 📁
-
-Here is an overview of the folder structure:
-
+```cpp
+const char* ssid     = "sampleSSID"; 
+const char* password = "samplePSW";
 ```
-├── localscripts/
-│   ├── detectionscript/
-│   │   ├── blocklists/               # Contains IP blocklists downloaded from external sources.
-│   │   ├── config/                   # Configuration files (e.g., unsafe protocols, ports).
-│   │   ├── core/                     # Core logic for packet capture and blocklist integration.
-│   │   ├── ui/                       # GUI components (e.g., main window, temporal analysis).
-│   │   └── main.py                   # Entry point for the botnet detection tool.
-├── src/                              # PlatformIO scripts (separate for ESP32 testing purposes).
-├── lib/                              # Libraries for PlatformIO.
-├── .gitignore                        # Ignore unnecessary files like Python cache and blocklists.
-├── platformio.ini                    # PlatformIO configuration.
-├── README.md                         # Documentation for the repository.
-├── requirements.txt                  # Python dependencies.
-```
+
+Include this file in your ESP32 project, and ensure it is added to `.gitignore` to prevent accidental commits.
 
 ---
 
-## Installation and Setup 🚀
+## Directory Structure
 
-### Prerequisites:
-Ensure you have the following installed on your system:
-- **Python 3.8+**
-- **pip** (Python package installer)
-- **Git**
+The project is structured as follows:
 
-### Steps:
-
-1. Clone this repository:
-
-```bash
-git clone https://github.com/FKammerer45/botnet_detection.git
-cd botnet_detection
 ```
-
-2. Install the required dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-3. Run the main script:
-
-```bash
-python localscripts/detectionscript/main.py
+ESP 32 DDOS test/
+|-- localscripts/
+|   |-- detectionscript/
+|       |-- blocklists/          # Blocklist files for malicious IP detection
+|       |-- config/              # Configuration files (e.g., globals.py)
+|       |-- core/                # Core logic for packet capturing and analysis
+|       |-- ui/                  # GUI components
+|-- src/                         # ESP32-related source files
+|-- lib/                         # Libraries for PlatformIO
+|-- test/                        # Unit tests
+|-- .gitignore                   # Git ignore file
+|-- platformio.ini               # PlatformIO configuration
+|-- README.md                    # Project documentation
 ```
 
 ---
 
-## How It Works 🧪
+## Setting Up the Project
 
-1. **Packet Capture:**
-   - The tool captures packets using Scapy and analyzes their source, destination, protocol, and port.
-   - Temporal data is logged for trend analysis.
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/FKammerer45/botnet_detection.git
+   cd botnet_detection
+   ```
 
-2. **Blocklist Integration:**
-   - Known malicious IPs are downloaded from external blocklists and flagged if encountered.
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-3. **GUI:**
-   - The GUI provides visualization tools to track suspicious traffic and configure unsafe ports/protocols.
+3. Create an Access Point (AP) through Windows settings or configure your router/switch to mirror network traffic to your PC.
+
+4. If using the ESP32 script:
+   - Create a `credentials.h` file as shown above.
+   - Place it in the ESP32 source directory.
+   - Ensure it is ignored in `.gitignore`.
 
 ---
 
-## Contributing 👥
+## Running the Tool
 
-Contributions to the project are welcome! Feel free to fork the repository, make improvements, and create pull requests.
+1. Start the Python-based packet capture tool:
+   ```bash
+   python3 main.py
+   ```
+
+2. Use the GUI to monitor network activity and detect suspicious traffic.
+
+3. For temporal analysis, click on **"Temporal Analysis"** in the GUI.
 
 ---
 
-## License 📜
+## Contributions
 
-This project is for educational and research purposes only and should not be used for malicious activities. Please refer to the LICENSE file for more details.
+We welcome contributions to enhance the tool and make it more robust. Feel free to submit pull requests or raise issues for suggestions and bug reports.
+
+---
+
+## License
+
+This project is licensed under the MIT License. See the `LICENSE` file for details.

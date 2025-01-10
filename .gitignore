@@ -17,7 +17,7 @@ env/
 .venv/
 
 # The folder with downloaded blocklists
-detectionscript/blocklists/
+localscripts/detectionscript/blocklists/
 
 # Jupyter notebooks checkpoints (if any)
 .ipynb_checkpoints/

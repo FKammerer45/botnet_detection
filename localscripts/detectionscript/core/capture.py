@@ -1,8 +1,10 @@
 # capture.py
 import time
 import threading
+import subprocess
+import re
 from collections import deque
-from scapy.all import sniff, IP, TCP, UDP
+from scapy.all import sniff,get_if_list,get_if_hwaddr, IP, TCP, UDP
 from core.blocklist_integration import identify_malicious_ip
 
 ip_data = {}
@@ -80,8 +82,82 @@ def packet_callback(pkt):
             cdata["protocol_count"][(proto, port)] += 1
 
 def capture_packets():
-    """Start sniffing packets on specified interfaces."""
-    sniff(prn=packet_callback, store=False, iface=["Ethernet", "LAN-Verbindung* 14"])
+    """
+    Allow user to select multiple interfaces and sniff packets on them.
+    """
+    interface_mapping = list_interfaces()
+
+    print("Enter the numbers of the interfaces to sniff on, separated by commas (e.g., 1,3):")
+    selected = input("Enter your selection: ")
+    try:
+        selected_indices = [int(i.strip()) for i in selected.split(",")]
+        selected_interfaces = [interface_mapping[idx] for idx in selected_indices if idx in interface_mapping]
+
+        if not selected_interfaces:
+            print("No valid interfaces selected. Exiting.")
+            return
+
+        print(f"Sniffing on interfaces: {', '.join(selected_interfaces)}")
+        sniff(prn=packet_callback, store=False, iface=selected_interfaces)
+    except ValueError:
+        print("Invalid input. Please enter valid numbers separated by commas.")
+        return
+
+
+
+
+def get_friendly_names():
+    """
+    Map NPF device names to friendly interface names using 'ipconfig' and Scapy.
+    """
+    # Get NPF device names from Scapy
+    npf_devices = get_if_list()
+
+    # Get the MAC addresses for NPF devices
+    npf_mac_mapping = {device: get_if_hwaddr(device) for device in npf_devices}
+
+    # Get friendly names and MAC addresses from 'ipconfig /all'
+    cmd = "ipconfig /all"
+    try:
+        output = subprocess.check_output(cmd, shell=True, text=True, encoding="cp1252", errors="replace")
+    except subprocess.CalledProcessError as e:
+        print("Error running ipconfig:", e)
+        return {}
+
+    # Regex to extract friendly names and MAC addresses
+    matches = re.finditer(
+        r"Beschreibung[. ]+:\s+(.*?)\n.*?Physische Adresse[. ]+:\s+([A-Fa-f0-9-]+)",
+        output,
+        re.S,
+    )
+
+    interface_mapping = {}
+    for match in matches:
+        friendly_name = match.group(1).strip()
+        mac_address = match.group(2).strip().replace("-", ":")
+
+        # Match the MAC address to the NPF device
+        for npf_device, npf_mac in npf_mac_mapping.items():
+            if npf_mac.lower() == mac_address.lower():
+                interface_mapping[npf_device] = friendly_name
+                break
+
+    return interface_mapping
+
+
+def list_interfaces():
+    """
+    Display a user-friendly list of interfaces.
+    """
+    mapping = get_friendly_names()
+
+    print("Available Interfaces:")
+    numbered_interfaces = {}
+    for idx, (npf_name, friendly_name) in enumerate(mapping.items(), start=1):
+        print(f"{idx}: {friendly_name} ({npf_name})")
+        numbered_interfaces[idx] = npf_name
+
+    return numbered_interfaces
 
 def aggregate_minute_data():
     """

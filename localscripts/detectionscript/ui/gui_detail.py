@@ -3,6 +3,7 @@ import time
 import tkinter as tk
 from tkinter import ttk
 from core.capture import ip_data, lock
+from core.blocklist_integration import blocklists
 
 class DetailWindow:
     def __init__(self, master, source_ip,
@@ -222,26 +223,25 @@ class DetailWindow:
         with lock:
             if self.source_ip not in ip_data:
                 return
-            
+
             # Clear existing rows first
             for row in self.threat_tree.get_children():
                 self.threat_tree.delete(row)
 
             info = ip_data[self.source_ip]
-
-            # malicious_hits is now a dict like:
-            # {
-            #    "185.106.92.110": {
-            #       "blocklists": {"firehol_level1.netset", "abusech_feodo"},
-            #       "count": 5,
-            #       "direction": "outbound"
-            #    },
-            #    ...
-            # }
             hits_dict = info.get("malicious_hits", {})
 
             for mal_ip, hit_info in hits_dict.items():
-                blocklist_names = ','.join(hit_info["blocklists"])
+                # Filter out blocklists that are inactive
+                active_blocklists = [
+                    bl for bl in hit_info["blocklists"] if blocklists.get(bl, False)
+                ]
+
+                # Skip if no active blocklists match this malicious IP
+                if not active_blocklists:
+                    continue
+
+                blocklist_names = ','.join(active_blocklists)
                 direction = hit_info["direction"]
                 count = hit_info["count"]
 

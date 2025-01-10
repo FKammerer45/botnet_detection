@@ -1,3 +1,4 @@
+#main.py
 import threading
 import tkinter as tk
 from core.capture import capture_packets

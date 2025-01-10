@@ -1,20 +1,21 @@
+#blocklist_integration.py
 import os
 import requests
 import csv
 
 FIREHOL_BASE_URL = "https://raw.githubusercontent.com/firehol/blocklist-ipsets/master"
-FIREHOL_LISTS = [
-    "iblocklist_abuse_zeus.netset",
-    "dshield.netset",
-    "spamhaus_drop.netset",
-    "spamhaus_edrop.netset"
-]
-ABUSE_FEODO_URL = "https://feodotracker.abuse.ch/downloads/ipblocklist_aggressive.txt"
-ABUSE_SSLBL_URL = "https://sslbl.abuse.ch/blacklist/sslipblacklist_aggressive.csv"
+
+# Dynamic blocklists storage: URL => Active/Inactive
+blocklists = {
+    "https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/iblocklist_abuse_zeus.netset": True,
+    "https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/dshield.netset": True,
+    "https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/spamhaus_drop.netset": True,
+    "https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/spamhaus_edrop.netset": True,
+    "https://feodotracker.abuse.ch/downloads/ipblocklist_aggressive.txt": True,
+    "https://sslbl.abuse.ch/blacklist/sslipblacklist_aggressive.csv": True,
+}
 
 DOWNLOAD_DIR = "blocklists"
-
-# We'll store (ip_network, list_name) in malicious_networks
 malicious_networks = []
 
 
@@ -22,46 +23,36 @@ def download_blocklists():
     if not os.path.exists(DOWNLOAD_DIR):
         os.mkdir(DOWNLOAD_DIR)
 
-    # 1. FireHol-based
-    for netset_file in FIREHOL_LISTS:
-        url = f"{FIREHOL_BASE_URL}/{netset_file}"
-        local_path = os.path.join(DOWNLOAD_DIR, netset_file)
+    for url, active in blocklists.items():
+        if not active:
+            continue  # Skip inactive blocklists
+
+        filename = url.split("/")[-1]
+        local_path = os.path.join(DOWNLOAD_DIR, filename)
         print(f"Downloading {url} -> {local_path}")
-        resp = requests.get(url, timeout=30)
-        resp.raise_for_status()
-        with open(local_path, 'wb') as f:
-            f.write(resp.content)
-
-    # 2. Feodo (plain text IPs/CIDRs)
-    feodo_path = os.path.join(DOWNLOAD_DIR, "feodo_aggressive.txt")
-    print(f"Downloading {ABUSE_FEODO_URL} -> {feodo_path}")
-    resp_feodo = requests.get(ABUSE_FEODO_URL, timeout=30)
-    resp_feodo.raise_for_status()
-    with open(feodo_path, 'wb') as f:
-        f.write(resp_feodo.content)
-
-    # 3. SSLBL (CSV)
-    sslbl_path = os.path.join(DOWNLOAD_DIR, "sslipblacklist_aggressive.csv")
-    print(f"Downloading {ABUSE_SSLBL_URL} -> {sslbl_path}")
-    resp_sslbl = requests.get(ABUSE_SSLBL_URL, timeout=30)
-    resp_sslbl.raise_for_status()
-    with open(sslbl_path, 'wb') as f:
-        f.write(resp_sslbl.content)
-
+        try:
+            resp = requests.get(url, timeout=30)
+            resp.raise_for_status()
+            with open(local_path, 'wb') as f:
+                f.write(resp.content)
+        except requests.RequestException as e:
+            print(f"Failed to download {url}: {e}")
 
 def load_blocklists():
     global malicious_networks
     malicious_networks.clear()
 
-    # 1. Parse FireHol netset files
-    for netset_file in FIREHOL_LISTS:
-        local_path = os.path.join(DOWNLOAD_DIR, netset_file)
+    for url, active in blocklists.items():
+        if not active:
+            continue  # Skip inactive blocklists
+
+        filename = url.split("/")[-1]
+        local_path = os.path.join(DOWNLOAD_DIR, filename)
         if os.path.exists(local_path):
-            _parse_blocklist_file(
-                filepath=local_path, 
-                list_name=netset_file, 
-                filetype='netset'
-            )
+            if filename.endswith(".csv"):
+                _parse_blocklist_file(local_path, url, filetype='csv', ip_column='IP')
+            else:
+                _parse_blocklist_file(local_path, url, filetype='netset')
 
     # 2. Parse Feodo text
     feodo_path = os.path.join(DOWNLOAD_DIR, "feodo_aggressive.txt")

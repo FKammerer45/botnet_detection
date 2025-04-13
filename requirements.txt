@@ -1,4 +1,4 @@
-
 scapy
 matplotlib
-tkinter
+psutil
+requests

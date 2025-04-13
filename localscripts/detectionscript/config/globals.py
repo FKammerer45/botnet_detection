@@ -1,52 +1,61 @@
-# globals.py
+# config/globals.py
 """
-Globals for storing unsafe ports and protocols.
-Import from your other modules to access or modify these sets.
+Global configuration settings for the detection script.
+
+This module stores shared configuration data like unsafe port/protocol lists
+and protocols tracked for temporal analysis.
 """
 
-# Known malicious or heavily abused ports:
-# - 23 (Telnet)
-# - 445 (SMB)
-# - 666 (commonly trojan 'doom' or 'rtb666')
-# - 8085 (Koobface variant proxy)
-# - 3389 (RDP)
-# - 1080 (SOCKS proxy)
-# - 3128 (Common HTTP proxy)
-# etc.
+# --- Unsafe Ports/Protocols Configuration ---
+# These sets define ports and protocol names considered potentially risky or
+# indicative of suspicious activity. They are used for highlighting in the GUI
+# if the corresponding "Flag Unsafe" option is enabled.
+
+# Set of integer port numbers considered unsafe.
+# Examples based on commonly abused services or malware C&C ports.
 UNSAFE_PORTS = {
-    23,
-    445,
-    666,
-    8085,
-    3389,
-    1080,
-    3128,
+    23,     # Telnet (unencrypted)
+    445,    # SMB (often exploited)
+     666,    # Commonly associated with trojans (e.g., Doom) 
+     8085,   # Example: Koobface variant proxy 
+    3389,   # RDP (if exposed, can be vulnerable)
+    1080,   # SOCKS Proxy (can be used maliciously)
+    3128,   # Common HTTP Proxy port (can be abused)
+    6667,   # IRC (often used for botnet C&C)
+    # Add more ports as needed based on security policies or observed threats
 }
 
-# Potentially suspicious or outdated protocols:
-# - "telnet", "ftp", "irc", "rdp", "smb", "pop3", "imap", etc.
-# This list is arbitrary; add or remove as suits your environment.
+# Set of protocol names (lowercase strings) considered unsafe or suspicious.
+# Examples include unencrypted protocols or those commonly used by botnets.
 UNSAFE_PROTOCOLS = {
-    "telnet",     # unencrypted remote login
-    "ftp",        # unencrypted file transfer
-    "irc",        # chat protocol widely used by some botnets
-    "rdp",        # can be abused if exposed to the internet
-    "smb",        # Windows shares
-    "pop3",       # unencrypted mail
-    "imap",       # unencrypted mail
-    "nfs",        # network file system, can be risky if open
-    "snmp",       # can leak sensitive info if misconfigured
-    # Add more as needed...
+    "telnet",     # Unencrypted remote login
+    "ftp",        # Unencrypted file transfer
+    "irc",        # Chat protocol often used by botnets
+     "rdp",      # RDP uses TCP port 3389, covered by UNSAFE_PORTS
+     "smb",      # SMB uses TCP port 445, covered by UNSAFE_PORTS
+    "pop3",       # Unencrypted email retrieval
+    "imap",       # Unencrypted email retrieval (unless over SSL/TLS)
+     "nfs",      # Network File System (can be risky if misconfigured)
+     "snmp",     # Can leak info if misconfigured (often UDP 161/162)
+    # Add more protocol names (as identified by Scapy, e.g., 'gre', 'igmp') if needed
 }
 
-# If you plan to support port ranges or protocol+port combos,
-# you can define more data structures here.
-# For example:
-# UNSAFE_RULES = []
 
-# Just a set of protocols (or protocol names) we consider relevant for plotting
+# --- Temporal Analysis Configuration ---
+
+# Set of protocol names (lowercase strings) to track specifically
+# in the temporal analysis graphs when the breakdown is enabled.
+# Others will still contribute to the "Total Packets" count.
 TRACKED_PROTOCOLS = {
     "tcp",
     "udp",
-    "other"  # or "icmp", etc.—whatever your aggregator might store
+    "icmp", # Example: Add ICMP tracking
+    "other" # Catch-all for protocols not TCP/UDP/ICMP
 }
+
+# --- Data Pruning Configuration ---
+# Time in seconds after which an inactive IP address entry will be
+# removed from the main statistics dictionary (`ip_data`) to save memory.
+# 3600 seconds = 1 hour
+IP_DATA_PRUNE_TIMEOUT = 3600
+

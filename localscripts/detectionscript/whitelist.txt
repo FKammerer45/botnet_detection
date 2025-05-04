@@ -1,0 +1,21 @@
+# Whitelist Entries - Network Monitor
+# Add IP addresses, CIDR subnets, or domain names (one per line)
+# that should NOT be flagged as malicious or suspicious.
+# Lines starting with # are comments.
+
+# Example Local Network (adjust to your network)
+# 192.168.0.0/24
+10.0.0.0/8
+
+# Example Known Good Servers/IPs
+1.1.1.1 # Cloudflare DNS
+8.8.8.8 # Google DNS
+192.168.0.1 # My Router
+
+# Example Known Good Domains (lowercase)
+# Note: Subdomains are NOT automatically whitelisted by a parent domain entry.
+# Add specific subdomains if needed.
+google.com
+googleapis.com
+github.com
+my-internal-server.local

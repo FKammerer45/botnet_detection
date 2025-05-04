@@ -1,114 +1,137 @@
-# main.py
-import threading
+# main.py (Corrected section)
 import tkinter as tk
-import logging
 import sys
+import threading
+import logging # Import standard logging library
+import os # Import os for path joining if needed
 
-# --- Local Imports ---
+# --- Setup Logging ---
+# Import the config instance first
+from core.config_manager import config
+
+# Configure logging using the config object
+log_level_str = config.log_level.upper() # Get level string from config
+numeric_level = getattr(logging, log_level_str, logging.INFO) # Convert string to logging level
+
+# Define log filename (potentially get from config if you add it there)
+# For now, using the default mentioned in config_manager DEFAULTS example
+log_filename = "network_monitor.log"
+# Optional: Ensure logs go to the script's directory or a specific logs folder
+# log_filepath = os.path.join(os.path.dirname(__file__), log_filename) # Example path
+
+logging.basicConfig(
+    level=numeric_level,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    # Use filename=log_filepath if you defined a specific path
+    filename=log_filename,
+    filemode='a' # Append mode ('w' would overwrite each time)
+)
+# Optional: Add a handler to also print logs to console (useful for debugging)
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setLevel(numeric_level) # Use same level or different for console
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+console_handler.setFormatter(formatter)
+logging.getLogger('').addHandler(console_handler) # Add handler to root logger
+
+logger = logging.getLogger(__name__) # Get logger for main module
+
+# --- Now import other components ---
 try:
+    from core.whitelist_manager import get_whitelist
+    # Import the specific functions/event needed from capture
+    from core.capture import capture_packets, select_interfaces, stop_capture, capture_stop_event
     from ui.gui_main import PacketStatsGUI
 except ImportError as e:
-     print(f"ERROR: Failed to import GUI components: {e}", file=sys.stderr)
-     sys.exit(1)
-except tk.TclError as e:
-     print(f"ERROR: Tkinter initialization failed: {e}", file=sys.stderr)
-     sys.exit(1)
-
-try:
-    from core.capture import capture_packets, select_interfaces
-    # Import DNS blocklist loaders to initialize them
-    from core.dns_blocklist_integration import download_dns_blocklists, load_dns_blocklists
-except ImportError as e:
-     print(f"ERROR: Failed to import core components: {e}", file=sys.stderr)
-     sys.exit(1)
+    # Log AFTER basicConfig is set up
+    logger.critical(f"Failed to import core components: {e}", exc_info=True)
+    print(f"ERROR: Failed to import core components: {e}")
+    sys.exit(1)
+except Exception as e:
+    logger.critical(f"Unexpected error during initial imports: {e}", exc_info=True)
+    print(f"ERROR: Unexpected error during imports: {e}")
+    sys.exit(1)
 
 
-# --- Logging Configuration ---
-def setup_logging():
-    """Configures basic logging for the application."""
-    log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    logging.basicConfig(level=logging.INFO, format=log_format, handlers=[logging.StreamHandler()])
-    logging.info("Logging configured.")
-
-# --- Main Application Logic ---
 def main():
-    """Main function to set up logging, select interfaces, start GUI and capture thread."""
-    setup_logging()
-    logger = logging.getLogger(__name__)
+    logger.info("Application starting...")
 
-    logger.info("Starting Network Monitor application.")
-
-    # --- Initialize DNS Blocklists (Download might be skipped if files exist) ---
-    # Note: This happens before GUI starts, could add delay. Consider threading later.
+    # Load whitelist early (optional, depends if needed before GUI)
     try:
-        logger.info("Downloading initial DNS blocklists (if needed)...")
-        download_dns_blocklists()
-        logger.info("Loading initial DNS blocklists...")
-        load_dns_blocklists()
-        logger.info("Initial DNS blocklists processed.")
+        get_whitelist() # Initialize whitelist
+        logger.info("Whitelist instance created/retrieved.")
     except Exception as e:
-        logger.error(f"Failed to initialize DNS blocklists: {e}", exc_info=True)
-        # Decide if this is fatal or just a warning
-        # messagebox.showerror("DNS Blocklist Error", f"Failed to load DNS blocklists: {e}") # Requires Tk root
+        logger.error(f"Failed to initialize whitelist: {e}", exc_info=True)
+        # Decide if this is fatal? Probably not.
+        print(f"Warning: Could not initialize whitelist: {e}")
 
-    # 1. Select Interfaces
+    # --- Select Interfaces ---
     selected_interfaces = select_interfaces()
     if not selected_interfaces:
-        logger.warning("No interfaces selected or selection cancelled. Exiting.")
-        print("Exiting application.")
-        return
+        logger.warning("No interfaces selected. Exiting.")
+        print("No interfaces were selected.")
+        return # Exit if no interfaces chosen
 
-    # 2. Initialize GUI (This now also loads IP blocklists)
+    # --- Start Packet Capture Thread ---
+    logger.info("Starting packet capture thread...")
+    # Make the thread NOT a daemon so we can join it
+    capture_thread = threading.Thread(target=capture_packets, args=(selected_interfaces,), daemon=False)
+    capture_thread.start()
+
+    # --- Initialize and Run GUI ---
+    logger.info("Initializing GUI...")
+    root = tk.Tk()
     try:
-        root = tk.Tk()
         app = PacketStatsGUI(root)
-    except Exception as e:
-        logger.critical(f"Failed to initialize Tkinter GUI: {e}", exc_info=True)
-        print(f"ERROR: Could not start the GUI: {e}", file=sys.stderr)
-        return
+        logger.info("Starting Tkinter mainloop...")
+        root.mainloop() # Blocks here until the main window is closed
+        logger.info("Tkinter mainloop finished.")
 
-    # 3. Start Packet Capture Thread
-    logger.info("Creating packet capture thread...")
-    capture_thread = threading.Thread(
-        target=capture_packets,
-        args=(selected_interfaces,),
-        daemon=True
-    )
-    try:
-        capture_thread.start()
-        logger.info("Packet capture thread started.")
     except Exception as e:
-        logger.critical(f"Failed to start packet capture thread: {e}", exc_info=True)
-        # Need root to show messagebox here
-        # messagebox.showerror("Thread Error", f"Could not start packet capture: {e}")
-        print(f"ERROR: Could not start packet capture thread: {e}", file=sys.stderr)
-        try: root.destroy()
-        except: pass
-        return
-
-    # 4. Start Tkinter Main Loop
-    logger.info("Starting Tkinter main loop...")
-    try:
-        root.mainloop()
-    except KeyboardInterrupt:
-         logger.info("KeyboardInterrupt received. Shutting down.")
-    except Exception as e:
-         logger.critical(f"An error occurred in the Tkinter main loop: {e}", exc_info=True)
+        logger.critical(f"Fatal error during GUI execution: {e}", exc_info=True)
+        print(f"\nFATAL GUI ERROR: {e}")
     finally:
-         logger.info("Application shutdown complete.")
+        # --- Graceful Shutdown Sequence ---
+        logger.info("Initiating shutdown sequence...")
+
+        # 1. Signal the capture thread to stop
+        stop_capture()
+
+        # 2. Wait for the capture thread to finish
+        logger.info("Waiting for capture thread to join...")
+        capture_thread.join(timeout=5.0) # Wait up to 5 seconds
+        if capture_thread.is_alive():
+            logger.warning("Capture thread did not join within timeout!")
+        else:
+            logger.info("Capture thread joined successfully.")
+
+        # 3. Explicitly shut down logging (optional, do last)
+        logger.info("Shutting down logging system.")
+        logging.shutdown()
+        print("Application finished.")
 
 
 if __name__ == "__main__":
-    import os
-    try: is_admin = os.getuid() == 0
-    except AttributeError:
-        try:
-             import ctypes
-             is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
-        except Exception: is_admin = False
+    # Basic check for admin rights (example for Windows)
+    import platform
+    import ctypes
+    is_admin = False
+    try:
+        if platform.system() == "Windows":
+            is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
+        elif platform.system() == "Linux" or platform.system() == "Darwin":
+            # Check effective user ID (requires os module)
+            import os
+            is_admin = os.geteuid() == 0
+    except Exception as e:
+        logger.warning(f"Could not determine admin rights: {e}")
+        print(f"Warning: Could not determine admin/root rights ({e}). Packet capture might fail.")
 
     if not is_admin:
-         print("WARNING: Packet sniffing usually requires root/administrator privileges.")
-         print("The application might not be able to capture packets without them.")
+        logger.warning("Application not running as administrator/root. Packet capture may fail.")
+        print("\nWARNING: Not running as administrator/root. Packet capture might require elevated privileges.")
+        # Optional: Ask user if they want to continue?
+        # cont = input("Continue anyway? (y/n): ").lower()
+        # if cont != 'y':
+        #     sys.exit("Exiting: Run as administrator/root for packet capture.")
 
     main()

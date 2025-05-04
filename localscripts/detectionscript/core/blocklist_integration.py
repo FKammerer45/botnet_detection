@@ -4,204 +4,210 @@ import requests
 import csv
 import ipaddress
 import logging
+import re
 
-# Get a logger for this module
+# Import config and whitelist function
+from core.config_manager import config
+from core.whitelist_manager import get_whitelist # Import function
+# Import constants from globals
+from config.globals import DOWNLOAD_DIR
+
 logger = logging.getLogger(__name__)
+whitelist = get_whitelist() # Get the singleton instance
 
-# Base URL for FireHOL level 1 lists (example)
-FIREHOL_BASE_URL = "https://raw.githubusercontent.com/firehol/blocklist-ipsets/master"
-
-# Dynamic blocklists storage: URL => Active/Inactive status
-blocklists = {
-    f"{FIREHOL_BASE_URL}/dshield.netset": True,
-    f"{FIREHOL_BASE_URL}/spamhaus_drop.netset": True,
-    f"{FIREHOL_BASE_URL}/spamhaus_edrop.netset": True,
-    "https://feodotracker.abuse.ch/downloads/ipblocklist_aggressive.txt": True,
-    "https://sslbl.abuse.ch/blacklist/sslipblacklist_aggressive.csv": True,
-}
-
-DOWNLOAD_DIR = "blocklists"
-
-# Use a simple list to store malicious networks and their source list identifiers (URLs).
-# Structure: [(ipaddress.ip_network, list_identifier_str), ...]
+# Data storage (populated by load_blocklists)
 malicious_networks = []
+malicious_domains = set()
 
+# --- Utility Functions ---
+def get_local_filename(url, list_type="ip"):
+    try:
+        path_parts = [p for p in url.split('/') if p]
+        base_name = path_parts[-1] if path_parts else url
+        if not base_name or '.' not in base_name: base_name = url.split('//')[-1].replace('.', '_').replace('/', '_')
+        prefix = "dns_" if list_type == "dns" else "ip_"
+        filename = f"{prefix}{base_name}"
+        filename = "".join(c if c.isalnum() or c in ['.', '-', '_'] else '_' for c in filename)
+        max_len = 80
+        if len(filename) > max_len:
+             keep_end = 20; keep_start = max_len - keep_end - 3
+             filename = filename[:keep_start] + "..." + filename[-keep_end:]
+        return filename
+    except Exception as e: logger.error(f"Filename gen error for {url}: {e}"); return f"{prefix}{hash(url)}.bin"
 
-def download_blocklists():
-    """Downloads all active blocklists from their URLs."""
+# --- Downloading ---
+def download_blocklists(force_download=False):
     if not os.path.exists(DOWNLOAD_DIR):
+        try: os.mkdir(DOWNLOAD_DIR); logger.info(f"Created dir: {DOWNLOAD_DIR}")
+        except OSError as e: logger.error(f"Failed create dir {DOWNLOAD_DIR}: {e}", exc_info=True); return
+    all_urls = config.ip_blocklist_urls.union(config.dns_blocklist_urls)
+    logger.info(f"Checking/Downloading {len(all_urls)} blocklists...")
+    for url in all_urls:
+        list_type = "dns" if url in config.dns_blocklist_urls else "ip"
+        local_path = os.path.join(DOWNLOAD_DIR, get_local_filename(url, list_type))
+        if os.path.exists(local_path) and not force_download: logger.debug(f"Skip download, exists: {os.path.basename(local_path)}"); continue
+        logger.debug(f"Download [{list_type.upper()}]: {url} -> {local_path}")
         try:
-            os.mkdir(DOWNLOAD_DIR)
-            logger.info(f"Created blocklist download directory: {DOWNLOAD_DIR}")
-        except OSError as e:
-            logger.error(f"Failed to create blocklist directory {DOWNLOAD_DIR}: {e}", exc_info=True)
-            return
-
-    active_lists = {url for url, active in blocklists.items() if active}
-    logger.info(f"Starting download for {len(active_lists)} active blocklists...")
-
-    for url in active_lists:
-        filename = url.split("/")[-1]
-        filename = "".join(c if c.isalnum() or c in ['.', '-', '_'] else '_' for c in filename) # Sanitize
-        local_path = os.path.join(DOWNLOAD_DIR, filename)
-        logger.debug(f"Attempting to download {url} -> {local_path}")
-        try:
-            resp = requests.get(url, timeout=60, stream=True)
+            resp = requests.get(url, timeout=60, stream=True, headers={'User-Agent': 'NetworkMonitorBot/1.0'})
             resp.raise_for_status()
             with open(local_path, 'wb') as f:
-                for chunk in resp.iter_content(chunk_size=8192):
-                    f.write(chunk)
-            logger.debug(f"Successfully downloaded {url}")
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Failed to download {url}: {e}", exc_info=True)
-        except IOError as e:
-             logger.error(f"Failed to write blocklist file {local_path}: {e}", exc_info=True)
-        except Exception as e:
-             logger.error(f"An unexpected error occurred downloading {url}: {e}", exc_info=True)
+                for chunk in resp.iter_content(chunk_size=8192): f.write(chunk)
+            logger.debug(f"Downloaded {url}")
+        except requests.exceptions.RequestException as e: logger.error(f"Download failed {url}: {e}", exc_info=False)
+        except IOError as e: logger.error(f"Write failed {local_path}: {e}", exc_info=True)
+        except Exception as e: logger.error(f"Download error {url}: {e}", exc_info=True)
+    logger.info("Download check finished.")
 
-    logger.info("Blocklist download process finished.")
-
-
+# --- Loading ---
 def load_blocklists():
-    """Loads all active blocklists from local files into the malicious_networks list."""
-    global malicious_networks
-    new_network_list = []
-    loaded_count = 0
-    entry_count = 0
-
-    logger.info("Loading blocklists into memory list...")
-
-    for url, active in blocklists.items():
-        if not active:
-            logger.debug(f"Skipping inactive blocklist: {url}")
-            continue
-
-        filename = url.split("/")[-1]
-        filename = "".join(c if c.isalnum() or c in ['.', '-', '_'] else '_' for c in filename)
-        local_path = os.path.join(DOWNLOAD_DIR, filename)
-
+    global malicious_networks, malicious_domains
+    new_network_list = []; new_domain_set = set()
+    loaded_files = 0; total_ip_entries = 0; total_dns_entries = 0
+    logger.info("Loading configured blocklists...")
+    # Load IP Lists
+    logger.info(f"Loading {len(config.ip_blocklist_urls)} IP blocklists...")
+    for url in config.ip_blocklist_urls:
+        local_path = os.path.join(DOWNLOAD_DIR, get_local_filename(url, "ip"))
         if os.path.exists(local_path):
-            # *** Use the URL as the list identifier ***
-            list_identifier = url
-            logger.debug(f"Parsing blocklist file: {local_path} (Identifier: {list_identifier})")
+            logger.debug(f"Parsing [IP]: {os.path.basename(local_path)}")
             try:
-                count = 0
-                if filename.endswith(".csv"):
-                    count = _parse_csv_file_to_list(new_network_list, local_path, list_identifier, ip_column='Dst IP Address', comment_char='#', delimiter=',')
-                elif filename.endswith(".txt") or filename.endswith(".netset"):
-                     count = _parse_netset_file_to_list(new_network_list, local_path, list_identifier, comment_char='#')
-                else:
-                     logger.warning(f"Unsupported file extension for blocklist: {filename}. Attempting netset parse.")
-                     count = _parse_netset_file_to_list(new_network_list, local_path, list_identifier, comment_char='#')
+                count = 0; filename_lower = local_path.lower()
+                if filename_lower.endswith(".csv"): count = _parse_ip_csv_file_to_list(new_network_list, local_path, url)
+                else: count = _parse_ip_netset_file_to_list(new_network_list, local_path, url)
+                if count > 0: logger.info(f"Loaded {count} IP entries from {os.path.basename(local_path)}"); total_ip_entries += count; loaded_files += 1
+                else: logger.warning(f"No IP entries loaded from {os.path.basename(local_path)}.")
+            except Exception as e: logger.error(f"Parse IP file error {local_path}: {e}", exc_info=True)
+        else: logger.warning(f"IP file not found: {local_path}.")
+    # Load DNS Lists
+    logger.info(f"Loading {len(config.dns_blocklist_urls)} DNS blocklists...")
+    for url in config.dns_blocklist_urls:
+         local_path = os.path.join(DOWNLOAD_DIR, get_local_filename(url, "dns"))
+         if os.path.exists(local_path):
+            logger.debug(f"Parsing [DNS]: {os.path.basename(local_path)}")
+            try:
+                count = _parse_dns_file_to_set(new_domain_set, local_path, url)
+                if count > 0: logger.info(f"Loaded {count} DNS entries from {os.path.basename(local_path)}"); total_dns_entries += count; loaded_files += 1
+                else: logger.warning(f"No DNS entries loaded from {os.path.basename(local_path)}.")
+            except Exception as e: logger.error(f"Parse DNS file error {local_path}: {e}", exc_info=True)
+         else: logger.warning(f"DNS file not found: {local_path}.")
+    malicious_networks = new_network_list; malicious_domains = new_domain_set
+    logger.info(f"Blocklist loading complete. Files: {loaded_files}, IPs: {total_ip_entries}, DNS: {total_dns_entries}")
 
-                if count > 0:
-                    logger.info(f"Loaded {count} entries from {filename} (ID: {list_identifier})")
-                    entry_count += count
-                    loaded_count += 1
-                else:
-                    logger.warning(f"No entries loaded from {filename}. Check format or content.")
-
-            except Exception as e:
-                logger.error(f"Failed to parse blocklist file {local_path}: {e}", exc_info=True)
-        else:
-            logger.warning(f"Blocklist file not found for active list {url}: {local_path}. Please download first.")
-
-    malicious_networks = new_network_list
-    logger.info(f"Blocklist loading complete. Loaded {entry_count} entries from {loaded_count} files into list.")
-
-
-def _add_entry_to_list(network_list, network_obj, list_identifier):
-    """Adds a tuple of (ipaddress.ip_network, list_identifier) to the list."""
-    # *** Store list_identifier (URL) instead of filename ***
-    try:
-        network_list.append((network_obj, list_identifier))
-        return True
-    except Exception as e:
-        logger.error(f"Error adding network {network_obj} from list '{list_identifier}' to list: {e}", exc_info=True)
-        return False
-
+# --- IP Parsing Functions ---
+def _add_ip_entry_to_list(network_list, network_obj, list_identifier):
+    try: network_list.append((network_obj, list_identifier)); return True
+    except Exception as e: logger.error(f"Error adding network {network_obj} from '{list_identifier}': {e}", exc_info=True); return False
 def _parse_ip_or_cidr(ip_str):
-    """Parses a string as IP or CIDR, returning an ipaddress object or None."""
-    try:
-        return ipaddress.ip_network(ip_str, strict=False)
+    try: return ipaddress.ip_network(ip_str.strip(), strict=False)
     except ValueError:
-        logger.warning(f"Invalid IP/CIDR format '{ip_str}'. Skipping.")
+        if ip_str and not ip_str.startswith('#'): logger.warning(f"Invalid IP/CIDR: '{ip_str}'. Skipping.")
         return None
-
-def _parse_netset_file_to_list(network_list, filepath, list_identifier, comment_char='#'):
-    """Parses files with one IP or CIDR per line and adds to a list."""
-    # *** Uses list_identifier (URL) ***
+def _parse_ip_netset_file_to_list(network_list, filepath, list_identifier, comment_char='#'):
     count = 0
     try:
         with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
             for line in f:
                 line = line.strip()
-                if not line or (comment_char and line.startswith(comment_char)):
-                    continue
+                if not line or (comment_char and line.startswith(comment_char)): continue
                 network_obj = _parse_ip_or_cidr(line)
-                if network_obj:
-                    if _add_entry_to_list(network_list, network_obj, list_identifier):
-                        count += 1
-    except IOError as e:
-        logger.error(f"Could not read file {filepath}: {e}", exc_info=True)
-    except Exception as e:
-        logger.error(f"Error parsing netset file {filepath}: {e}", exc_info=True)
+                if network_obj and _add_ip_entry_to_list(network_list, network_obj, list_identifier): count += 1
+    except IOError as e: logger.error(f"Read error {filepath}: {e}", exc_info=True)
+    except Exception as e: logger.error(f"Parse IP netset error {filepath}: {e}", exc_info=True)
     return count
-
-def _parse_csv_file_to_list(network_list, filepath, list_identifier, ip_column='IP', comment_char='#', delimiter=','):
-    """Parses CSV files, extracting IPs/CIDRs from a specific column and adds to a list."""
-     # *** Uses list_identifier (URL) ***
-    count = 0
+def _parse_ip_csv_file_to_list(network_list, filepath, list_identifier, ip_column='Dst IP Address', comment_char='#', delimiter=','):
+    count = 0; line_num = 0; header_found = False; reader = None
     try:
         with open(filepath, 'r', encoding='utf-8', errors='ignore') as csvfile:
-            lines = (line for line in csvfile if not line.strip().startswith(comment_char))
-            reader = csv.DictReader(lines, delimiter=delimiter)
-            if ip_column not in reader.fieldnames:
-                 logger.error(f"IP column '{ip_column}' not found in CSV file: {filepath}. Field names: {reader.fieldnames}")
-                 return 0
-
-            for row in reader:
-                ip_str = row.get(ip_column, '').strip()
-                if not ip_str:
-                    continue
-                network_obj = _parse_ip_or_cidr(ip_str)
-                if network_obj:
-                    if _add_entry_to_list(network_list, network_obj, list_identifier):
-                        count += 1
-    except IOError as e:
-        logger.error(f"Could not read CSV file {filepath}: {e}", exc_info=True)
-    except csv.Error as e:
-         logger.error(f"CSV parsing error in file {filepath}, line {reader.line_num}: {e}", exc_info=True)
-    except Exception as e:
-        logger.error(f"Error parsing CSV file {filepath}: {e}", exc_info=True)
+            potential_header_line = ""; header_line_num = 0
+            for current_line_num, line_h in enumerate(csvfile, 1):
+                line_h = line_h.strip()
+                if not line_h or line_h.startswith(comment_char): continue
+                potential_header_line = line_h; header_line_num = current_line_num; break
+            if not potential_header_line: return 0
+            fieldnames = []
+            try:
+                 sniffer = csv.Sniffer(); dialect = sniffer.sniff(potential_header_line)
+                 has_header = sniffer.has_header(potential_header_line)
+                 if has_header:
+                     csvfile.seek(0); reader_check = csv.reader((l for l in csvfile if not l.strip().startswith(comment_char)), dialect=dialect)
+                     fieldnames = next(reader_check)
+                     if ip_column in fieldnames:
+                         header_found = True; logger.debug(f"CSV Header found in {filepath}")
+                         csvfile.seek(0); lines_for_dictreader = (l for l_num, l in enumerate(csvfile, 1) if not l.strip().startswith(comment_char) and l_num > header_line_num)
+                         reader = csv.DictReader(lines_for_dictreader, fieldnames=fieldnames, dialect=dialect)
+                     else: logger.warning(f"CSV Header in {filepath} missing '{ip_column}'. Fields: {fieldnames}. Treating as simple list.")
+                 else: logger.warning(f"No header detected in {filepath}. Treating as simple list.")
+            except csv.Error: logger.warning(f"CSV dialect/header error in {filepath}. Treating as simple list.")
+            if reader:
+                 line_num = header_line_num
+                 for row_dict in reader:
+                     line_num += 1; ip_str = row_dict.get(ip_column, '').strip()
+                     if not ip_str: continue
+                     network_obj = _parse_ip_or_cidr(ip_str)
+                     if network_obj and _add_ip_entry_to_list(network_list, network_obj, list_identifier): count += 1
+            else:
+                 csvfile.seek(0)
+                 for line_num_simple, line_s in enumerate(csvfile, 1):
+                     line_s = line_s.strip()
+                     if not line_s or line_s.startswith(comment_char): continue
+                     ip_str = line_s.split(delimiter)[0].strip()
+                     network_obj = _parse_ip_or_cidr(ip_str)
+                     if network_obj and _add_ip_entry_to_list(network_list, network_obj, list_identifier): count += 1
+    except IOError as e: logger.error(f"Read CSV error {filepath}: {e}", exc_info=True)
+    except Exception as e: logger.error(f"Parse IP CSV error {filepath} near line {line_num}: {e}", exc_info=True)
     return count
 
+# --- DNS Parsing Functions ---
+def _parse_dns_file_to_set(domain_set, filepath, list_identifier):
+    count = 0; line_num = 0
+    try:
+        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+            for line_num, line in enumerate(f, 1):
+                line = line.strip()
+                if not line or line.startswith('#'): continue
+                parts = line.split(); domain = None; potential_domain = None
+                try:
+                    if len(parts) >= 2 and ipaddress.ip_address(parts[0]): potential_domain = parts[1].lower()
+                    elif len(parts) == 1: potential_domain = parts[0].lower()
+                except ValueError: # Handle case where first part isn't IP but multiple parts exist
+                     if len(parts) == 1: potential_domain = parts[0].lower()
 
+                if potential_domain:
+                    potential_domain = potential_domain.rstrip('.')
+                    if '.' in potential_domain and not potential_domain.startswith('.') and not potential_domain.endswith('.'):
+                        if re.match(r'^[a-z0-9.-]+$', potential_domain): domain = potential_domain
+                        else: logger.debug(f"Skip invalid DNS format '{potential_domain}' line {line_num} in {filepath}")
+                    else: logger.debug(f"Skip invalid DNS structure '{potential_domain}' line {line_num} in {filepath}")
+                if domain: domain_set.add(domain); count += 1
+    except IOError as e: logger.error(f"Read DNS file error {filepath}: {e}", exc_info=True)
+    except Exception as e: logger.error(f"Parse DNS file error {filepath} near line {line_num}: {e}", exc_info=True)
+    return count
+
+# --- Checking Functions ---
 def identify_malicious_ip(ip_str: str) -> set:
-    """
-    Check if an IP address string falls within any network in the malicious_networks list.
-
-    Args:
-        ip_str: The IP address string to check.
-
-    Returns:
-        A set containing the original identifiers (URLs) of the blocklists
-        the IP was found in, or an empty set if not found or invalid input.
-    """
+    """Checks IP against blocklist, ignoring whitelist."""
     global malicious_networks
+    # *** Use the whitelist instance ***
+    if whitelist.is_ip_whitelisted(ip_str): logger.debug(f"IP {ip_str} whitelisted."); return set()
     matched_lists = set()
     try:
         ip_obj = ipaddress.ip_address(ip_str)
-        # *** Iterate through (network, list_identifier) tuples ***
         for network, list_identifier in malicious_networks:
-            if ip_obj in network:
-                matched_lists.add(list_identifier) # Add the URL/identifier
-    except ValueError:
-        logger.debug(f"Invalid IP string passed to identify_malicious_ip: {ip_str}")
-        return set()
-    except Exception as e:
-        logger.error(f"Error during list lookup for IP '{ip_str}': {e}", exc_info=True)
-        return set()
+            if ip_obj in network: matched_lists.add(list_identifier)
+    except ValueError: logger.debug(f"Invalid IP for blocklist lookup: {ip_str}")
+    except Exception as e: logger.error(f"IP blocklist lookup error '{ip_str}': {e}", exc_info=True)
+    return matched_lists
 
-    return matched_lists # Returns a set of URLs
-
+def is_domain_malicious(domain: str) -> bool:
+    """Checks domain against blocklist, ignoring whitelist."""
+    global malicious_domains
+    if not domain: return False
+    domain_lower = domain.lower().strip('.')
+    # *** Use the whitelist instance ***
+    if whitelist.is_domain_whitelisted(domain_lower): logger.debug(f"Domain {domain_lower} whitelisted."); return False
+    if domain_lower in malicious_domains: logger.debug(f"Exact domain blocklist match: '{domain_lower}'"); return True
+    parts = domain_lower.split('.')
+    for i in range(1, len(parts) - 1):
+        parent_domain = '.'.join(parts[i:])
+        if parent_domain in malicious_domains: logger.debug(f"Parent domain blocklist match: '{parent_domain}' for query '{domain_lower}'"); return True
+    return False

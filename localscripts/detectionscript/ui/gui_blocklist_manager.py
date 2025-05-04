@@ -1,143 +1,161 @@
-# gui_blocklist_manager.py
+# ui/gui_blocklist_manager.py
 import tkinter as tk
-from tkinter import messagebox
-import logging # Import logging module
-from core.blocklist_integration import blocklists, download_blocklists, load_blocklists
+from tkinter import ttk, messagebox
+import logging
+from core.config_manager import config # Import config instance
+# Import blocklist functions (download/load are needed on apply)
+from core.blocklist_integration import download_blocklists, load_blocklists
 
-# Get a logger for this module
 logger = logging.getLogger(__name__)
 
-def apply_blocklist_changes(checkbox_vars):
-    """
-    Update the `blocklists` dictionary and apply changes by downloading and loading blocklists.
-    """
-    logger.info("Applying blocklist changes...")
-    active_lists = []
-    inactive_lists = []
-    for blocklist, var in checkbox_vars.items():
-        is_active = var.get()
-        blocklists[blocklist] = is_active  # Update active/inactive status
-        if is_active:
-            active_lists.append(blocklist)
-        else:
-            inactive_lists.append(blocklist)
+# *** Ensure class name matches the one used in gui_main.py ***
+class BlocklistManagerWindow:
+    def __init__(self, master):
+        """Initialize the blocklist manager GUI using config."""
+        self.master = master
+        self.master.title("Blocklist Manager")
+        self.master.geometry("750x600")
+        logger.info("Initializing BlocklistManagerWindow.")
 
-    logger.debug(f"Active blocklists: {active_lists}")
-    logger.debug(f"Inactive blocklists: {inactive_lists}")
+        # Store checkbox variables locally: {url: tk.BooleanVar}
+        self.checkbox_vars = {}
 
-    # Apply changes
-    try:
-        download_blocklists()
-        load_blocklists()
-        logger.info("Blocklists downloaded and loaded successfully.")
-        messagebox.showinfo("Blocklists Updated", "Blocklists have been updated and applied!")
-    except Exception as e:
-        logger.error(f"Error applying blocklist changes: {e}", exc_info=True)
-        messagebox.showerror("Error", f"Failed to apply blocklist changes: {e}")
+        # --- Main Frame ---
+        main_frame = ttk.Frame(self.master, padding="10")
+        main_frame.pack(fill=tk.BOTH, expand=True)
 
+        # --- Explanation ---
+        explanation_label = ttk.Label(
+            main_frame,
+            text=(
+                "Manage IP and DNS blocklists defined in config.ini.\n"
+                "- Check/Uncheck to activate/deactivate lists for the *next run* (requires saving).\n"
+                "- Add new URLs directly to config.ini ([Blocklists_IP] or [Blocklists_DNS]).\n"
+                "- Click 'Save & Apply' to update config.ini, re-download active lists, and reload data."
+            ),
+            wraplength=730, justify="left"
+        )
+        explanation_label.pack(pady=10, anchor=tk.W)
 
-def add_new_blocklist(blocklist_entry, checkbox_vars, frame):
-    """
-    Add a new blocklist dynamically.
-    """
-    new_blocklist = blocklist_entry.get().strip()
-    if new_blocklist:
-        if new_blocklist not in blocklists:
-            logger.info(f"Adding new blocklist: {new_blocklist}")
-            blocklists[new_blocklist] = True  # Default active
-            var = tk.BooleanVar(value=True)
-            checkbox_vars[new_blocklist] = var
+        # --- Paned Window for IP and DNS lists ---
+        paned_window = tk.PanedWindow(main_frame, orient=tk.HORIZONTAL, sashrelief=tk.RAISED)
+        paned_window.pack(fill=tk.BOTH, expand=True, pady=5)
 
-            # Add a new checkbox to the GUI
-            tk.Checkbutton(frame, text=new_blocklist, variable=var).pack(anchor="w")
-            blocklist_entry.delete(0, tk.END)
-            messagebox.showinfo("Blocklist Added", f"Added blocklist: {new_blocklist}")
-        else:
-            logger.warning(f"Attempted to add duplicate blocklist: {new_blocklist}")
-            messagebox.showwarning("Duplicate Blocklist", "This blocklist already exists.")
-    else:
-        logger.warning("Attempted to add an empty blocklist URL/filename.")
-        messagebox.showwarning("Invalid Input", "Please enter a valid blocklist URL or filename.")
+        # --- IP Blocklist Section ---
+        ip_list_frame = ttk.LabelFrame(paned_window, text="IP Blocklists (from config.ini)")
+        paned_window.add(ip_list_frame) 
+      
+        self._setup_list_ui(ip_list_frame, config.ip_blocklist_urls, "ip")
+
+        # --- DNS Blocklist Section ---
+        dns_list_frame = ttk.LabelFrame(paned_window, text="DNS Blocklists (from config.ini)")
+        paned_window.add(dns_list_frame) 
+    
+        self._setup_list_ui(dns_list_frame, config.dns_blocklist_urls, "dns")
 
 
-def open_blocklist_manager():
-    """
-    Open the blocklist manager GUI.
-    """
-    logger.info("Opening Blocklist Manager window.")
-    def apply_changes():
-        apply_blocklist_changes(checkbox_vars)
+        # --- Buttons ---
+        button_frame = ttk.Frame(main_frame)
+        button_frame.pack(pady=15)
 
-    # Create the blocklist manager window
-    blocklist_window = tk.Toplevel()
-    blocklist_window.title("Blocklist Manager")
-    blocklist_window.geometry("700x600")
+        apply_button = ttk.Button(button_frame, text="Save & Apply Changes", command=self.save_and_apply_changes)
+        apply_button.pack(side=tk.LEFT, padx=10)
 
-    # Add an explanation at the top
-    explanation_label = tk.Label(
-        blocklist_window,
-        text=(
-            "Manage your blocklists below.\n"
-            "- Check or uncheck to activate/deactivate lists.\n"
-            "- Add new lists using URLs (e.g., .netset, .txt, .csv formats supported).\n"
-            "- Examples:\n"
-            "  https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/dshield.netset\n"
-            "  https://feodotracker.abuse.ch/downloads/ipblocklist_aggressive.txt\n"
-            "  https://sslbl.abuse.ch/blacklist/sslipblacklist_aggressive.csv\n"
-            "\nClick 'Apply Changes' to download and load active lists."
-        ),
-        wraplength=680,
-        justify="left",
-        fg="blue"
-    )
-    explanation_label.pack(pady=10, padx=10)
+        cancel_button = ttk.Button(button_frame, text="Cancel", command=self.master.destroy)
+        cancel_button.pack(side=tk.LEFT, padx=10)
 
-    # Frame for checkboxes
-    checkbox_frame = tk.Frame(blocklist_window)
-    checkbox_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        self.master.protocol("WM_DELETE_WINDOW", lambda: (logger.info("BlocklistManagerWindow closed."), self.master.destroy()))
 
-    # Scrollable canvas for many blocklists
-    canvas = tk.Canvas(checkbox_frame)
-    scrollbar = tk.Scrollbar(checkbox_frame, orient="vertical", command=canvas.yview)
-    scrollable_frame = tk.Frame(canvas)
+    def _setup_list_ui(self, parent_frame, url_set, list_type):
+        """Creates the scrollable checkbox list for a given set of URLs."""
+        # Frame for checkboxes with scrollbar
+        checkbox_area = tk.Frame(parent_frame)
+        checkbox_area.pack(fill="both", expand=True, padx=5, pady=5)
 
-    scrollable_frame.bind(
-        "<Configure>",
-        lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-    )
+        canvas = tk.Canvas(checkbox_area)
+        scrollbar = ttk.Scrollbar(checkbox_area, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
 
-    canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-    canvas.configure(yscrollcommand=scrollbar.set)
+        scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
 
-    canvas.pack(side="left", fill="both", expand=True)
-    scrollbar.pack(side="right", fill="y")
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
 
-    # Checkboxes for blocklists
-    checkbox_vars = {}
-    # Sort blocklist items for consistent display order
-    sorted_blocklist_items = sorted(blocklists.items())
-    for blocklist, is_active in sorted_blocklist_items:
-        var = tk.BooleanVar(value=is_active)
-        checkbox_vars[blocklist] = var
-        tk.Checkbutton(scrollable_frame, text=blocklist, variable=var).pack(anchor="w")
+        # Populate checkboxes
+        sorted_urls = sorted(list(url_set))
+        for url in sorted_urls:
+            # Checkboxes represent the *current* active state from the config object
+            # The user modifies these, and on save, the config object is updated.
+            is_active = url in (config.ip_blocklist_urls if list_type == "ip" else config.dns_blocklist_urls)
+            var = tk.BooleanVar(value=is_active)
+            self.checkbox_vars[url] = var # Store var keyed by URL
 
-    # Add blocklist entry
-    add_frame = tk.Frame(blocklist_window)
-    add_frame.pack(fill=tk.X, padx=10, pady=5)
-    tk.Label(add_frame, text="Add URL/Path:").pack(side=tk.LEFT, padx=5)
-    blocklist_entry = tk.Entry(add_frame)
-    blocklist_entry.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=5)
-    add_button = tk.Button(
-        add_frame,
-        text="Add",
-        command=lambda: add_new_blocklist(blocklist_entry, checkbox_vars, scrollable_frame)
-    )
-    add_button.pack(side=tk.LEFT, padx=5)
+            # Shorten URL for display if too long
+            display_url = url
+            max_display_len = 60
+            if len(url) > max_display_len:
+                display_url = url[:max_display_len//2 - 2] + "..." + url[-max_display_len//2 + 1:]
 
-    # Apply button
-    apply_button = tk.Button(blocklist_window, text="Apply Changes", command=apply_changes)
-    apply_button.pack(pady=10)
+            cb = ttk.Checkbutton(scrollable_frame, text=display_url, variable=var) # Removed tooltip for now
+            cb.pack(anchor="w", padx=2)
 
-    # Add basic logging for window closure
-    blocklist_window.protocol("WM_DELETE_WINDOW", lambda: (logger.info("Blocklist Manager window closed."), blocklist_window.destroy()))
+            # Simple Tooltip implementation (Optional - can be complex)
+            # def enter(event, text=url): ...
+            # def leave(event): ...
+            # cb.bind("<Enter>", enter)
+            # cb.bind("<Leave>", leave)
+
+
+    def save_and_apply_changes(self):
+        """Update config object, save config.ini, re-download, re-load."""
+        logger.info("Applying blocklist changes...")
+        new_ip_urls = set()
+        new_dns_urls = set()
+
+        # Update the sets based on checkbox states
+        for url, var in self.checkbox_vars.items():
+             is_active = var.get()
+             # Determine if it was originally an IP or DNS list to add back correctly
+             # This relies on the initial population based on config sets
+             # A more robust way might store type alongside checkbox_vars if lists could be added dynamically
+
+             # Check if URL exists in either original config set
+             is_ip_list = url in config.ip_blocklist_urls
+             is_dns_list = url in config.dns_blocklist_urls
+
+             if is_active:
+                 if is_ip_list:
+                     new_ip_urls.add(url)
+                 elif is_dns_list: # Check if it was a DNS list
+                     new_dns_urls.add(url)
+                 else:
+                     # Should not happen if list is only populated from config
+                     logger.warning(f"URL '{url}' from checkbox_vars not found in initial config sets. Assuming IP list.")
+                     new_ip_urls.add(url) # Default assumption or skip?
+
+             # If inactive, it's simply not added to the new sets
+
+        # Update the config object
+        config.ip_blocklist_urls = new_ip_urls
+        config.dns_blocklist_urls = new_dns_urls
+        logger.debug(f"Updated config IP URLs: {config.ip_blocklist_urls}")
+        logger.debug(f"Updated config DNS URLs: {config.dns_blocklist_urls}")
+
+        # Save the updated config to config.ini
+        config.save_config()
+
+        # Re-download and re-load blocklists
+        try:
+            logger.info("Triggering blocklist re-download (force=True)...")
+            download_blocklists(force_download=True) # Force download based on new active state
+            logger.info("Triggering blocklist re-load...")
+            load_blocklists() # Reload based on new active state
+            logger.info("Blocklists updated and reloaded successfully.")
+            messagebox.showinfo("Blocklists Updated", "Config saved, blocklists re-downloaded and reloaded!", parent=self.master)
+            self.master.destroy() # Close manager window after applying
+        except Exception as e:
+            logger.error(f"Error applying blocklist changes: {e}", exc_info=True)
+            messagebox.showerror("Error", f"Failed to apply blocklist changes:\n{e}", parent=self.master)
 

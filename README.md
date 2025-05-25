@@ -155,12 +155,6 @@ Include this file in your ESP32 project, and ensure it is added to `.gitignore` 
 
 ---
 
-## Contributions
-
-We welcome contributions to enhance the tool and make it more robust. Feel free to submit pull requests or raise issues for suggestions and bug reports.
-
----
-
 ## License
 
 This project is licensed under the MIT License. (Assuming MIT, please add a `LICENSE` file if one doesn't exist).

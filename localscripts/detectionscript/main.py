@@ -38,6 +38,7 @@ logger = logging.getLogger(__name__) # Get logger for main module
 # --- Now import other components ---
 try:
     from core.whitelist_manager import get_whitelist
+    from core.data_manager import NetworkDataManager # Import NetworkDataManager
     # Import the specific functions/event needed from capture
     from core.capture import capture_packets, select_interfaces, stop_capture, capture_stop_event
     from ui.gui_main import PacketStatsGUI
@@ -64,6 +65,16 @@ def main():
         # Decide if this is fatal? Probably not.
         print(f"Warning: Could not initialize whitelist: {e}")
 
+    # --- Initialize Data Manager ---
+    logger.info("Initializing NetworkDataManager...")
+    try:
+        data_manager = NetworkDataManager()
+        logger.info("NetworkDataManager initialized.")
+    except Exception as e:
+        logger.critical(f"Failed to initialize NetworkDataManager: {e}", exc_info=True)
+        print(f"CRITICAL ERROR: Failed to initialize NetworkDataManager: {e}")
+        sys.exit(1)
+
     # --- Select Interfaces ---
     selected_interfaces = select_interfaces()
     if not selected_interfaces:
@@ -73,15 +84,16 @@ def main():
 
     # --- Start Packet Capture Thread ---
     logger.info("Starting packet capture thread...")
-    # Make the thread NOT a daemon so we can join it
-    capture_thread = threading.Thread(target=capture_packets, args=(selected_interfaces,), daemon=False)
+    # Pass data_manager to the capture_packets function
+    capture_thread = threading.Thread(target=capture_packets, args=(selected_interfaces, data_manager), daemon=False)
     capture_thread.start()
 
     # --- Initialize and Run GUI ---
     logger.info("Initializing GUI...")
     root = tk.Tk()
     try:
-        app = PacketStatsGUI(root)
+        # Pass data_manager to PacketStatsGUI
+        app = PacketStatsGUI(root, data_manager)
         logger.info("Starting Tkinter mainloop...")
         root.mainloop() # Blocks here until the main window is closed
         logger.info("Tkinter mainloop finished.")

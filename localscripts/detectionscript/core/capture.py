@@ -2,550 +2,101 @@
 import time
 import threading
 import logging
-from collections import deque, defaultdict
 import platform
-import ipaddress
 import socket
-import sys # Added for SystemExit
+import sys 
+import functools # For functools.partial
 
-# Third-party imports
-
-from scapy.all import sniff, IP, TCP, UDP, Ether, IPv6
-from scapy.layers.dns import DNS, DNSQR, DNSRR
+from scapy.all import sniff, IP, TCP, UDP, Ether, IPv6, DNS
+from scapy.layers.dns import DNSQR, DNSRR # Not directly used here anymore, but good for context
 from scapy.config import conf as scapy_conf
 from scapy.arch import get_if_list, get_if_hwaddr
 if platform.system() == "Windows":
-    from scapy.arch.windows import get_windows_if_list # Keep this for potential detailed listing
+    from scapy.arch.windows import get_windows_if_list
 
 import psutil
+from collections import defaultdict # For list_interfaces_cross_platform
 
-
-
-# Local imports
-from core.config_manager import config # Use the singleton config instance
-from core.whitelist_manager import get_whitelist # Use the singleton whitelist instance
-from core.blocklist_integration import identify_malicious_ip, is_domain_malicious
-from config.globals import MAX_MINUTES_TEMPORAL # Get maxlen for temporal data
+# NetworkDataManager will be passed to packet_callback via functools.partial
+# No direct import of data_manager here to avoid circular dependencies if data_manager imports from capture.
 
 logger = logging.getLogger(__name__)
-whitelist = get_whitelist() # Get the singleton instance
 
-# --- Configuration Derived Constants (Example - adjust as needed) ---
-# Define defaults in case config access fails or for clarity
-_DEFAULT_DEQUE_MAXLEN = 1000
-_MAXLEN_MULTIPLIER = 1.5 # Allow deque to hold more than strictly 1 min worth
-
-# Calculate a reasonable max deque length based on config's packets_per_second limit
-# This tries to prevent unbounded memory growth for timestamps deques
-try:
-    # Estimate max packets in 60 seconds, add buffer. Use the CORRECT config attribute.
-    _packet_deque_maxlen = int(config.max_packets_per_second * 60 * _MAXLEN_MULTIPLIER) if config.max_packets_per_second > 0 else _DEFAULT_DEQUE_MAXLEN
-    # Ensure it's at least the default minimum size
-    if _packet_deque_maxlen < _DEFAULT_DEQUE_MAXLEN:
-        _packet_deque_maxlen = _DEFAULT_DEQUE_MAXLEN
-    logger.info(f"Calculated timestamp deque maxlen: {_packet_deque_maxlen}")
-except AttributeError:
-     logger.error(f"Config attribute 'max_packets_per_second' not found! Using default deque maxlen: {_DEFAULT_DEQUE_MAXLEN}")
-     _packet_deque_maxlen = _DEFAULT_DEQUE_MAXLEN
-except Exception as e:
-     logger.error(f"Error calculating deque maxlen: {e}. Using default: {_DEFAULT_DEQUE_MAXLEN}")
-     _packet_deque_maxlen = _DEFAULT_DEQUE_MAXLEN
-# --- End Configuration Derived Constants ---
-
-
-# --- Global Data Structures (Thread Safety Critical) ---
-# Main dictionary holding data per source IP
-ip_data = {}
-# Lock for thread-safe access to shared data (ip_data, temporal_data, current_minute_data)
-lock = threading.Lock()
-# Dictionary for aggregated temporal data (per source IP)
-temporal_data = {}
-# Dictionary for currently accumulating minute data (per source IP)
-current_minute_data = {}
-
+# This event is still used to signal the capture thread to stop.
 capture_stop_event = threading.Event()
-# --- End Global Data Structures ---
-
 
 # --- Packet Processing Callback ---
-def packet_callback(pkt):
+def packet_callback(data_manager, pkt): # Added data_manager argument
     """
-    Processes individual packets captured by Scapy.
-    Extracts relevant information and updates shared data structures.
-    Must be thread-safe regarding access to shared data.
+    Extracts relevant information from a packet and passes it to NetworkDataManager.
     """
-    # Log summary of *every* packet received by callback for deep debugging
-    # logger.debug(f"Packet received by callback: {pkt.summary()}")
-
-    # --- Basic Packet Validation ---
-    # Check for Ethernet layer first
-    if not Ether in pkt:
-        # logger.debug("Packet ignored (Not Ethernet)") # Too verbose usually
-        return
-    # Check for IP layer (IPv4 or IPv6)
-    is_ipv4 = IP in pkt
-    is_ipv6 = IPv6 in pkt # Check for IPv6
-    if not is_ipv4 and not is_ipv6:
-        logger.debug(f"Packet ignored (No IP layer): {pkt.summary()}")
-        return
-
     try:
-        # --- Extract Core IP Information ---
-        now = time.time()
+        if not Ether in pkt: return
+        is_ipv4 = IP in pkt
+        is_ipv6 = IPv6 in pkt
+        if not is_ipv4 and not is_ipv6: return
+
+        pkt_time = time.time()
+        
+        src_ip, dst_ip, proto_num = None, None, None
         if is_ipv4:
             src_ip = pkt[IP].src
             dst_ip = pkt[IP].dst
-            proto_num = pkt[IP].proto # Protocol number
-        else: # IPv6
+            proto_num = pkt[IP].proto
+        elif is_ipv6: # IPv6
             src_ip = pkt[IPv6].src
             dst_ip = pkt[IPv6].dst
-            proto_num = pkt[IPv6].nh # Next Header (equivalent to protocol)
+            proto_num = pkt[IPv6].nh # Next Header
 
-        # --- Whitelist Check (Critical for Performance/Filtering) ---
-        # Check both source and destination against IP/Network whitelist
-        src_whitelisted = whitelist.is_ip_whitelisted(src_ip)
-        dst_whitelisted = whitelist.is_ip_whitelisted(dst_ip)
-        if src_whitelisted or dst_whitelisted:
-            reason = f"{'src' if src_whitelisted else ''}{' and ' if src_whitelisted and dst_whitelisted else ''}{'dst' if dst_whitelisted else ''}"
-            # Log at INFO level for visibility during troubleshooting
-        
-            return # Stop processing this packet
-
-        # If we reach here, the packet involves non-whitelisted IPs
-        #logger.debug(f"Processing packet: {src_ip} -> {dst_ip}")
-
-        # --- Protocol and Port Identification ---
+        # Protocol and Port Identification
         proto_name = "other"
-        src_port = None
-        dst_port = None
-        port_used = None # Destination port is usually most relevant
+        src_port, dst_port, port_used = None, None, None
         is_dns_traffic = False
-        tcp_flags = None
+        tcp_flags = None # Scapy flags object or None
 
-        # Map common protocol numbers to names
-        protocol_map = {1: 'icmp', 6: 'tcp', 17: 'udp', 58: 'icmpv6'} # Added ICMPv6
-
+        protocol_map = {1: 'icmp', 6: 'tcp', 17: 'udp', 58: 'icmpv6'}
         if proto_num in protocol_map:
             proto_name = protocol_map[proto_num]
-            # Extract ports for TCP/UDP
             if proto_name == 'tcp' and TCP in pkt:
                 tcp_layer = pkt[TCP]
                 src_port, dst_port = tcp_layer.sport, tcp_layer.dport
                 tcp_flags = tcp_layer.flags
                 port_used = dst_port
-                is_dns_traffic = (src_port == 53 or dst_port == 53)
             elif proto_name == 'udp' and UDP in pkt:
                 udp_layer = pkt[UDP]
                 src_port, dst_port = udp_layer.sport, udp_layer.dport
                 port_used = dst_port
-                is_dns_traffic = (src_port == 53 or dst_port == 53)
-            # Note: ICMP/ICMPv6 don't have ports in the same way
+            
+            # Check for DNS traffic (standard ports)
+            if (src_port == 53 or dst_port == 53) and (proto_name == 'tcp' or proto_name == 'udp'):
+                is_dns_traffic = True
         else:
-            # Try to get name from Scapy if not in our map
-            if is_ipv4:
-                proto_name_scapy = pkt[IP].sprintf("%IP.proto%")
-            else:
-                proto_name_scapy = pkt[IPv6].sprintf("%IPv6.nh%") # Use NextHeader name
-            # Use Scapy name if it's not just a number, otherwise format it
+            proto_name_scapy = pkt.sprintf(f"%{'IP.proto' if is_ipv4 else 'IPv6.nh'}%")
             proto_name = proto_name_scapy.lower() if not proto_name_scapy.isdigit() else f"other({proto_num})"
 
-        # --- Update Data Structures (CRITICAL SECTION - REQUIRES LOCK) ---
-        with lock:
-            # Initialize entry for source IP if it's the first time we see it
-            if src_ip not in ip_data:
-                 logger.debug(f"Initializing data structures for new source IP: {src_ip}")
-                 ip_data[src_ip] = {
-                     "total": 0, # Total packets from this source
-                     "timestamps": deque(maxlen=_packet_deque_maxlen), # Timestamps for rate calculation
-                     "last_seen": 0.0, # Timestamp of the last packet seen
-                     "max_per_sec": 0, # Max packets/sec observed
-                     # Data per destination contacted by this source
-                     "destinations": defaultdict(lambda: {"total": 0, "timestamps": deque(maxlen=_packet_deque_maxlen), "max_per_sec": 0}),
-                     # Data per protocol/port used by this source
-                     "protocols": defaultdict(lambda: {"total": 0, "timestamps": deque(maxlen=_packet_deque_maxlen), "max_per_sec": 0}),
-                     # Details of malicious IPs contacted (key=mal_ip, value=details)
-                     "malicious_hits": {},
-                     "contacted_malicious_ip": False, # Flag if source contacted any malicious IP
-                     # Details of suspicious DNS queries made
-                     "suspicious_dns": [],
-                     # Data for SYN scan detection (key=dst_ip, value=details)
-                     "syn_targets": defaultdict(lambda: {"ports": set(), "first_syn_time": 0.0}),
-                     "last_scan_check_time": 0.0, # When scan check was last performed
-                     "detected_scan_ports": False, # Flag: Port scan detected from this source
-                     "detected_scan_hosts": False, # Flag: Host scan detected from this source
-                     "is_malicious_source": False # Flag if the source IP itself is on a blocklist
-                 }
-
-            # Get the entry for the current source IP
-            ip_entry = ip_data[src_ip]
-
-            # --- Update General IP Stats ---
-            ip_entry["total"] += 1
-            ip_entry["timestamps"].append(now)
-            ip_entry["last_seen"] = now
-
-            # --- Update Destination Stats ---
-            # defaultdict handles creation of destination entry if it's new
-            dest_entry = ip_entry["destinations"][dst_ip]
-            dest_entry["total"] += 1
-            dest_entry["timestamps"].append(now)
-
-            # --- Update Protocol/Port Stats ---
-            # Use (protocol_name, destination_port) as the key
-            proto_key = (proto_name, port_used)
-            # defaultdict handles creation of protocol entry if it's new
-            proto_entry = ip_entry["protocols"][proto_key]
-            proto_entry["total"] += 1
-            proto_entry["timestamps"].append(now)
-
-            # --- Specific Logic Updates (Still under lock) ---
-
-            # 1. SYN Scan Detection Input: Log SYN packets
-            # Check for TCP SYN flag set, but ACK flag not set
-            if proto_name == "tcp" and tcp_flags is not None and tcp_flags.S and not tcp_flags.A:
-                # defaultdict handles creation of SYN target entry if it's new
-                syn_target_entry = ip_entry["syn_targets"][dst_ip]
-                # Record time of first SYN seen for this source->dest pair (within current tracking window)
-                if not syn_target_entry["first_syn_time"]:
-                    syn_target_entry["first_syn_time"] = now
-                # Add the destination port to the set of ports scanned for this target
-                if port_used is not None:
-                    syn_target_entry["ports"].add(port_used)
-                    logger.debug(f"SYN packet logged for scan detection: {src_ip} -> {dst_ip}:{port_used}")
-
-            # 2. DNS Query Processing: Check suspicious domains
-            if is_dns_traffic and pkt.haslayer(DNS):
-                dns_layer = pkt[DNS]
-                # qr=0 means it's a query, qdcount > 0 means there's at least one question
-                if dns_layer.qr == 0 and dns_layer.qdcount > 0:
-                    # Iterate through questions in the query (usually just 1)
-                    for i in range(dns_layer.qdcount):
-                        # Safely access the question record
-                        if dns_layer.qd and i < len(dns_layer.qd) and dns_layer.qd[i] is not None:
-                            try:
-                                # Decode query name, remove trailing dot, lowercase
-                                qname_bytes = dns_layer.qd[i].qname
-                                qname = qname_bytes.decode('utf-8', errors='ignore').rstrip('.').lower()
-                                logger.debug(f"DNS Query observed: {src_ip} requested '{qname}'")
-
-                                # Check domain against blocklist (this function respects domain whitelist)
-                                if is_domain_malicious(qname):
-                                    logger.warning(f"Malicious DNS Query DETECTED: {src_ip} -> '{qname}' (BLOCKLIST HIT)")
-                                    # Append details to the source IP's record
-                                    ip_entry["suspicious_dns"].append({
-                                        "timestamp": now,
-                                        "qname": qname,
-                                        "reason": "Blocklist Hit"
-                                    })
-                            except IndexError:
-                                logger.warning(f"Index error accessing DNS question {i} from {src_ip}")
-                            except Exception as dns_ex:
-                                # Log errors during DNS parsing, but don't stop processing other packets
-                                logger.error(f"Error processing DNS query record for '{qname_bytes}': {dns_ex}", exc_info=False)
-                        else:
-                             logger.debug(f"Malformed/empty DNS question record index {i} from {src_ip}")
-
-
-            # 3. Temporal Data Update (Tracking packets per minute)
-            minute_start = int(now // 60) * 60 # Integer timestamp for the start of the current minute
-
-            # Initialize per-minute counter for this IP if it's the first packet seen
-            if src_ip not in current_minute_data:
-                 current_minute_data[src_ip] = {"start_time": minute_start, "count": 0, "protocol_count": defaultdict(int)}
-
-            cdata = current_minute_data[src_ip]
-
-            # Check if the packet belongs to the currently tracked minute for this IP
-            if cdata["start_time"] == minute_start:
-                cdata["count"] += 1 # Increment total count for the minute
-                # Check if the specific protocol/port or generic protocol is tracked
-                tracked_key = None
-                if proto_key in config.tracked_protocols_temporal:
-                    tracked_key = proto_key
-                elif proto_name in config.tracked_protocols_temporal:
-                     tracked_key = proto_name # Track by protocol name if specific port isn't listed
-                # Increment count for the tracked protocol/port
-                if tracked_key:
-                     cdata["protocol_count"][tracked_key] += 1
-                # Increment 'other' count if this packet isn't specifically tracked but 'other' is
-                elif "other" in config.tracked_protocols_temporal:
-                     cdata["protocol_count"][("other", None)] += 1
-            else:
-                 # Packet belongs to a *new* minute. The old minute's data will be aggregated
-                 # by the separate 'aggregate_minute_data' function soon.
-                 # Start counting for the new minute immediately.
-                 logger.debug(f"New minute {minute_start} started for {src_ip}. Initializing counters.")
-                 # Create new entry for the new minute
-                 current_minute_data[src_ip] = {"start_time": minute_start, "count": 1, "protocol_count": defaultdict(int)}
-                 # Add the current packet to the new minute's count
-                 cdata_new = current_minute_data[src_ip]
-                 tracked_key_new = None
-                 if proto_key in config.tracked_protocols_temporal: tracked_key_new = proto_key
-                 elif proto_name in config.tracked_protocols_temporal: tracked_key_new = proto_name
-                 if tracked_key_new: cdata_new["protocol_count"][tracked_key_new] += 1
-                 elif "other" in config.tracked_protocols_temporal: cdata_new["protocol_count"][("other", None)] += 1
-
-        # --- End of Critical Section (Lock Released) ---
+        # Pass extracted data to the NetworkDataManager instance
+        data_manager.process_packet_data(
+            src_ip, dst_ip, proto_name, port_used, pkt_time,
+            tcp_flags, is_dns_traffic, pkt # Pass raw packet for DNS layer access in DataManager
+        )
 
     except AttributeError as ae:
-         # Catch errors if packet structure is unexpected (e.g., missing layers/fields)
-         logger.warning(f"Packet attribute error processing packet: {ae} - Summary: {pkt.summary()}", exc_info=False)
+         logger.warning(f"Packet attribute error in packet_callback: {ae} - Summary: {pkt.summary()}", exc_info=False)
     except Exception as e:
-        # Catch any other unforeseen errors during packet processing
-        logger.error(f"Unhandled error in packet_callback: {e}", exc_info=True)
-# --- End Packet Processing Callback ---
+        logger.error(f"Unhandled error in packet_callback: {e} - Packet: {pkt.summary()}", exc_info=True)
 
-
-# --- Scan Detection Logic ---
-def check_for_scans(ip, ip_entry, now):
-    """
-    Analyzes SYN packet data for a given source IP to detect potential
-    port scans or host scans based on configurable thresholds.
-
-    Args:
-        ip (str): The source IP address being checked.
-        ip_entry (dict): The data dictionary for the source IP from ip_data.
-        now (float): The current timestamp.
-
-    Returns:
-        bool: True if a scan (port or host) was detected, False otherwise.
-              Also updates 'detected_scan_ports' and 'detected_scan_hosts' flags
-              within the ip_entry dictionary.
-    """
-    # Ensure flags are reset at the beginning of the check
-    ip_entry["detected_scan_ports"] = False
-    ip_entry["detected_scan_hosts"] = False
-
-    # 1. Check if the source IP itself is whitelisted
-    if whitelist.is_ip_whitelisted(ip):
-        logger.debug(f"Scan check skipped (whitelisted source): {ip}")
-        # Clear potentially old scan data if IP just became whitelisted
-        ip_entry["syn_targets"].clear()
-        return False # No scan detected for whitelisted sources
-
-    # 2. Get configuration thresholds
-    scan_window_start = now - config.scan_time_window
-    distinct_ports_threshold = config.scan_distinct_ports_threshold
-    distinct_hosts_threshold = config.scan_distinct_hosts_threshold
-
-    # 3. Initialize detection flags and counters for this check cycle
-    detected_port_scan_flag = False
-    detected_host_scan_flag = False
-    unique_targets_in_window_count = 0 # Count unique destination IPs with recent SYNs
-
-    # 4. Iterate over SYN targets recorded for this source IP
-    # Iterate over a copy of keys as we might delete expired entries
-    dst_ips_synced = list(ip_entry.get("syn_targets", {}).keys())
-
-    for dst_ip in dst_ips_synced:
-        # Check if entry still exists (might rarely be removed by pruning?)
-        if dst_ip not in ip_entry["syn_targets"]:
-             continue
-
-        target_data = ip_entry["syn_targets"][dst_ip]
-        first_syn_time = target_data.get("first_syn_time", 0)
-
-        # 5. Check if SYN target is within the time window
-        if first_syn_time >= scan_window_start:
-            # This destination IP was contacted within the scan window
-            unique_targets_in_window_count += 1
-            port_count = len(target_data.get("ports", set()))
-
-            # 6. Check for Port Scan criteria
-            # If we haven't already detected a port scan from this source in this cycle...
-            # And the number of distinct ports to this *single* destination exceeds the threshold...
-            if not detected_port_scan_flag and port_count > distinct_ports_threshold:
-                # And the *destination* IP is NOT whitelisted...
-                if not whitelist.is_ip_whitelisted(dst_ip):
-                    logger.warning(f"Port Scan DETECTED: {ip} -> {dst_ip} ({port_count} distinct ports > {distinct_ports_threshold} threshold in {config.scan_time_window}s)")
-                    detected_port_scan_flag = True # Set flag for this cycle
-                else:
-                    # Log if high port count seen but destination is whitelisted
-                    logger.debug(f"High port count ({port_count}) from {ip} to {dst_ip} ignored (whitelisted destination).")
-        else:
-            # 7. Prune Expired SYN Target: Entry is older than the scan window
-            logger.debug(f"Removing expired SYN target record: {ip} -> {dst_ip} (first SYN @ {first_syn_time} is older than window start {scan_window_start})")
-            del ip_entry["syn_targets"][dst_ip]
-
-    # 8. Check for Host Scan criteria
-    # If the number of *unique destination IPs* contacted within the window exceeds the threshold
-    if unique_targets_in_window_count > distinct_hosts_threshold:
-        logger.warning(f"Host Scan DETECTED: {ip} contacted {unique_targets_in_window_count} distinct hosts > {distinct_hosts_threshold} threshold in {config.scan_time_window}s)")
-        detected_host_scan_flag = True
-
-    # 9. Update the main flags in the shared ip_data structure
-    ip_entry["detected_scan_ports"] = detected_port_scan_flag
-    ip_entry["detected_scan_hosts"] = detected_host_scan_flag
-    # Record the time this check was performed for rate limiting future checks
-    ip_entry["last_scan_check_time"] = now
-
-    # Return overall scan status for this check
-    return detected_port_scan_flag or detected_host_scan_flag
-# --- End Scan Detection Logic ---
-
-
-# --- Data Aggregation and Pruning ---
-def aggregate_minute_data():
-    """
-    Periodically called (e.g., every minute) to:
-    1. Aggregate counts from `current_minute_data` into `temporal_data`.
-    2. Perform checks on `ip_data` (scans, malicious hits).
-    3. Prune inactive entries from `ip_data`, `temporal_data`, `current_minute_data`.
-    Requires lock for safe access to shared data structures.
-    """
-    now = time.time()
-    current_minute_start = int(now // 60) * 60 # Start timestamp of the current minute
-    logger.debug(f"Running data aggregation cycle @ {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(now))}")
-
-    ips_to_prune = [] # List of IPs to remove at the end
-    # Calculate cutoff time for pruning based on configured timeout
-    prune_threshold_time = now - config.ip_data_prune_timeout
-
-    # --- CRITICAL SECTION - REQUIRES LOCK ---
-    with lock:
-        # --- 1. Aggregate Completed Minute Counters ---
-        # Iterate over a copy of keys in case dict changes (shouldn't with lock, but safer)
-        minute_data_keys = list(current_minute_data.keys())
-        for ip in minute_data_keys:
-            # Check if IP still exists in the dictionary
-            if ip not in current_minute_data:
-                continue
-
-            # Get the data accumulated for this IP in the 'current' tracker
-            cdata = current_minute_data[ip]
-
-            # If the data belongs to a minute *before* the currently starting one, aggregate it
-            if cdata["start_time"] < current_minute_start:
-                logger.debug(f"Aggregating completed minute {cdata['start_time']} data for IP: {ip}")
-
-                # Ensure the IP has an entry in the main temporal data store
-                if ip not in temporal_data:
-                    temporal_data[ip] = {
-                        "minutes": deque(maxlen=MAX_MINUTES_TEMPORAL),
-                        "protocol_minutes": defaultdict(lambda: deque(maxlen=MAX_MINUTES_TEMPORAL))
-                    }
-
-                # Append (timestamp, total_count) tuple for the completed minute
-                timestamp = cdata["start_time"]
-                total_count = cdata["count"]
-                temporal_data[ip]["minutes"].append((timestamp, total_count))
-
-                # Append counts for tracked protocols during that minute
-                for proto_key, count in cdata["protocol_count"].items():
-                    temporal_data[ip]["protocol_minutes"][proto_key].append((timestamp, count))
-
-                # Remove the aggregated minute data from the 'current' tracker
-                del current_minute_data[ip]
-            # else: Data is for the current minute, leave it to continue accumulating
-
-        # --- 2. Perform Checks and Pruning Preparation on Main ip_data ---
-        # Iterate over a copy of keys
-        ip_data_keys = list(ip_data.keys())
-        for ip in ip_data_keys:
-            # Check if IP still exists
-            if ip not in ip_data:
-                continue
-
-            ip_entry = ip_data[ip]
-
-            # --- 2a. Pruning Check: Mark inactive IPs for removal ---
-            if ip_entry.get("last_seen", 0) < prune_threshold_time:
-                ips_to_prune.append(ip)
-                logger.debug(f"Marking IP {ip} for pruning (last seen: {ip_entry.get('last_seen', 0)} < {prune_threshold_time})")
-                continue # Skip other checks if we're going to prune this IP
-
-            # --- 2b. Scan Check (Rate Limited) ---
-            # Check if enough time has passed since the last scan check for this IP
-            time_since_last_scan = now - ip_entry.get("last_scan_check_time", 0)
-            # Use a configurable interval to avoid checking too frequently
-            if time_since_last_scan > config.scan_check_interval:
-                 logger.debug(f"Performing scan check for {ip} (last check {time_since_last_scan:.1f}s ago)")
-                 # This function handles source whitelist check internally and updates ip_entry flags
-                 check_for_scans(ip, ip_entry, now)
-            # else: logger.debug(f"Skipping scan check for {ip} (checked recently)")
-
-
-            # --- 2c. Malicious IP Checks (Source and Destinations) ---
-
-            # Check if the source IP itself is on a blocklist (and not whitelisted)
-            # The identify_malicious_ip function handles the whitelist check internally
-            source_ip_malicious_lists = identify_malicious_ip(ip)
-            if source_ip_malicious_lists:
-                 if not ip_entry.get("is_malicious_source", False): # Log only first time detected
-                     logger.warning(f"Malicious SOURCE IP detected: {ip} is on lists: ({', '.join(source_ip_malicious_lists)})")
-                 ip_entry["is_malicious_source"] = True # Set flag
-                 # Add/update hit details in the source IP's record for unified view
-                 mal_hits = ip_entry.setdefault("malicious_hits", {})
-                 hit_entry = mal_hits.setdefault(ip, {"blocklists": set(), "count": 0, "direction": "source"})
-                 hit_entry["blocklists"].update(source_ip_malicious_lists)
-                 hit_entry["count"] = ip_entry.get("total", 1) # Use total packets from source as count? Or just 1?
-                 # Ensure the main flag indicating *any* malicious contact is set
-                 ip_entry["contacted_malicious_ip"] = True
-
-
-            # Check destinations contacted by this (potentially non-malicious) source IP
-            destinations_contacted = list(ip_entry.get("destinations", {}).keys())
-            for dst_ip in destinations_contacted:
-                 # Check if the destination IP is malicious (handles dest whitelist check)
-                 dest_ip_malicious_lists = identify_malicious_ip(dst_ip)
-                 if dest_ip_malicious_lists:
-                     # Log only if this specific src->dst malicious contact hasn't been logged recently?
-                     # For now, log each time check runs and finds it.
-                     logger.warning(f"Malicious DESTINATION IP detected for flow: {ip} -> {dst_ip} ({', '.join(dest_ip_malicious_lists)})")
-                     # Mark the source IP as having contacted *some* malicious IP
-                     ip_entry["contacted_malicious_ip"] = True
-                     # Add/update hit details in the source IP's record
-                     mal_hits = ip_entry.setdefault("malicious_hits", {})
-                     # Use setdefault to initialize if this dst_ip hit is new for this source
-                     hit_entry = mal_hits.setdefault(dst_ip, {"blocklists": set(), "count": 0, "direction": "outbound"})
-                     # Add the lists it was found on (can accumulate if on multiple lists over time)
-                     hit_entry["blocklists"].update(dest_ip_malicious_lists)
-                     # Update the count based on total packets sent from src to this specific malicious dest
-                     # Ensure dest_ip exists in destinations before accessing count
-                     if dst_ip in ip_entry.get("destinations", {}):
-                         hit_entry["count"] = ip_entry["destinations"][dst_ip].get("total", hit_entry["count"])
-
-        # --- 3. Execute Pruning (Remove marked IPs) ---
-        if ips_to_prune:
-            logger.info(f"Pruning {len(ips_to_prune)} inactive IP data entries.")
-            for ip in ips_to_prune:
-                # Remove from all relevant dictionaries
-                if ip in ip_data:
-                    del ip_data[ip]
-                    # logger.debug(f"Pruned ip_data for: {ip}") # Can be verbose
-                if ip in temporal_data:
-                    del temporal_data[ip]
-                    # logger.debug(f"Pruned temporal_data for: {ip}")
-                if ip in current_minute_data: # Should have been aggregated, but remove if lingering
-                    del current_minute_data[ip]
-                    # logger.debug(f"Pruned residual current_minute_data for: {ip}")
-            logger.info(f"Pruning complete. Active IPs remaining: {len(ip_data)}")
-
-    # --- End of Critical Section (Lock Released) ---
-    logger.debug("Aggregation and pruning cycle finished.")
-# --- End Data Aggregation and Pruning ---
-
-
-# --- Network Interface Handling ---
+# --- Network Interface Handling (Remains the same as it's UI related utility) ---
 def list_interfaces_cross_platform():
-    """
-    Lists available network interfaces using psutil and Scapy.
-    Prioritizes psutil for richer details and user-friendly names,
-    then maps to Scapy interfaces for actual sniffing.
-    Filters out interfaces with friendly_names starting with NPF for display.
-    """
     logger.info("Attempting to list and identify network interfaces...")
-    pre_filter_interfaces = [] # Store all found interfaces before filtering for display
-
+    detailed_interfaces = []
     try:
         scapy_raw_interfaces = get_if_list()
-        # Map Scapy interface name (stringified) to original Scapy interface object
         scapy_interfaces_map = {str(name): name for name in scapy_raw_interfaces}
     except Exception as e:
         logger.error(f"Scapy get_if_list() failed: {e}. Interface listing might be incomplete.", exc_info=True)
         scapy_interfaces_map = {}
 
-    scapy_mac_to_name_obj = {} # Maps MAC to original Scapy interface object
+    scapy_mac_to_name_obj = {}
     for name_str, name_obj in scapy_interfaces_map.items():
         try:
             hwaddr = get_if_hwaddr(name_obj)
@@ -554,248 +105,188 @@ def list_interfaces_cross_platform():
         except Exception as e:
             logger.debug(f"Could not get MAC for Scapy interface '{name_str}': {e}")
 
-    # 1. Use psutil to get interface details
     try:
         psutil_if_addrs = psutil.net_if_addrs()
         psutil_if_stats = psutil.net_if_stats()
-        
-        processed_scapy_names_objs = set() # Store Scapy objects that have been processed
+        processed_scapy_names_objs = set()
 
         for psutil_name_str, addrs in psutil_if_addrs.items():
             ips = []
             mac_address = None
             for addr in addrs:
-                if addr.family == psutil.AF_LINK:
-                    mac_address = addr.address.lower().replace('-', ':')
-                elif addr.family == socket.AF_INET:
-                    ips.append(addr.address)
-                elif addr.family == socket.AF_INET6:
-                    ips.append(addr.address)
+                if addr.family == psutil.AF_LINK: mac_address = addr.address.lower().replace('-', ':')
+                elif addr.family == socket.AF_INET: ips.append(addr.address)
+                elif addr.family == socket.AF_INET6: ips.append(addr.address)
 
             status_info = psutil_if_stats.get(psutil_name_str)
             status = "UP" if status_info and status_info.isup else "DOWN" if status_info else "N/A"
-            
             scapy_name_obj_to_use = None
             
-            # Try matching by psutil name (string) with Scapy interface names (strings)
-            if psutil_name_str in scapy_interfaces_map:
-                scapy_name_obj_to_use = scapy_interfaces_map[psutil_name_str]
-            # Fallback to MAC address matching
+            if str(psutil_name_str) in scapy_interfaces_map:
+                scapy_name_obj_to_use = scapy_interfaces_map[str(psutil_name_str)]
             elif mac_address and mac_address in scapy_mac_to_name_obj:
                 scapy_name_obj_to_use = scapy_mac_to_name_obj[mac_address]
             
             if scapy_name_obj_to_use:
-                pre_filter_interfaces.append({
-                    "friendly_name": psutil_name_str, # Use psutil name as friendly name
-                    "status": status,
-                    "ips": ips if ips else ["N/A"],
-                    "scapy_name": scapy_name_obj_to_use, # This is the Scapy object
-                    "mac": mac_address if mac_address else "N/A"
-                })
-                processed_scapy_names_objs.add(scapy_name_obj_to_use)
-            else:
-                # psutil interface without a Scapy match. Could be listed as non-sniffable if desired.
-                # For now, only list interfaces that have a Scapy counterpart for sniffing.
-                logger.debug(f"psutil interface '{psutil_name_str}' (MAC: {mac_address}) not matched to any Scapy interface. Skipping for selection.")
+                if str(scapy_name_obj_to_use).startswith("\\Device\\NPF_") and not str(psutil_name_str).startswith("\\Device\\NPF_"):
+                     # Prefer psutil name if Scapy name is NPF but psutil's is not
+                    friendly_name_display = psutil_name_str
+                else:
+                    friendly_name_display = psutil_name_str # Default to psutil name
+                
+                # Final filter for display based on friendly name
+                if not str(friendly_name_display).startswith("\\Device\\NPF_"):
+                    detailed_interfaces.append({
+                        "friendly_name": friendly_name_display, 
+                        "status": status, "ips": ips if ips else ["N/A"],
+                        "scapy_name": scapy_name_obj_to_use, 
+                        "mac": mac_address if mac_address else "N/A"
+                    })
+                    processed_scapy_names_objs.add(scapy_name_obj_to_use)
+            # else: logger.debug(f"psutil interface '{psutil_name_str}' not matched.")
 
-        # 2. Add Scapy interfaces that psutil might have missed or not matched
         for name_str, name_obj in scapy_interfaces_map.items():
-            if name_obj not in processed_scapy_names_objs:
+            if name_obj not in processed_scapy_names_objs and not str(name_obj).startswith("\\Device\\NPF_"):
                 ips_scapy = ["N/A"] 
-                try: # Scapy's direct IP info is less reliable
+                try:
                     ip_s = scapy_conf.ifaces.data.get(name_obj, {}).get('ip', 'N/A')
                     if ip_s and ip_s != '0.0.0.0': ips_scapy = [ip_s]
-                except Exception: pass 
-
-                pre_filter_interfaces.append({
-                    "friendly_name": name_str, # Use Scapy's string name as friendly name
-                    "status": "N/A", 
-                    "ips": ips_scapy,
-                    "scapy_name": name_obj, # Scapy object
+                except: pass 
+                detailed_interfaces.append({
+                    "friendly_name": name_str, "status": "N/A", "ips": ips_scapy,
+                    "scapy_name": name_obj,
                     "mac": get_if_hwaddr(name_obj) if get_if_hwaddr(name_obj) != "00:00:00:00:00:00" else "N/A"
                 })
-                
     except Exception as e:
         logger.error(f"Error gathering interface details: {e}", exc_info=True)
-        # Fallback to Scapy-only if psutil processing fails significantly
-        if not pre_filter_interfaces:
-            logger.warning("Falling back to Scapy-only interface listing due to error.")
+        if not detailed_interfaces: # Fallback
+            logger.warning("Falling back to Scapy-only interface listing.")
             for name_str, name_obj in scapy_interfaces_map.items():
+                if str(name_obj).startswith("\\Device\\NPF_"): continue
                 ips_scapy = ["N/A"]
                 try:
                     ip_s = scapy_conf.ifaces.data.get(name_obj, {}).get('ip', 'N/A')
                     if ip_s and ip_s != '0.0.0.0': ips_scapy = [ip_s]
                 except: pass
-                pre_filter_interfaces.append({
-                    "friendly_name": name_str,
-                    "status": "N/A",
-                    "ips": ips_scapy,
+                detailed_interfaces.append({
+                    "friendly_name": name_str, "status": "N/A", "ips": ips_scapy,
                     "scapy_name": name_obj,
                     "mac": get_if_hwaddr(name_obj) if get_if_hwaddr(name_obj) != "00:00:00:00:00:00" else "N/A"
                 })
 
-    # Filter for display: remove interfaces where friendly_name starts with \Device\NPF_
-    # The underlying scapy_name might still be an NPF string if that's how Scapy sees a real adapter.
-    detailed_interfaces = [
-        iface for iface in pre_filter_interfaces
-        if not str(iface.get("friendly_name", "")).startswith("\\Device\\NPF_")
-    ]
-
     if not detailed_interfaces:
-        logger.critical("No usable network interfaces were found (after NPF filtering for display).")
+        logger.critical("No usable network interfaces found (after NPF filtering for display).")
         print("\nERROR: No network interfaces found. Cannot start capture.")
         return []
 
-    # Sort interfaces: UP status first, then by friendly name
     detailed_interfaces.sort(key=lambda x: (x['status'] != 'UP', str(x['friendly_name'])))
+    for i, iface in enumerate(detailed_interfaces): iface['idx'] = i + 1
 
-    # Assign display index
-    for i, iface in enumerate(detailed_interfaces):
-        iface['idx'] = i + 1
-
-    # --- Display Interfaces to User ---
     print("\nAvailable Network Interfaces:")
     print("-" * 80)
-    print(f"{'Idx':<4} {'Name':<30} {'Status':<10} {'IP Addresses':<30}") # Adjusted Name width
+    print(f"{'Idx':<4} {'Name':<30} {'Status':<10} {'IP Addresses':<30}")
     print("-" * 80)
     for iface in detailed_interfaces:
         ips_str = ', '.join(iface['ips'])
-        # Ensure friendly_name is a string for printing and formatting
-        display_friendly_name = str(iface['friendly_name'])
-        print(f"{iface['idx']:<4} {display_friendly_name:<30} {iface['status']:<10} {ips_str:<30}")
+        print(f"{iface['idx']:<4} {str(iface['friendly_name']):<30} {iface['status']:<10} {ips_str:<30}")
     print("-" * 80)
-    
     return detailed_interfaces
-# --- End Network Interface Handling ---
-
 
 # --- Packet Sniffing Thread Target ---
-def capture_packets(selected_interfaces):
-    """Target function for the packet sniffing thread. MODIFIED FOR GRACEFUL STOP."""
-    global capture_stop_event # Indicate we are using the global event
-
+def capture_packets(selected_interfaces, data_manager_instance): # Added data_manager_instance
+    """Target function for the packet sniffing thread."""
     if not selected_interfaces:
-        logger.error("Packet capture thread started with no interfaces selected. Stopping.")
+        logger.error("Packet capture thread: No interfaces selected. Stopping.")
+        return
+    if not data_manager_instance:
+        logger.error("Packet capture thread: NetworkDataManager instance not provided. Stopping.")
         return
 
     interfaces_str = [repr(iface) if isinstance(iface, bytes) else str(iface) for iface in selected_interfaces]
-    logger.info(f"Packet capture thread started. Sniffing on interface(s): {', '.join(interfaces_str)}")
+    logger.info(f"Packet capture thread started. Sniffing on: {', '.join(interfaces_str)}")
+    
+    bound_packet_callback = functools.partial(packet_callback, data_manager_instance)
 
     packet_filter = "ip or ip6 or (udp port 53) or (tcp port 53)"
     logger.info(f"Using packet filter: \"{packet_filter}\"")
-
-    # --- Loop with timeout instead of blocking indefinitely ---
-    sniff_timeout = 1.0 # Seconds - check the stop event every second
+    sniff_timeout = 1.0 
     logger.info(f"Sniffing with {sniff_timeout}s timeout loop for graceful shutdown.")
 
     while not capture_stop_event.is_set():
         try:
-            # Sniff for the timeout period
-            sniff(prn=packet_callback, store=False, iface=selected_interfaces,
+            sniff(prn=bound_packet_callback, store=False, iface=selected_interfaces,
                   filter=packet_filter, timeout=sniff_timeout)
-
         except PermissionError as pe:
             logger.critical(f"PERMISSION ERROR: {pe}. Stopping capture thread.", exc_info=False)
             print("\nCRITICAL ERROR: Insufficient permissions. Please run as root/administrator.")
-            break # Exit the loop on permission error
+            break 
         except OSError as ose:
             logger.critical(f"OS ERROR during sniff loop on {interfaces_str}: {ose}", exc_info=True)
             print(f"\nCRITICAL ERROR: Sniffing failed on {', '.join(interfaces_str)}. Check interface/Npcap. ({ose})")
-            break # Exit the loop on OS error
+            break 
         except Exception as e:
-            # Catch other unexpected errors during the sniff call
             logger.critical(f"UNEXPECTED SNIFF ERROR: {e}", exc_info=True)
             print(f"\nCRITICAL ERROR: Packet sniffing loop encountered an error: {e}")
-            # Decide whether to break or continue after an error? Let's break for safety.
             break
-
-        # Loop continues if timeout expires without error and stop event not set
-
-    # --- End of loop ---
+    
     if capture_stop_event.is_set():
         logger.info("Capture thread received stop signal and is exiting gracefully.")
     else:
          logger.warning("Capture thread loop exited unexpectedly (error?).")
-# --- End Packet Sniffing Thread Target ---
+
 def stop_capture():
     """Signals the packet capture thread to stop."""
     global capture_stop_event
     logger.info("Signaling packet capture thread to stop.")
     capture_stop_event.set()
 
-
 # --- Interface Selection Prompt ---
 def select_interfaces():
     """
     Lists available interfaces and prompts the user to select one or more.
     Uses the new list_interfaces_cross_platform() return format.
-
-    Returns:
-        list or None: A list of selected Scapy interface names (original Scapy objects/names)
-                      if confirmed, or None if selection is cancelled or fails.
     """
     available_interfaces = list_interfaces_cross_platform()
-
     if not available_interfaces:
-        # list_interfaces_cross_platform already prints an error message
         logger.warning("No interfaces returned by list_interfaces_cross_platform.")
-        return None # Indicate failure/nothing to select
+        return None 
 
-    # Create a mapping from display index to the interface dictionary
-    # This helps in retrieving the full interface details based on user input
     idx_to_iface_map = {iface['idx']: iface for iface in available_interfaces}
-
     while True:
         selected_input = input("Enter the number(s) of the interface(s) to monitor (e.g., 1 or 1,3): ")
         try:
-            # Parse the input string into a list of integers
             selected_indices = [int(i.strip()) for i in selected_input.split(",") if i.strip()]
-            if not selected_indices: # Handle empty input after split/strip
+            if not selected_indices:
                 print("No selection made. Please enter interface number(s).")
                 continue
 
-            selected_scapy_names = []    # Store the actual Scapy names for valid selections
-            selected_friendly_names = [] # Store friendly names for confirmation
-            invalid_indices = []         # Store any invalid numbers entered
-
-            # Validate selected indices against the displayed list
+            selected_scapy_names, selected_friendly_names, invalid_indices = [], [], []
             for idx_val in selected_indices:
-                if idx_val in idx_to_iface_map:
-                    iface_details = idx_to_iface_map[idx_val]
+                iface_details = idx_to_iface_map.get(idx_val)
+                if iface_details:
                     selected_scapy_names.append(iface_details['scapy_name'])
                     selected_friendly_names.append(iface_details['friendly_name'])
                 else:
                     invalid_indices.append(idx_val)
 
-            # Report errors if any invalid numbers were entered
             if invalid_indices:
                 valid_range_str = f"1 to {len(available_interfaces)}" if available_interfaces else "N/A"
                 print(f"Error: Invalid interface number(s) entered: {invalid_indices}. Valid range: {valid_range_str}")
-                continue # Ask again
-
-            # Check if at least one valid interface was selected
+                continue
             if not selected_scapy_names:
                 print("No valid interfaces selected from the input.")
-                continue # Ask again
+                continue
 
-            # --- Confirmation ---
-            print(f"\nYou have selected: {', '.join(map(str,selected_friendly_names))}") # Ensure friendly names are strings
-
-            # Ask for confirmation to start sniffing
+            print(f"\nYou have selected: {', '.join(map(str,selected_friendly_names))}")
             confirm = input("Start sniffing on these interfaces? (y/n): ").lower().strip()
-            if confirm == 'y':
-                return selected_scapy_names # Return the list of Scapy names/objects
+            if confirm == 'y': return selected_scapy_names
             elif confirm == 'n':
                 print("Selection cancelled by user.")
-                return None # Indicate cancellation
-            else:
-                print("Invalid confirmation input. Please enter 'y' or 'n'.")
-                # Loop back to ask for confirmation again
-
+                return None 
+            else: print("Invalid confirmation input. Please enter 'y' or 'n'.")
         except ValueError:
             print("Invalid input. Please enter only numbers, separated by commas if multiple.")
         except Exception as e:
             logger.error(f"Error during interface selection process: {e}", exc_info=True)
             print(f"An unexpected error occurred during selection: {e}")
-            return None # Indicate failure
-# --- End Interface Selection Prompt ---
+            return None

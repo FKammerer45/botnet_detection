@@ -10,7 +10,8 @@ from collections import deque
 
 # Import config manager and shared data/lock
 from core.config_manager import config
-from core.capture import temporal_data, lock
+# from core.capture import temporal_data, lock # Will be accessed via data_manager
+# NetworkDataManager will be passed in via __init__
 
 logger = logging.getLogger(__name__)
 
@@ -22,9 +23,10 @@ DEVICE_REFRESH_INTERVAL_MS = 10000
 # --- End Constants ---
 
 class TemporalAnalysisWindow:
-    def __init__(self, master):
+    def __init__(self, master, data_manager): # Added data_manager
         """Initialize the temporal analysis window."""
         self.master = master
+        self.data_manager = data_manager # Store data_manager instance
         self.master.title("Temporal Analysis")
         self.master.geometry("800x650") # Slightly increased height for toolbar
         logger.info("Initializing Temporal Analysis window.")
@@ -115,32 +117,48 @@ class TemporalAnalysisWindow:
         # This might help with their __del__ method behavior during shutdown.
         if hasattr(self, 'ip_var'):
             self.ip_var = None
+            logger.debug("Set self.ip_var to None.")
         if hasattr(self, 'show_protocols_var'):
             self.show_protocols_var = None
+            logger.debug("Set self.show_protocols_var to None.")
 
-        # Close the matplotlib figure
-        try:
-             plt.close(self.fig)
-             logger.debug("Matplotlib figure closed.")
-        except Exception as e:
-             logger.warning(f"Error closing matplotlib figure: {e}")
+        # Close the matplotlib figure first
+        if hasattr(self, 'fig'):
+            try:
+                plt.close(self.fig)
+                logger.debug("Matplotlib figure closed.")
+            except Exception as e:
+                logger.warning(f"Error closing matplotlib figure: {e}")
+            self.fig = None # Dereference
+            self.ax = None  # Dereference axes associated with the figure
 
-        # Explicitly destroy canvas widget first (Might help release some resources earlier)
+        # Destroy Matplotlib toolbar if it exists
+        if hasattr(self, 'toolbar') and self.toolbar:
+            try:
+                self.toolbar.destroy()
+                logger.debug("Matplotlib toolbar destroyed.")
+            except Exception as e:
+                logger.warning(f"Error destroying Matplotlib toolbar: {e}")
+            self.toolbar = None
+
+        # Destroy canvas widget
         if hasattr(self, 'canvas_widget') and self.canvas_widget:
              try:
-                 logger.debug("Attempting to destroy canvas_widget.")
                  self.canvas_widget.destroy()
                  logger.debug("Canvas_widget destroyed.")
              except tk.TclError:
-                 logger.debug("Canvas_widget already destroyed or TclError.")
-                 pass # Ignore if already gone or error during destroy
+                 logger.debug("Canvas_widget already destroyed or TclError during explicit destroy.")
+             self.canvas_widget = None # Dereference
+        
+        if hasattr(self, 'canvas') and self.canvas: # The FigureCanvasTkAgg instance
+            self.canvas = None # Dereference
 
-        # Destroy the Tkinter window (master for this specific window)
+        # Finally, destroy the Tkinter Toplevel window
         try:
-            if self.master.winfo_exists(): # Check if it exists before destroying
-                logger.debug("Attempting to destroy TemporalAnalysisWindow master.")
+            if self.master.winfo_exists(): 
+                logger.debug("Attempting to destroy TemporalAnalysisWindow master (Toplevel).")
                 self.master.destroy()
-                logger.debug("TemporalAnalysisWindow master destroyed.")
+                logger.debug("TemporalAnalysisWindow master (Toplevel) destroyed.")
         except tk.TclError:
             logger.debug("TemporalAnalysisWindow master already destroyed or TclError.")
             pass
@@ -176,9 +194,9 @@ class TemporalAnalysisWindow:
         current_selection = self.ip_var.get()
         new_values = []
         try:
-            with lock:
-                # Get IPs that have temporal data
-                devices = sorted(list(temporal_data.keys()))
+            # Get all active IPs from data_manager.ip_data keys
+            devices = self.data_manager.get_active_ips_list() # Use new method
+            
             # Always include "All Traffic" option? Or only if protocols are tracked?
             # For now, let's just use IPs with data.
             new_values = devices
@@ -252,19 +270,19 @@ class TemporalAnalysisWindow:
             logger.info(f"Updating temporal plot for IP: {ip_to_show}")
             data_copy = None
             try:
-                with lock: # Access shared temporal_data safely
-                    if ip_to_show in temporal_data:
-                        device_data_ref = temporal_data[ip_to_show]
-                        data_copy = {
-                            "minutes": list(device_data_ref.get("minutes", deque())),
-                            "protocol_minutes": {
-                                k: list(v) for k, v in device_data_ref.get("protocol_minutes", {}).items()
-                            }
-                        }
-                    else:
-                        logger.warning(f"IP {ip_to_show} not found in temporal_data for plotting.")
+                # Get temporal data snapshot from data_manager
+                current_temporal_data = self.data_manager.get_temporal_data_snapshot()
+                if ip_to_show in current_temporal_data:
+                    device_data_ref = current_temporal_data[ip_to_show]
+                    # The snapshot already returns deques/lists, so direct use is okay
+                    data_copy = {
+                        "minutes": device_data_ref.get("minutes", deque()),
+                        "protocol_minutes": device_data_ref.get("protocol_minutes", {})
+                    }
+                else:
+                    logger.warning(f"IP {ip_to_show} not found in temporal_data snapshot for plotting.")
 
-                if data_copy and data_copy.get("minutes"):
+                if data_copy and data_copy.get("minutes"): # Check if minutes list is not empty
                     self.plotter.plot_data(ip_to_show, data_copy, self.show_protocols_var.get())
                     self.status_var.set(f"Displaying data for {ip_to_show}")
                 else:

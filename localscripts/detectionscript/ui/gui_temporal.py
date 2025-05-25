@@ -4,7 +4,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import logging
 import matplotlib.dates as mdates
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 import matplotlib.pyplot as plt
 from collections import deque
 
@@ -26,11 +26,12 @@ class TemporalAnalysisWindow:
         """Initialize the temporal analysis window."""
         self.master = master
         self.master.title("Temporal Analysis")
-        self.master.geometry("800x600")
+        self.master.geometry("800x650") # Slightly increased height for toolbar
         logger.info("Initializing Temporal Analysis window.")
+        self._is_closing = False # Flag to indicate if window is being closed
 
         # --- Top Control Frame ---
-        top_frame = tk.Frame(master)
+        top_frame = ttk.Frame(master, padding=(10, 5, 10, 0)) # Use ttk.Frame for consistency
         top_frame.pack(fill=tk.X, padx=10, pady=5)
 
         ttk.Label(top_frame, text="Select IP:").pack(side=tk.LEFT) # Changed label
@@ -57,9 +58,26 @@ class TemporalAnalysisWindow:
         # Embed the plot in the Tkinter window
         self.canvas = FigureCanvasTkAgg(self.fig, master=master)
         self.canvas_widget = self.canvas.get_tk_widget()
-        self.canvas_widget.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        self.canvas_widget.pack(fill=tk.BOTH, expand=True, padx=10, pady=0) # Reduced pady
+
+        # --- Matplotlib Navigation Toolbar ---
+        toolbar_frame = ttk.Frame(master)
+        toolbar_frame.pack(fill=tk.X, padx=10, pady=(0,5))
+        try:
+            self.toolbar = NavigationToolbar2Tk(self.canvas, toolbar_frame)
+            self.toolbar.update()
+        except Exception as e:
+            logger.error(f"Failed to create Matplotlib navigation toolbar: {e}", exc_info=True)
+            # Continue without toolbar if it fails
+
+        # --- Status Label ---
+        self.status_var = tk.StringVar(value="Ready.")
+        status_label = ttk.Label(master, textvariable=self.status_var, anchor=tk.W)
+        status_label.pack(fill=tk.X, padx=10, pady=(0,5))
+
 
         # --- Initial Setup ---
+        self.plotter = TemporalPlotter(self.ax) # Create plotter instance
         self._update_scheduled = None # Handle for periodic plot update
         self._device_refresh_scheduled = None # Handle for periodic device list refresh
         self.refresh_ip_list() # Populate the combobox initially
@@ -72,16 +90,33 @@ class TemporalAnalysisWindow:
 
     def on_close(self):
         """Handle window closing gracefully."""
+        if self._is_closing: # Prevent re-entry
+            return
+        self._is_closing = True
         logger.info("Closing Temporal Analysis window.")
+
         # Cancel scheduled updates
         if self._update_scheduled:
-            try: self.master.after_cancel(self._update_scheduled)
-            except (tk.TclError, ValueError): pass # Ignore errors if already cancelled/invalid
+            try: 
+                self.master.after_cancel(self._update_scheduled)
+                logger.debug("Cancelled _update_scheduled.")
+            except (tk.TclError, ValueError): 
+                logger.debug("Error cancelling _update_scheduled (already cancelled/invalid).")
             self._update_scheduled = None
         if self._device_refresh_scheduled:
-             try: self.master.after_cancel(self._device_refresh_scheduled)
-             except (tk.TclError, ValueError): pass
+             try: 
+                self.master.after_cancel(self._device_refresh_scheduled)
+                logger.debug("Cancelled _device_refresh_scheduled.")
+             except (tk.TclError, ValueError): 
+                logger.debug("Error cancelling _device_refresh_scheduled (already cancelled/invalid).")
              self._device_refresh_scheduled = None
+        
+        # Explicitly None out Tkinter Variables before destroying master
+        # This might help with their __del__ method behavior during shutdown.
+        if hasattr(self, 'ip_var'):
+            self.ip_var = None
+        if hasattr(self, 'show_protocols_var'):
+            self.show_protocols_var = None
 
         # Close the matplotlib figure
         try:
@@ -113,18 +148,29 @@ class TemporalAnalysisWindow:
 
     def schedule_periodic_refresh(self):
         """Schedules the periodic refresh of the device list and plot."""
+        if self._is_closing:
+            return
         # Schedule device list refresh
         if self.master.winfo_exists():
              self._device_refresh_scheduled = self.master.after(DEVICE_REFRESH_INTERVAL_MS, self.refresh_ip_list)
         else:
              self._device_refresh_scheduled = None
+             logger.warning("Master window does not exist in schedule_periodic_refresh for device list.")
 
-        # Schedule plot update (more frequent) - Handled within update_plot itself
-        # This function only needs to schedule the *next* refresh_ip_list
+        # Plot update is scheduled within update_plot itself.
+        # This function primarily ensures the IP list refresh cycle continues.
 
 
     def refresh_ip_list(self):
         """Refreshes the list of IPs in the combobox based on available temporal data."""
+        if self._is_closing or not self.master.winfo_exists():
+            logger.debug("refresh_ip_list: Window closing or master destroyed, aborting.")
+            if self._device_refresh_scheduled: # Ensure it's not rescheduled if we are aborting
+                try: self.master.after_cancel(self._device_refresh_scheduled)
+                except: pass
+                self._device_refresh_scheduled = None
+            return
+
         logger.debug("Refreshing IP list for temporal analysis.")
         # Keep track of current selection to try and preserve it
         current_selection = self.ip_var.get()
@@ -158,183 +204,210 @@ class TemporalAnalysisWindow:
             if self.ip_var.get() != current_selection or not new_values:
                  self.update_plot()
             # Reschedule the next IP list refresh cycle
-            if self.master.winfo_exists():
+            if self.master.winfo_exists() and not self._is_closing: # Check _is_closing before rescheduling
                  self._device_refresh_scheduled = self.master.after(DEVICE_REFRESH_INTERVAL_MS, self.refresh_ip_list)
             else:
+                 logger.debug("Not rescheduling IP list refresh (window closing or master gone).")
                  self._device_refresh_scheduled = None
 
 
     def update_plot(self):
         """Update the matplotlib plot based on the selected IP and settings."""
+        if self._is_closing or not self.master.winfo_exists(): # Check closing flag and master existence
+            logger.debug("update_plot: Window closing or master destroyed, aborting.")
+            if self._update_scheduled: # Ensure it's not rescheduled if we are aborting
+                try: self.master.after_cancel(self._update_scheduled)
+                except: pass
+                self._update_scheduled = None
+            return
+
         # --- Cancel previous update if still pending ---
-        # (This helps prevent stacking updates if plotting takes longer than interval)
-        if self._update_scheduled:
-             try: self.master.after_cancel(self._update_scheduled)
-             except (tk.TclError, ValueError): pass
-             self._update_scheduled = None
+        if self._update_scheduled: # This specific one is for the *plot* update loop
+             try: 
+                self.master.after_cancel(self._update_scheduled)
+                logger.debug("Cancelled previous _update_scheduled for plot.")
+             except (tk.TclError, ValueError): 
+                logger.debug("Error cancelling previous _update_scheduled for plot (already cancelled/invalid).")
+             self._update_scheduled = None # Clear it as we are about to run or reschedule
 
         # --- Basic checks before proceeding ---
-        try:
-            if not self.master.winfo_exists():
-                logger.warning("Temporal window closed, aborting plot update.")
-                return
-            if not hasattr(self, 'canvas') or not self.canvas or not hasattr(self, 'ax') or not self.ax:
-                 logger.warning("Canvas or Axes not available, aborting plot update.")
-                 return
-        except tk.TclError: # Catch if master check fails during shutdown
-             logger.warning("Temporal window likely closing, aborting plot update.")
+        # Moved winfo_exists check to the top with _is_closing
+        if not hasattr(self, 'canvas') or not self.canvas or not hasattr(self, 'ax') or not self.ax:
+             logger.warning("Canvas or Axes not available, aborting plot update.")
+             # Attempt to reschedule if not closing, so it might recover if canvas becomes available
+             if not self._is_closing and self.master.winfo_exists():
+                 self._update_scheduled = self.master.after(UPDATE_INTERVAL_MS, self.update_plot)
              return
 
 
+        self.status_var.set("Updating plot...")
         ip_to_show = self.ip_var.get()
+
         if not ip_to_show:
             logger.debug("Update plot called, no IP selected.")
+            self.plotter.plot_no_data_selected()
+            self.canvas.draw_idle()
+            self.status_var.set("No IP Selected. Select an IP to view data.")
+        else:
+            logger.info(f"Updating temporal plot for IP: {ip_to_show}")
+            data_copy = None
             try:
-                self.ax.clear()
-                self.ax.set_title("No IP Selected")
-                self.ax.set_xlabel("Time")
-                self.ax.set_ylabel("Packets per Minute")
+                with lock: # Access shared temporal_data safely
+                    if ip_to_show in temporal_data:
+                        device_data_ref = temporal_data[ip_to_show]
+                        data_copy = {
+                            "minutes": list(device_data_ref.get("minutes", deque())),
+                            "protocol_minutes": {
+                                k: list(v) for k, v in device_data_ref.get("protocol_minutes", {}).items()
+                            }
+                        }
+                    else:
+                        logger.warning(f"IP {ip_to_show} not found in temporal_data for plotting.")
+
+                if data_copy and data_copy.get("minutes"):
+                    self.plotter.plot_data(ip_to_show, data_copy, self.show_protocols_var.get())
+                    self.status_var.set(f"Displaying data for {ip_to_show}")
+                else:
+                    logger.info(f"No temporal data found for IP: {ip_to_show}.")
+                    self.plotter.plot_no_data_for_ip(ip_to_show)
+                    self.status_var.set(f"No temporal data available for {ip_to_show}")
+                
                 self.canvas.draw_idle()
-            except Exception as e: # Catch broader errors during clear/draw
-                logger.warning(f"Error drawing 'No IP Selected' plot: {e}")
-            finally:
-                # Still schedule next attempt even if current draw fails
-                if self.master.winfo_exists(): self._update_scheduled = self.master.after(UPDATE_INTERVAL_MS, self.update_plot)
+                logger.debug(f"Temporal plot for {ip_to_show} update cycle finished.")
+
+            except Exception as e:
+                logger.error(f"General error updating temporal plot for {ip_to_show}: {e}", exc_info=True)
+                try:
+                    self.plotter.plot_error_state(ip_to_show)
+                    self.canvas.draw_idle()
+                    self.status_var.set(f"Error updating plot for {ip_to_show}.")
+                except Exception as e_draw:
+                    logger.error(f"Failed to draw error state on plot: {e_draw}")
+        
+        # Common finally block for rescheduling
+        if not self._is_closing and self.master.winfo_exists():
+            self._update_scheduled = self.master.after(UPDATE_INTERVAL_MS, self.update_plot)
+        else:
+            logger.info("Not rescheduling plot update (window closing or master gone).")
+            self._update_scheduled = None
+
+
+# --- End of TemporalAnalysisWindow class ---
+# --- TemporalPlotter Class (Handles actual plotting logic) ---
+class TemporalPlotter:
+    def __init__(self, ax):
+        self.ax = ax
+
+    def _clear_ax(self):
+        self.ax.clear()
+        # Reset navigation history for zoom/pan if toolbar is used
+        if self.ax.get_figure().canvas.toolbar:
+            self.ax.get_figure().canvas.toolbar.update()
+
+
+    def plot_data(self, ip_to_show, data_copy, show_protocols):
+        self._clear_ax()
+        logger.debug(f"Plotter: Plotting data for {ip_to_show}, show_protocols={show_protocols}")
+
+        minutes_data = data_copy.get("minutes", [])
+        valid_minutes_data = [m for m in minutes_data if isinstance(m, (tuple, list)) and len(m) == 2]
+
+        if not valid_minutes_data:
+            logger.warning(f"Plotter: No valid total data points found for {ip_to_show}")
+            self.ax.set_title(f"No Valid Data Points for {ip_to_show}")
+            self.ax.set_xlabel("Time")
+            self.ax.set_ylabel("Packets per Minute")
             return
 
-        logger.info(f"Updating temporal plot for IP: {ip_to_show}")
-        data_copy = None # To store thread-safe copy of data
         try:
-            # --- Get data safely ---
-            with lock:
-                if ip_to_show not in temporal_data:
-                    logger.warning(f"IP {ip_to_show} not found in temporal_data.")
-                    data_copy = None # No data available
-                else:
-                    # Create deep copies of the deques (as lists) to work with outside the lock
-                    device_data_ref = temporal_data[ip_to_show]
-                    data_copy = {
-                        "minutes": list(device_data_ref.get("minutes", deque())),
-                        "protocol_minutes": {
-                            k: list(v) for k, v in device_data_ref.get("protocol_minutes", {}).items()
-                        }
-                    }
-            # --- End lock ---
+            times = [m[0] for m in valid_minutes_data]
+            counts = [m[1] for m in valid_minutes_data]
+            dates = [datetime.datetime.fromtimestamp(t) for t in times]
 
-            # --- Clear and prepare axes ---
-            self.ax.clear()
+            self.ax.plot(dates, counts, linestyle='-', marker='o', label="Total Packets/Min", zorder=10, color='blue')
 
-            # --- Plotting logic ---
-            if not data_copy or not data_copy.get("minutes"):
-                logger.info(f"No temporal data found for IP: {ip_to_show} after copying.")
-                self.ax.set_title(f"No Temporal Data for {ip_to_show}")
-            else:
-                # Plot total packets per minute
-                minutes_data = data_copy["minutes"]
-                # Ensure data points are valid tuples/lists of length 2
-                valid_minutes_data = [m for m in minutes_data if isinstance(m, (tuple, list)) and len(m) == 2]
+            if show_protocols:
+                protocol_minutes_data = data_copy.get("protocol_minutes", {})
+                plotted_protocols_count = 0
+                # Define some distinct colors for protocols
+                protocol_colors = plt.cm.get_cmap('tab10', len(protocol_minutes_data) if protocol_minutes_data else 1)
 
-                if not valid_minutes_data:
-                    logger.warning(f"No valid total data points found for {ip_to_show}")
-                    self.ax.set_title(f"No Valid Data Points for {ip_to_show}")
-                else:
-                    try:
-                        times = [m[0] for m in valid_minutes_data] # Timestamps
-                        counts = [m[1] for m in valid_minutes_data] # Counts
-                        dates = [datetime.datetime.fromtimestamp(t) for t in times]
+                for i, (key, pdeque_list) in enumerate(protocol_minutes_data.items()):
+                    label_str = "Unknown"
+                    if isinstance(key, tuple) and len(key) == 2:
+                        proto_name, port_num = key
+                        label_str = f"{str(proto_name).upper()}:{port_num}" if port_num is not None else str(proto_name).upper()
+                    elif isinstance(key, str):
+                        label_str = str(key).upper()
+                    else:
+                        logger.warning(f"Plotter: Skipping unexpected key format in protocol_minutes: {key}")
+                        continue
 
-                        # Plot the main "Total Packets" line
-                        self.ax.plot(dates, counts, linestyle='-', marker='o', label="Total Packets/Min", zorder=10) # Draw total on top
+                    valid_pdeque_list = [p for p in pdeque_list if isinstance(p, (tuple, list)) and len(p) == 2]
+                    if not valid_pdeque_list:
+                        logger.debug(f"Plotter: No valid points for protocol '{label_str}' for {ip_to_show}")
+                        continue
 
-                        # Plot protocol breakdown if requested
-                        if self.show_protocols_var.get():
-                            logger.debug(f"Plotting protocol breakdown for {ip_to_show}.")
-                            protocol_minutes_data = data_copy.get("protocol_minutes", {})
-                            plotted_protocols_count = 0
+                    ptimes = [x[0] for x in valid_pdeque_list]
+                    pcnts = [x[1] for x in valid_pdeque_list]
+                    pdates = [datetime.datetime.fromtimestamp(t) for t in ptimes]
+                    
+                    self.ax.plot(pdates, pcnts, linestyle='--', marker='.', label=label_str, alpha=0.7, color=protocol_colors(i))
+                    plotted_protocols_count += 1
+                logger.debug(f"Plotter: Plotted breakdown for {plotted_protocols_count} protocols.")
 
-                            # --- CORRECTED LOOP FOR PROTOCOL BREAKDOWN ---
-                            for key, pdeque_list in protocol_minutes_data.items():
-                                proto_name, port_num = None, None
-                                label_str = "Unknown"
+            self.ax.set_title(f"Traffic for {ip_to_show} (Packets per Minute)")
+            self.ax.set_xlabel("Time (Local)")
+            self.ax.set_ylabel("Packets per Minute")
+            self.ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
+            
+            # Dynamic tick locator based on time range
+            if dates:
+                time_range_seconds = (max(times) - min(times)) if len(times) > 1 else 60
+                if time_range_seconds <= 300: # 5 minutes
+                    major_interval = 1
+                    minor_interval = 1
+                elif time_range_seconds <= 1800: # 30 minutes
+                    major_interval = 5
+                    minor_interval = 1
+                elif time_range_seconds <= 3600 * 2: # 2 hours
+                    major_interval = 15
+                    minor_interval = 5
+                else: # More than 2 hours
+                    major_interval = 30
+                    minor_interval = 10
+                self.ax.xaxis.set_major_locator(mdates.MinuteLocator(interval=major_interval))
+                self.ax.xaxis.set_minor_locator(mdates.MinuteLocator(interval=minor_interval))
 
-                                # Check if the key is a tuple (proto, port) or just a string (proto)
-                                if isinstance(key, tuple) and len(key) == 2:
-                                    proto_name, port_num = key
-                                    # Format label, ensure proto_name is string
-                                    label_str = f"{str(proto_name).upper()}:{port_num}" if port_num is not None else str(proto_name).upper()
-                                elif isinstance(key, str): # Handle case where key is just the protocol name string
-                                    proto_name = key
-                                    port_num = None # Assume no specific port
-                                    label_str = str(proto_name).upper()
-                                else:
-                                    logger.warning(f"Skipping unexpected key format in protocol_minutes: {key}")
-                                    continue # Skip this key if format is wrong
+            self.ax.grid(True, linestyle=':', alpha=0.7) # Lighter grid
+            self.ax.legend(loc='upper left', fontsize='x-small') # Smaller legend
+            self.ax.get_figure().autofmt_xdate(rotation=25, ha='right')
+            self.ax.get_figure().tight_layout() # Apply tight_layout here
 
-                                # Ensure protocol data points are valid
-                                valid_pdeque_list = [p for p in pdeque_list if isinstance(p, (tuple, list)) and len(p) == 2]
-                                if not valid_pdeque_list:
-                                    logger.debug(f"No valid points for protocol '{label_str}' for {ip_to_show}")
-                                    continue # Skip if no valid points for this protocol
+        except Exception as plot_ex:
+            logger.error(f"Plotter: Error during plotting data for {ip_to_show}: {plot_ex}", exc_info=True)
+            self._clear_ax()
+            self.ax.set_title(f"Error Plotting Data for {ip_to_show}")
 
-                                ptimes = [x[0] for x in valid_pdeque_list]
-                                pcnts = [x[1] for x in valid_pdeque_list]
-                                pdates = [datetime.datetime.fromtimestamp(t) for t in ptimes]
+    def plot_no_data_selected(self):
+        self._clear_ax()
+        self.ax.set_title("No IP Selected")
+        self.ax.set_xlabel("Time")
+        self.ax.set_ylabel("Packets per Minute")
+        self.ax.get_figure().tight_layout()
 
-                                # Plot the line for this protocol
-                                self.ax.plot(pdates, pcnts, linestyle='-', marker='.', label=label_str, alpha=0.8) # Use different marker/alpha
-                                plotted_protocols_count += 1
-                            # --- END CORRECTED LOOP ---
-                            logger.debug(f"Plotted breakdown for {plotted_protocols_count} protocols.")
+    def plot_no_data_for_ip(self, ip_to_show):
+        self._clear_ax()
+        self.ax.set_title(f"No Temporal Data for {ip_to_show}")
+        self.ax.set_xlabel("Time")
+        self.ax.set_ylabel("Packets per Minute")
+        self.ax.get_figure().tight_layout()
 
-                        # --- Configure Axes Appearance ---
-                        self.ax.set_title(f"Traffic for {ip_to_show} (Packets per Minute)")
-                        self.ax.set_xlabel("Time (Local)")
-                        self.ax.set_ylabel("Packets per Minute")
-                        # Format x-axis dates
-                        self.ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M')) # Show Hour:Minute
-                        interval_minutes = 10 # Example: tick every 10 minutes
-                        self.ax.xaxis.set_major_locator(mdates.MinuteLocator(interval=interval_minutes))
-                        self.ax.xaxis.set_minor_locator(mdates.MinuteLocator(interval=5)) # Minor ticks every 5 mins? Adjust as needed
-                        # Add grid and legend
-                        self.ax.grid(True, linestyle='--', alpha=0.6)
-                        self.ax.legend(loc='upper left', fontsize='small')
-                        # Rotate date labels slightly
-                        self.fig.autofmt_xdate(rotation=30, ha='right')
+    def plot_error_state(self, ip_to_show="Selected IP"):
+        self._clear_ax()
+        self.ax.set_title(f"Error Updating Plot for {ip_to_show}")
+        self.ax.set_xlabel("Time")
+        self.ax.set_ylabel("Packets per Minute")
+        self.ax.get_figure().tight_layout()
 
-                    except Exception as plot_ex:
-                         logger.error(f"Error during plotting data section for {ip_to_show}: {plot_ex}", exc_info=True)
-                         self.ax.clear() # Clear axes on error
-                         self.ax.set_title(f"Error Plotting Data for {ip_to_show}")
-
-
-            # --- Final draw and reschedule (outside main data processing) ---
-            # Use tight_layout to prevent labels overlapping
-            self.fig.tight_layout()
-            # Redraw the canvas
-            self.canvas.draw_idle()
-            logger.debug(f"Temporal plot for {ip_to_show} update cycle finished.")
-
-        except Exception as e:
-            # Catch broad errors during the entire update process
-            logger.error(f"General error updating temporal plot for {ip_to_show}: {e}", exc_info=True)
-            try:
-                 # Try to display an error message on the plot
-                 self.ax.clear()
-                 self.ax.set_title(f"Error updating plot for {ip_to_show}")
-                 self.canvas.draw_idle()
-            except Exception as e_draw:
-                 logger.error(f"Failed to draw error state on plot: {e_draw}")
-                 # Avoid further errors if canvas/ax is broken
-        finally:
-            # --- Reschedule the next plot update (CRITICAL for loop) ---
-            # Add extra safety checks before rescheduling
-            try:
-                 if self.master.winfo_exists() and hasattr(self, 'canvas') and self.canvas:
-                     self._update_scheduled = self.master.after(UPDATE_INTERVAL_MS, self.update_plot)
-                 else:
-                      logger.info("Temporal window closed or canvas invalid, stopping plot updates.")
-                      self._update_scheduled = None # Ensure handle is cleared
-            except Exception as e_reschedule:
-                 logger.error(f"Error rescheduling temporal plot update: {e_reschedule}")
-                 self._update_scheduled = None # Stop trying if rescheduling fails
 # --- End of TemporalAnalysisWindow class ---

@@ -120,30 +120,35 @@ class Whitelist:
         try:
             with open(self.filepath, 'r', encoding='utf-8') as f:
                 for line_num, line in enumerate(f, 1):
-                    line = line.strip()
-                    if not line or line.startswith('#'):
+                    original_line = line.strip() # For logging original if needed
+                    if not original_line or original_line.startswith('#'):
+                        continue
+                    
+                    # Remove inline comments and strip again
+                    entry_to_parse = original_line.split('#')[0].strip()
+                    if not entry_to_parse: # Line might have been only a comment after content
                         continue
 
                     # Try parsing as IP/CIDR first
                     try:
-                        network = ipaddress.ip_network(line, strict=False)
+                        network = ipaddress.ip_network(entry_to_parse, strict=False)
                         new_ip_networks.add(network)
                         loaded_ips += 1
-                        logger.debug(f"Whitelisted IP/Network: {network}")
+                        logger.debug(f"Whitelisted IP/Network: {network} (from line: '{original_line}')")
                         continue # Successfully parsed as IP/network
                     except ValueError:
                         # If not IP/CIDR, treat as potential domain
                         pass
 
                     # Treat as domain (basic validation)
-                    domain = line.lower()
+                    domain = entry_to_parse.lower()
                     if '.' in domain and not domain.startswith('.') and not domain.endswith('.'):
                         # Add more robust domain validation if needed
                         new_domains.add(domain)
                         loaded_domains += 1
-                        logger.debug(f"Whitelisted Domain: {domain}")
+                        logger.debug(f"Whitelisted Domain: {domain} (from line: '{original_line}')")
                     else:
-                        logger.warning(f"Ignoring invalid whitelist entry on line {line_num}: '{line}'")
+                        logger.warning(f"Ignoring invalid whitelist entry on line {line_num}: '{original_line}' (parsed as: '{entry_to_parse}')")
 
             self.ip_networks = new_ip_networks
             self.domains = new_domains

@@ -61,14 +61,16 @@ class DetailWindow:
         self.threat_frame = tk.Frame(self.notebook)
         self.notebook.add(self.threat_frame, text="Threat Info")
         self._setup_threat_tab()
-        # No sorting needed for threat tab currently
 
-        # --- Scan Status Label (Below Tabs) ---
-        self.scan_status_frame = tk.Frame(self.master)
-        self.scan_status_frame.pack(fill=tk.X, padx=10, pady=(0, 5))
-        self.scan_status_label = tk.Label(self.scan_status_frame, text="Scan Status: Initializing...",
-                                          fg=COLOR_SCAN_DISABLED, anchor=tk.W)
-        self.scan_status_label.pack(fill=tk.X)
+        # DNS Queries Tab (New)
+        self.dns_query_frame = tk.Frame(self.notebook)
+        self.notebook.add(self.dns_query_frame, text="DNS Queries")
+        self._setup_dns_query_tab()
+
+        # Scan Activity Tab (New)
+        self.scan_activity_frame = tk.Frame(self.notebook)
+        self.notebook.add(self.scan_activity_frame, text="Scan Activity")
+        self._setup_scan_activity_tab()
 
         # --- Start Update Loop ---
         self._update_scheduled = None
@@ -140,6 +142,45 @@ class DetailWindow:
             self.threat_tree.column(col, width=widths[col], anchor=anchors[col])
 
         self.threat_tree.pack(fill=tk.BOTH, expand=True)
+
+    def _setup_dns_query_tab(self):
+        """Sets up the Treeview for the DNS Queries tab."""
+        columns = ("timestamp", "qname", "reason")
+        self.dns_tree = ttk.Treeview(self.dns_query_frame, columns=columns, show="headings")
+        headers = {"timestamp": "Timestamp", "qname": "Queried Domain", "reason": "Reason"}
+        widths = {"timestamp": 150, "qname": 250, "reason": 150}
+        for col in columns:
+            self.dns_tree.heading(col, text=headers[col], anchor=tk.W)
+            self.dns_tree.column(col, width=widths[col], anchor=tk.W)
+        self.dns_tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+    def _setup_scan_activity_tab(self):
+        """Sets up the UI for the Scan Activity tab."""
+        # Frame for status labels
+        status_frame = ttk.Frame(self.scan_activity_frame, padding=(5,5))
+        status_frame.pack(fill=tk.X)
+
+        self.port_scan_status_var = tk.StringVar(value="Port Scan: Unknown")
+        ttk.Label(status_frame, textvariable=self.port_scan_status_var).pack(anchor=tk.W)
+        
+        self.host_scan_status_var = tk.StringVar(value="Host Scan: Unknown")
+        ttk.Label(status_frame, textvariable=self.host_scan_status_var).pack(anchor=tk.W)
+
+        ttk.Separator(self.scan_activity_frame, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=5)
+        
+        # Frame for scan targets tree
+        targets_frame = ttk.LabelFrame(self.scan_activity_frame, text="Detected Scan Targets/Ports")
+        targets_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+        columns = ("target_ip", "scanned_ports")
+        self.scan_targets_tree = ttk.Treeview(targets_frame, columns=columns, show="headings")
+        headers = {"target_ip": "Target IP", "scanned_ports": "Scanned Ports"}
+        widths = {"target_ip": 150, "scanned_ports": 300}
+        for col in columns:
+            self.scan_targets_tree.heading(col, text=headers[col], anchor=tk.W)
+            self.scan_targets_tree.column(col, width=widths[col], anchor=tk.W)
+        self.scan_targets_tree.pack(fill=tk.BOTH, expand=True)
+
 
     def update_gui(self):
         """Periodically updates all tabs in the detail window."""
@@ -283,30 +324,15 @@ class DetailWindow:
             # This function handles its own locking and checks flag_malicious_enabled
             self.update_threat_info(flag_malicious_enabled, source_ip_exists)
 
-            # --- Update Scan Status Label ---
-            status_text = "Scan Status: "
-            status_color = COLOR_SCAN_DEFAULT # Default unlikely to be used
+            # --- Update Threat Info Tab ---
+            # This function handles its own locking and checks flag_malicious_enabled
+            self.update_threat_info(flag_malicious_enabled, source_ip_exists)
 
-            if not flag_scan_enabled:
-                status_text += "Detection Disabled"
-                status_color = COLOR_SCAN_DISABLED
-            elif scan_ports_detected and scan_hosts_detected:
-                status_text += "Port & Host Scan Detected!"
-                status_color = COLOR_SCAN_DETECTED
-            elif scan_ports_detected:
-                status_text += "Port Scan Detected!"
-                status_color = COLOR_SCAN_DETECTED
-            elif scan_hosts_detected:
-                status_text += "Host Scan Detected!"
-                status_color = COLOR_SCAN_DETECTED
-            elif not source_ip_exists:
-                 status_text += "Source IP data unavailable"
-                 status_color = COLOR_SCAN_DISABLED
-            else:
-                status_text += "No Scan Detected"
-                status_color = COLOR_SCAN_NONE
-
-            self.scan_status_label.config(text=status_text, fg=status_color)
+            # --- Update DNS Queries Tab ---
+            self.update_dns_queries_tab(source_ip_exists)
+            
+            # --- Update Scan Activity Tab ---
+            self.update_scan_activity_tab(flag_scan_enabled, source_ip_exists, scan_ports_detected, scan_hosts_detected)
 
         except Exception as e:
             logger.error(f"Error during detail GUI update for {self.source_ip}: {e}", exc_info=True)
@@ -357,36 +383,32 @@ class DetailWindow:
             active_ip_lists = config.get_active_blocklist_urls("ip") # Get URLs currently enabled in config
             logger.debug(f"Active IP blocklist URLs from config: {active_ip_lists}")
 
-            # ****************************************************************
-            # ************ CORRECTED INDENTATION STARTS HERE *****************
-            # ****************************************************************
-            for mal_ip, hit_info in malicious_hits.items(): # Line 360 from previous analysis
-                # The capture thread should only add hits from active lists at the time of detection.
-                # However, we can double-check here against the *current* config state if needed,
-                # or simply display the stored info. Let's display stored info for now.
-                # If filtering by *current* active lists is desired:
-                # blocklists_hit = hit_info.get("blocklists", set())
-                # active_hits_on_lists = {bl for bl in blocklists_hit if bl in active_ip_lists}
-                # if not active_hits_on_lists:
-                #    logger.debug(f"Skipping hit {self.source_ip}->{mal_ip}, lists currently inactive: {blocklists_hit}")
-                #    continue
-                # bl_names = ', '.join(sorted(list(active_hits_on_lists))) # Use filtered list
+        # --- Start of locked section for threat_info ---
+        with lock:
+            if self.source_ip not in ip_data:
+                logger.warning(f"IP {self.source_ip} disappeared before threat info update (lock held).")
+                self.threat_tree.insert("", tk.END, values=(f"Data for {self.source_ip} became unavailable", "", "", ""))
+                return
 
-                # Displaying stored info (lists active at time of hit):
+            source_info = ip_data[self.source_ip]
+            malicious_hits = source_info.get("malicious_hits", {})
+            logger.debug(f"Raw malicious_hits dict for {self.source_ip}: {malicious_hits}")
+
+            if not malicious_hits:
+                logger.debug(f"No malicious hits recorded for {self.source_ip}.")
+                self.threat_tree.insert("", tk.END, values=("No recorded malicious hits", "", "", ""))
+                return
+            
+            for mal_ip, hit_info in malicious_hits.items():
                 blocklists_hit = hit_info.get("blocklists", set())
-                if not blocklists_hit: # Should not happen if added correctly
+                if not blocklists_hit: 
                      logger.warning(f"Hit recorded for {mal_ip} from {self.source_ip} with empty blocklist set.")
-                     continue # Skip this hit if blocklist info is missing
+                     continue 
                 bl_names = ', '.join(sorted(list(blocklists_hit)))
-
-
                 direction = hit_info.get("direction", "N/A")
                 count = hit_info.get("count", 0)
                 threat_data_for_table.append((mal_ip, bl_names, direction, count))
-            # **************************************************************
-            # ************ CORRECTED INDENTATION ENDS HERE *****************
-            # **************************************************************
-        # --- End of locked section ---
+        # --- End of locked section for threat_info ---
 
         # Sort by malicious IP
         try:
@@ -397,14 +419,9 @@ class DetailWindow:
 
 
         if not threat_data_for_table:
-            # This case might be hit if hits existed but none were from currently active lists (if filtering applied)
-            # Or if the malicious_hits dict was empty to begin with.
+            # This case might be hit if the malicious_hits dict was empty to begin with.
             logger.debug(f"No relevant threat data to display for {self.source_ip} after processing.")
-            # Check if the dictionary was empty vs filtered
-            if not malicious_hits: # Check original dict state again
-                 self.threat_tree.insert("", tk.END, values=("No recorded malicious hits", "", "", ""))
-            else:
-                 self.threat_tree.insert("", tk.END, values=("No hits matching current filters", "", "", "")) # Or similar msg
+            self.threat_tree.insert("", tk.END, values=("No recorded malicious hits", "", "", ""))
         else:
             logger.debug(f"Populating threat table for {self.source_ip} with {len(threat_data_for_table)} entries.")
             for row in threat_data_for_table:
@@ -478,4 +495,79 @@ class DetailWindow:
         setattr(self, sort_col_attr, column)
         setattr(self, sort_asc_attr, new_ascending)
         logger.debug(f"Set detail table sort: Column='{column}', Ascending={new_ascending}")
-        # The actual sorting happens in the next update_gui call
+        # The actual sorting happens in the next update_gui call (which is called immediately by some actions or periodically)
+        self.update_gui() # Trigger an immediate update to reflect sort change
+
+    def update_dns_queries_tab(self, source_ip_exists):
+        """Updates the DNS Queries tab."""
+        logger.debug(f"Updating DNS Queries tab for {self.source_ip}.")
+        self.dns_tree.delete(*self.dns_tree.get_children())
+
+        if not source_ip_exists:
+            self.dns_tree.insert("", tk.END, values=("(Source IP data unavailable)", "", ""))
+            return
+
+        dns_queries_data = []
+        with lock:
+            if self.source_ip in ip_data:
+                suspicious_dns_list = ip_data[self.source_ip].get("suspicious_dns", [])
+                for query_info in suspicious_dns_list:
+                    ts = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(query_info.get("timestamp", 0)))
+                    qname = query_info.get("qname", "N/A")
+                    reason = query_info.get("reason", "N/A")
+                    dns_queries_data.append((ts, qname, reason))
+            else: # Should ideally not happen if source_ip_exists is true
+                self.dns_tree.insert("", tk.END, values=("(Source IP data unavailable)", "", ""))
+                return
+        
+        if not dns_queries_data:
+            self.dns_tree.insert("", tk.END, values=("No suspicious DNS queries recorded", "", ""))
+        else:
+            dns_queries_data.sort(key=lambda x: x[0], reverse=True) # Sort by timestamp descending
+            for row in dns_queries_data:
+                self.dns_tree.insert("", tk.END, values=row)
+
+    def update_scan_activity_tab(self, flag_scan_enabled, source_ip_exists, scan_ports_detected, scan_hosts_detected):
+        """Updates the Scan Activity tab."""
+        logger.debug(f"Updating Scan Activity tab for {self.source_ip}.")
+        self.scan_targets_tree.delete(*self.scan_targets_tree.get_children())
+
+        if not flag_scan_enabled:
+            self.port_scan_status_var.set("Port Scan: Detection Disabled")
+            self.host_scan_status_var.set("Host Scan: Detection Disabled")
+            self.scan_targets_tree.insert("", tk.END, values=("Scan detection disabled in main UI.", ""))
+            return
+
+        if not source_ip_exists:
+            self.port_scan_status_var.set("Port Scan: Source IP data unavailable")
+            self.host_scan_status_var.set("Host Scan: Source IP data unavailable")
+            self.scan_targets_tree.insert("", tk.END, values=("Source IP data unavailable.", ""))
+            return
+
+        self.port_scan_status_var.set(f"Port Scan Detected: {'Yes' if scan_ports_detected else 'No'}")
+        self.host_scan_status_var.set(f"Host Scan Detected: {'Yes' if scan_hosts_detected else 'No'}")
+
+        scan_target_details = []
+        if scan_ports_detected or scan_hosts_detected: # Only populate tree if a scan was detected
+            with lock:
+                if self.source_ip in ip_data:
+                    syn_targets = ip_data[self.source_ip].get("syn_targets", {})
+                    for target_ip, details in syn_targets.items():
+                        ports_str = ", ".join(map(str, sorted(list(details.get("ports", set())))))
+                        if not ports_str and scan_hosts_detected and not scan_ports_detected: # Host scan might not list ports
+                            ports_str = "(Host scan)"
+                        elif not ports_str:
+                            ports_str = "N/A"
+                        scan_target_details.append((target_ip, ports_str))
+                else: # Should not happen
+                    self.scan_targets_tree.insert("", tk.END, values=("(Source IP data unavailable)", ""))
+                    return
+        
+        if not scan_target_details and (scan_ports_detected or scan_hosts_detected):
+             self.scan_targets_tree.insert("", tk.END, values=("Scan detected, but no specific targets/ports logged.", ""))
+        elif not scan_target_details: # No scan detected, no targets
+            self.scan_targets_tree.insert("", tk.END, values=("No scan targets to display.", ""))
+        else:
+            scan_target_details.sort(key=lambda x: ipaddress.ip_address(x[0]))
+            for row in scan_target_details:
+                self.scan_targets_tree.insert("", tk.END, values=row)

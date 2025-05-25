@@ -17,7 +17,7 @@ from ui.gui_unsafe import UnsafeConfigWindow
 from ui.gui_temporal import TemporalAnalysisWindow
 import ui.gui_blocklist_manager as gui_blocklist_manager
 from ui.gui_detail import DetailWindow
-from ui.gui_dns import DnsMonitorWindow
+# from ui.gui_dns import DnsMonitorWindow # Removed
 from ui.gui_scan_config import ScanConfigWindow
 from ui.gui_whitelist_manager import WhitelistManagerWindow
 
@@ -43,7 +43,7 @@ class PacketStatsGUI:
 
         # References to open Toplevel windows
         self.temporal_window_ref = None
-        self.dns_monitor_window_ref = None
+        # self.dns_monitor_window_ref = None # Removed
         self.detail_window_refs = [] # Can have multiple detail windows
         # Config windows are typically modal or short-lived, but can be tracked if complex.
         self.unsafe_config_window_ref = None
@@ -97,7 +97,7 @@ class PacketStatsGUI:
         # Attempt to close known Toplevel windows gracefully
         # This allows their own WM_DELETE_WINDOW handlers (on_close methods) to execute
         window_refs_to_close = [
-            self.temporal_window_ref, self.dns_monitor_window_ref,
+            self.temporal_window_ref, # self.dns_monitor_window_ref, # Removed
             self.unsafe_config_window_ref, self.scan_config_window_ref,
             self.blocklist_manager_window_ref, self.whitelist_manager_window_ref
         ]
@@ -193,7 +193,7 @@ class PacketStatsGUI:
         tk.Button(row2_frame, text="Blocklists", command=self.open_blocklist_manager).pack(side=tk.LEFT, padx=3)
         tk.Button(row2_frame, text="Whitelist", command=self.open_whitelist_manager).pack(side=tk.LEFT, padx=3)
         tk.Button(row2_frame, text="Temporal", command=self.open_temporal_analysis).pack(side=tk.LEFT, padx=3)
-        tk.Button(row2_frame, text="DNS Mon", command=self.open_dns_monitor).pack(side=tk.LEFT, padx=3)
+        # tk.Button(row2_frame, text="DNS Mon", command=self.open_dns_monitor).pack(side=tk.LEFT, padx=3) # Removed
 
     def add_table_frame(self, parent_frame):
         """Adds the main statistics table (Treeview)."""
@@ -279,19 +279,7 @@ class PacketStatsGUI:
         temporal_instance = TemporalAnalysisWindow(top)
         top.protocol("WM_DELETE_WINDOW", lambda t=top, ti=temporal_instance: (ti.on_close(), self._clear_window_reference(t, "temporal_window_ref")))
 
-
-    def open_dns_monitor(self):
-        logger.debug("Opening DNS Monitor window.")
-        if self.dns_monitor_window_ref and self.dns_monitor_window_ref.winfo_exists():
-            self.dns_monitor_window_ref.lift()
-            return
-        top = tk.Toplevel(self.master)
-        self.dns_monitor_window_ref = top # Store reference
-        dns_instance = DnsMonitorWindow(top) # Assuming DnsMonitorWindow has an on_close or similar
-        # If DnsMonitorWindow has its own on_close, use it. Otherwise, just destroy and clear.
-        # For now, assuming a simple destroy and clear:
-        top.protocol("WM_DELETE_WINDOW", lambda t=top, di=dns_instance: (di.on_close() if hasattr(di, 'on_close') else t.destroy(), self._clear_window_reference(t, "dns_monitor_window_ref")))
-
+    # Removed open_dns_monitor method
 
     def configure_scan(self):
         logger.debug("Opening Scan Detection Configuration window.")
@@ -460,21 +448,38 @@ class PacketStatsGUI:
                 data_for_table = self.sort_data(data_for_table, self.current_sort_column, self.current_sort_ascending)
 
             # --- Update Treeview ---
-            selected_item_id = self.tree.focus() # Preserve selection
+            selected_ip_address = None
+            focused_item_id = self.tree.focus() # Get the ID of the currently focused item
+            if focused_item_id:
+                # Get the values of the focused item, IP is assumed to be the first value
+                item_values = self.tree.item(focused_item_id, "values")
+                if item_values and len(item_values) > 0:
+                    selected_ip_address = item_values[0]
+                    logger.debug(f"Preserving selection: IP {selected_ip_address}")
+
             scroll_position = self.tree.yview() # Preserve scroll position
 
             self.tree.delete(*self.tree.get_children()) # Clear existing rows
 
+            new_item_id_to_select = None
             for row_data in data_for_table:
                 ip_val, total_val, pmin_val, psec_val, maxp_val, flag_val = row_data
                 tags_to_apply = (TAG_ALERT,) if flag_val else ()
-                self.tree.insert("", tk.END, values=(ip_val, total_val, pmin_val, psec_val, maxp_val), tags=tags_to_apply)
-
-            # Restore selection and scroll position if possible
-            if selected_item_id and self.tree.exists(selected_item_id):
-                self.tree.focus(selected_item_id)
-                self.tree.selection_set(selected_item_id)
-            self.tree.yview_moveto(scroll_position[0])
+                # Insert the new row and get its item ID
+                current_item_id = self.tree.insert("", tk.END, values=(ip_val, total_val, pmin_val, psec_val, maxp_val), tags=tags_to_apply)
+                # If this IP matches the previously selected one, store its new item ID
+                if selected_ip_address and ip_val == selected_ip_address:
+                    new_item_id_to_select = current_item_id
+            
+            # If we found the previously selected IP among the new items, re-select it
+            if new_item_id_to_select:
+                logger.debug(f"Restoring selection to item ID: {new_item_id_to_select} for IP: {selected_ip_address}")
+                self.tree.focus(new_item_id_to_select)
+                self.tree.selection_set(new_item_id_to_select)
+                # Optionally, ensure the selected item is visible
+                # self.tree.see(new_item_id_to_select) 
+            
+            self.tree.yview_moveto(scroll_position[0]) # Restore scroll position
             # --- End Treeview Update ---
 
         except Exception as e:

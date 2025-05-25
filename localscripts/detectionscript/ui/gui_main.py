@@ -36,9 +36,21 @@ WINDOW_GEOMETRY = "950x600"
 class PacketStatsGUI:
     def __init__(self, master):
         self.master = master
+        self.master = master
         self.master.title("Network Monitor")
         self.master.geometry(WINDOW_GEOMETRY)
         logger.info("Initializing PacketStatsGUI...")
+
+        # References to open Toplevel windows
+        self.temporal_window_ref = None
+        self.dns_monitor_window_ref = None
+        self.detail_window_refs = [] # Can have multiple detail windows
+        # Config windows are typically modal or short-lived, but can be tracked if complex.
+        self.unsafe_config_window_ref = None
+        self.scan_config_window_ref = None
+        self.blocklist_manager_window_ref = None
+        self.whitelist_manager_window_ref = None
+
 
         # Attempt blocklist initialization early, notify user on failure
         try:
@@ -70,21 +82,76 @@ class PacketStatsGUI:
         logger.info("PacketStatsGUI initialized.")
 
     def on_close(self):
-        """Gracefully handle window closing."""
-        logger.info("Closing main window.")
+        """Gracefully handle window closing, ensuring child Toplevels are closed first."""
+        logger.info("Main application on_close triggered.")
+
+        # Cancel scheduled updates for the main GUI
         if self._update_scheduled:
             try:
                 self.master.after_cancel(self._update_scheduled)
+                logger.debug("Main GUI update loop cancelled.")
             except tk.TclError:
-                # Might happen if window is already destroyed
-                pass
+                logger.debug("TclError cancelling main GUI update (already cancelled/invalid).")
             self._update_scheduled = None
+        
+        # Attempt to close known Toplevel windows gracefully
+        # This allows their own WM_DELETE_WINDOW handlers (on_close methods) to execute
+        window_refs_to_close = [
+            self.temporal_window_ref, self.dns_monitor_window_ref,
+            self.unsafe_config_window_ref, self.scan_config_window_ref,
+            self.blocklist_manager_window_ref, self.whitelist_manager_window_ref
+        ]
+        # Add all detail windows
+        window_refs_to_close.extend(self.detail_window_refs)
+
+        for window_instance in window_refs_to_close:
+            if window_instance and window_instance.winfo_exists():
+                try:
+                    logger.info(f"Attempting to close child window: {window_instance.title()}")
+                    window_instance.destroy() # This should trigger its on_close via WM_DELETE_WINDOW
+                except tk.TclError as e:
+                    logger.warning(f"TclError closing child window {window_instance.title()}: {e}")
+                except Exception as e:
+                    logger.error(f"Unexpected error closing child window {window_instance.title()}: {e}", exc_info=True)
+        
+        # Clear the list of detail windows after attempting to close them
+        self.detail_window_refs.clear()
+
+        # Give Tkinter a moment to process these destruction events if necessary
+        # self.master.update_idletasks() # Usually not needed if destroy is handled well
+
+        # Finally, destroy the main window
         try:
-            # Ensure the window is destroyed if not already
             if self.master.winfo_exists():
+                logger.info("Destroying main application window.")
                 self.master.destroy()
-        except tk.TclError:
-            pass # Window likely already gone
+                logger.info("Main application window destroyed.")
+            else:
+                logger.info("Main application window already destroyed.")
+        except tk.TclError as e:
+            logger.warning(f"TclError destroying main window: {e} (likely already gone).")
+        except Exception as e:
+            logger.error(f"Unexpected error destroying main window: {e}", exc_info=True)
+
+
+    def _clear_window_reference(self, window_instance, ref_attr_name=None, ref_list_name=None):
+        """Clears a reference to a closed Toplevel window."""
+        logger.debug(f"Clearing reference for window: {window_instance}, attr: {ref_attr_name}, list: {ref_list_name}")
+        if ref_attr_name and hasattr(self, ref_attr_name) and getattr(self, ref_attr_name) == window_instance:
+            setattr(self, ref_attr_name, None)
+            logger.debug(f"Cleared attribute reference: {ref_attr_name}")
+        elif ref_list_name and hasattr(self, ref_list_name):
+            try:
+                getattr(self, ref_list_name).remove(window_instance)
+                logger.debug(f"Removed window from list reference: {ref_list_name}")
+            except ValueError:
+                logger.debug(f"Window not found in list reference: {ref_list_name}")
+        
+        # The window's own WM_DELETE_WINDOW protocol should handle its actual destruction.
+        # If this clear_window_reference is called by that protocol, we don't want to call destroy() again.
+        # However, if this is called for other reasons, ensure it's destroyed.
+        # For now, assume WM_DELETE_WINDOW on the Toplevel handles its own destroy().
+
 
     def add_description_frame(self, parent_frame):
         """Adds the description label."""
@@ -189,33 +256,74 @@ class PacketStatsGUI:
     # --- Configuration Window Openers ---
     def configure_unsafe(self):
         logger.debug("Opening Unsafe Configuration window.")
+        if self.unsafe_config_window_ref and self.unsafe_config_window_ref.winfo_exists():
+            self.unsafe_config_window_ref.lift()
+            return
         top = tk.Toplevel(self.master)
+        self.unsafe_config_window_ref = top # Store reference
         UnsafeConfigWindow(top)
+        top.protocol("WM_DELETE_WINDOW", lambda t=top: (UnsafeConfigWindow(t).master.destroy(), self._clear_window_reference(t, "unsafe_config_window_ref")))
+
 
     def open_temporal_analysis(self):
         logger.debug("Opening Temporal Analysis window.")
+        if self.temporal_window_ref and self.temporal_window_ref.winfo_exists():
+            self.temporal_window_ref.lift() # Bring to front if already open
+            return
         top = tk.Toplevel(self.master)
-        TemporalAnalysisWindow(top)
+        self.temporal_window_ref = top # Store reference
+        # The TemporalAnalysisWindow itself sets its WM_DELETE_WINDOW to its on_close method.
+        # We need to ensure our reference is cleared when it's closed by its 'X' button.
+        # The on_close in TemporalAnalysisWindow will call top.destroy().
+        # We hook into that to clear our reference.
+        temporal_instance = TemporalAnalysisWindow(top)
+        top.protocol("WM_DELETE_WINDOW", lambda t=top, ti=temporal_instance: (ti.on_close(), self._clear_window_reference(t, "temporal_window_ref")))
+
 
     def open_dns_monitor(self):
         logger.debug("Opening DNS Monitor window.")
+        if self.dns_monitor_window_ref and self.dns_monitor_window_ref.winfo_exists():
+            self.dns_monitor_window_ref.lift()
+            return
         top = tk.Toplevel(self.master)
-        DnsMonitorWindow(top)
+        self.dns_monitor_window_ref = top # Store reference
+        dns_instance = DnsMonitorWindow(top) # Assuming DnsMonitorWindow has an on_close or similar
+        # If DnsMonitorWindow has its own on_close, use it. Otherwise, just destroy and clear.
+        # For now, assuming a simple destroy and clear:
+        top.protocol("WM_DELETE_WINDOW", lambda t=top, di=dns_instance: (di.on_close() if hasattr(di, 'on_close') else t.destroy(), self._clear_window_reference(t, "dns_monitor_window_ref")))
+
 
     def configure_scan(self):
         logger.debug("Opening Scan Detection Configuration window.")
+        if self.scan_config_window_ref and self.scan_config_window_ref.winfo_exists():
+            self.scan_config_window_ref.lift()
+            return
         top = tk.Toplevel(self.master)
-        ScanConfigWindow(top)
+        self.scan_config_window_ref = top
+        ScanConfigWindow(top) # This window manages its own closure.
+        top.protocol("WM_DELETE_WINDOW", lambda t=top: (ScanConfigWindow(t).master.destroy(), self._clear_window_reference(t, "scan_config_window_ref")))
+
 
     def open_blocklist_manager(self):
         logger.debug("Opening Blocklist Manager window.")
+        if self.blocklist_manager_window_ref and self.blocklist_manager_window_ref.winfo_exists():
+            self.blocklist_manager_window_ref.lift()
+            return
         top = tk.Toplevel(self.master)
+        self.blocklist_manager_window_ref = top
         gui_blocklist_manager.BlocklistManagerWindow(top)
+        top.protocol("WM_DELETE_WINDOW", lambda t=top: (gui_blocklist_manager.BlocklistManagerWindow(t).master.destroy(), self._clear_window_reference(t, "blocklist_manager_window_ref")))
+
 
     def open_whitelist_manager(self):
         logger.debug("Opening Whitelist Manager window.")
+        if self.whitelist_manager_window_ref and self.whitelist_manager_window_ref.winfo_exists():
+            self.whitelist_manager_window_ref.lift()
+            return
         top = tk.Toplevel(self.master)
+        self.whitelist_manager_window_ref = top
         WhitelistManagerWindow(top)
+        top.protocol("WM_DELETE_WINDOW", lambda t=top: (WhitelistManagerWindow(t).master.destroy(), self._clear_window_reference(t, "whitelist_manager_window_ref")))
 
     # --- Flag Getters ---
     def get_flag_unsafe(self): return self.flag_unsafe_var.get()
@@ -239,15 +347,33 @@ class PacketStatsGUI:
                 return
 
             logger.info(f"Double-clicked IP: {source_ip}. Opening detail window.")
-            # Open the detail window
+            
+            # Check if a detail window for this IP is already open
+            for existing_detail_top, ip_in_detail in self.detail_window_refs:
+                if ip_in_detail == source_ip and existing_detail_top.winfo_exists():
+                    existing_detail_top.lift()
+                    return
+
             detail_top = tk.Toplevel(self.master)
-            DetailWindow(
+            # Store tuple of (window_instance, ip_string)
+            detail_ref_tuple = (detail_top, source_ip)
+            self.detail_window_refs.append(detail_ref_tuple)
+
+            detail_instance = DetailWindow(
                 detail_top,
                 source_ip,
                 self.get_flag_unsafe,    # Pass getter functions for live flag status
                 self.get_flag_malicious,
                 self.get_flag_scan
             )
+            # Handle closure of detail window to remove from list
+            detail_top.protocol("WM_DELETE_WINDOW", 
+                lambda t=detail_top, dt_instance=detail_instance, ref=detail_ref_tuple: (
+                    dt_instance.on_close() if hasattr(dt_instance, 'on_close') else t.destroy(), 
+                    self._clear_window_reference(t, ref_list_name="detail_window_refs")
+                )
+            )
+
         except IndexError:
             logger.error(f"Could not extract IP from row {focused_item_id}. Values: {item_values}", exc_info=True)
         except Exception as e:

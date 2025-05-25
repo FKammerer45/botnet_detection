@@ -14,7 +14,7 @@ class BlocklistManagerWindow:
         """Initialize the blocklist manager GUI using config."""
         self.master = master
         self.master.title("Blocklist Manager")
-        self.master.geometry("750x600")
+        self.master.geometry("750x700") # Increased height
         logger.info("Initializing BlocklistManagerWindow.")
 
         # Store checkbox variables locally: {url: tk.BooleanVar}
@@ -28,9 +28,9 @@ class BlocklistManagerWindow:
         explanation_label = ttk.Label(
             main_frame,
             text=(
-                "Manage IP and DNS blocklists defined in config.ini.\n"
+                "Manage IP and DNS blocklists.\n"
                 "- Check/Uncheck to activate/deactivate lists for the *next run* (requires saving).\n"
-                "- Add new URLs directly to config.ini ([Blocklists_IP] or [Blocklists_DNS]).\n"
+                "- Use the form below to add new blocklist URLs.\n"
                 "- Click 'Save & Apply' to update config.ini, re-download active lists, and reload data."
             ),
             wraplength=730, justify="left"
@@ -41,17 +41,32 @@ class BlocklistManagerWindow:
         paned_window = tk.PanedWindow(main_frame, orient=tk.HORIZONTAL, sashrelief=tk.RAISED)
         paned_window.pack(fill=tk.BOTH, expand=True, pady=5)
 
-        # --- IP Blocklist Section ---
-        ip_list_frame = ttk.LabelFrame(paned_window, text="IP Blocklists (from config.ini)")
-        paned_window.add(ip_list_frame) 
+        # Store frames for easy clearing and rebuilding
+        self.ip_list_frame_container = ttk.LabelFrame(paned_window, text="IP Blocklists")
+        paned_window.add(self.ip_list_frame_container)
       
-        self._setup_list_ui(ip_list_frame, config.ip_blocklist_urls, "ip")
-
-        # --- DNS Blocklist Section ---
-        dns_list_frame = ttk.LabelFrame(paned_window, text="DNS Blocklists (from config.ini)")
-        paned_window.add(dns_list_frame) 
+        self.dns_list_frame_container = ttk.LabelFrame(paned_window, text="DNS Blocklists")
+        paned_window.add(self.dns_list_frame_container)
     
-        self._setup_list_ui(dns_list_frame, config.dns_blocklist_urls, "dns")
+        self._refresh_all_blocklist_displays() # Initial population
+
+        # --- Add New Blocklist Section ---
+        add_frame = ttk.LabelFrame(main_frame, text="Add New Blocklist URL", padding="10")
+        add_frame.pack(fill=tk.X, pady=10)
+
+        ttk.Label(add_frame, text="URL:").grid(row=0, column=0, padx=5, pady=5, sticky=tk.W)
+        self.new_url_var = tk.StringVar()
+        new_url_entry = ttk.Entry(add_frame, textvariable=self.new_url_var, width=60)
+        new_url_entry.grid(row=0, column=1, padx=5, pady=5, sticky=tk.EW)
+
+        ttk.Label(add_frame, text="Type:").grid(row=1, column=0, padx=5, pady=5, sticky=tk.W)
+        self.new_url_type_var = tk.StringVar(value="IP") # Default to IP
+        url_type_combo = ttk.Combobox(add_frame, textvariable=self.new_url_type_var, values=["IP", "DNS"], state="readonly", width=5)
+        url_type_combo.grid(row=1, column=1, padx=5, pady=5, sticky=tk.W)
+        
+        add_button = ttk.Button(add_frame, text="Add Blocklist", command=self.add_new_blocklist)
+        add_button.grid(row=1, column=2, padx=10, pady=5, sticky=tk.E)
+        add_frame.columnconfigure(1, weight=1)
 
 
         # --- Buttons ---
@@ -66,10 +81,25 @@ class BlocklistManagerWindow:
 
         self.master.protocol("WM_DELETE_WINDOW", lambda: (logger.info("BlocklistManagerWindow closed."), self.master.destroy()))
 
+    def _clear_frame_widgets(self, frame):
+        for widget in frame.winfo_children():
+            widget.destroy()
+
+    def _refresh_all_blocklist_displays(self):
+        """Clears and rebuilds both IP and DNS blocklist UI sections."""
+        logger.debug("Refreshing blocklist displays.")
+        self.checkbox_vars.clear() # Clear old vars before repopulating
+
+        self._clear_frame_widgets(self.ip_list_frame_container)
+        self._setup_list_ui(self.ip_list_frame_container, config.ip_blocklist_urls, "ip")
+
+        self._clear_frame_widgets(self.dns_list_frame_container)
+        self._setup_list_ui(self.dns_list_frame_container, config.dns_blocklist_urls, "dns")
+
     def _setup_list_ui(self, parent_frame, url_set, list_type):
         """Creates the scrollable checkbox list for a given set of URLs."""
         # Frame for checkboxes with scrollbar
-        checkbox_area = tk.Frame(parent_frame)
+        checkbox_area = tk.Frame(parent_frame) # Use tk.Frame for direct child of LabelFrame
         checkbox_area.pack(fill="both", expand=True, padx=5, pady=5)
 
         canvas = tk.Canvas(checkbox_area)
@@ -84,32 +114,59 @@ class BlocklistManagerWindow:
         scrollbar.pack(side="right", fill="y")
 
         # Populate checkboxes
-        sorted_urls = sorted(list(url_set))
-        for url in sorted_urls:
-            # Checkboxes represent the *current* active state from the config object
-            # The user modifies these, and on save, the config object is updated.
-            is_active = url in (config.ip_blocklist_urls if list_type == "ip" else config.dns_blocklist_urls)
-            var = tk.BooleanVar(value=is_active)
-            self.checkbox_vars[url] = var # Store var keyed by URL
+        # Use the current config object's sets directly
+        current_urls_for_type = config.ip_blocklist_urls if list_type == "ip" else config.dns_blocklist_urls
+        sorted_urls = sorted(list(url_set)) # url_set is passed for initial population, but active state from current_urls_for_type
 
-            # Shorten URL for display if too long
+        for url in sorted_urls:
+            is_active = url in current_urls_for_type # Check against current config state
+            var = tk.BooleanVar(value=is_active)
+            self.checkbox_vars[url] = var 
+
             display_url = url
-            max_display_len = 60
+            max_display_len = 50 # Adjusted for potentially narrower panes
             if len(url) > max_display_len:
                 display_url = url[:max_display_len//2 - 2] + "..." + url[-max_display_len//2 + 1:]
 
-            cb = ttk.Checkbutton(scrollable_frame, text=display_url, variable=var) # Removed tooltip for now
+            cb = ttk.Checkbutton(scrollable_frame, text=display_url, variable=var)
             cb.pack(anchor="w", padx=2)
 
-            # Simple Tooltip implementation (Optional - can be complex)
-            # def enter(event, text=url): ...
-            # def leave(event): ...
-            # cb.bind("<Enter>", enter)
-            # cb.bind("<Leave>", leave)
+    def add_new_blocklist(self):
+        """Adds a new blocklist URL to the config object and refreshes the UI."""
+        new_url = self.new_url_var.get().strip()
+        url_type = self.new_url_type_var.get() # "IP" or "DNS"
+
+        if not new_url:
+            messagebox.showwarning("Input Error", "URL cannot be empty.", parent=self.master)
+            return
+        
+        # Basic URL validation (can be improved)
+        if not (new_url.startswith("http://") or new_url.startswith("https://")):
+            messagebox.showwarning("Input Error", "URL must start with http:// or https://", parent=self.master)
+            return
+
+        # Check for duplicates
+        if new_url in config.ip_blocklist_urls or new_url in config.dns_blocklist_urls:
+            messagebox.showwarning("Duplicate URL", "This URL already exists in the blocklists.", parent=self.master)
+            return
+
+        if url_type == "IP":
+            config.ip_blocklist_urls.add(new_url)
+            logger.info(f"Added new IP blocklist URL (in memory): {new_url}")
+        elif url_type == "DNS":
+            config.dns_blocklist_urls.add(new_url)
+            logger.info(f"Added new DNS blocklist URL (in memory): {new_url}")
+        else:
+            messagebox.showerror("Internal Error", "Invalid blocklist type selected.", parent=self.master)
+            return
+        
+        self._refresh_all_blocklist_displays() # Refresh UI to show the new URL
+        self.new_url_var.set("") # Clear input field
+        messagebox.showinfo("URL Added", f"'{new_url}' added as {url_type} blocklist.\nClick 'Save & Apply Changes' to make it permanent.", parent=self.master)
 
 
     def save_and_apply_changes(self):
-        """Update config object, save config.ini, re-download, re-load."""
+        """Update config object based on checkbox states, save config.ini, re-download, re-load."""
         logger.info("Applying blocklist changes...")
         new_ip_urls = set()
         new_dns_urls = set()
@@ -158,4 +215,3 @@ class BlocklistManagerWindow:
         except Exception as e:
             logger.error(f"Error applying blocklist changes: {e}", exc_info=True)
             messagebox.showerror("Error", f"Failed to apply blocklist changes:\n{e}", parent=self.master)
-

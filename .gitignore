@@ -27,3 +27,4 @@ localscripts/detectionscript/blocklists/
 Thumbs.db
 .idea/
 .vscode/
+localscripts/detectionscript/network_monitor.log

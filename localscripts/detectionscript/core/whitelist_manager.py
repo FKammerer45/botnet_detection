@@ -15,7 +15,90 @@ class Whitelist:
         self.filepath = filepath
         self.ip_networks = set() # Store ipaddress.ip_network objects
         self.domains = set()     # Store lowercase domain strings
-        self.load_whitelist()
+        self.load_whitelist() # Initial load
+
+    def add_entry(self, entry_str: str) -> tuple[bool, str]:
+        """
+        Adds a new entry (IP/network or domain) to the whitelist.
+        Returns a tuple (success: bool, message_or_type: str).
+        message_or_type is "ip", "domain" on success, or error message on failure.
+        """
+        entry_str = entry_str.strip()
+        if not entry_str:
+            return False, "Entry cannot be empty."
+
+        # Try parsing as IP/CIDR first
+        try:
+            network = ipaddress.ip_network(entry_str, strict=False)
+            if network not in self.ip_networks:
+                self.ip_networks.add(network)
+                logger.info(f"Added IP/Network to whitelist (in memory): {network}")
+                return True, "ip"
+            else:
+                return False, "IP/Network already in whitelist."
+        except ValueError:
+            # If not IP/CIDR, treat as potential domain
+            pass
+
+        # Treat as domain
+        domain = entry_str.lower()
+        if '.' in domain and not domain.startswith('.') and not domain.endswith('.'):
+            # Basic validation, can be improved
+            if domain not in self.domains:
+                self.domains.add(domain)
+                logger.info(f"Added domain to whitelist (in memory): {domain}")
+                return True, "domain"
+            else:
+                return False, "Domain already in whitelist."
+        else:
+            logger.warning(f"Invalid format for whitelist entry: '{entry_str}'")
+            return False, f"Invalid IP/Network or Domain format: '{entry_str}'"
+
+    def remove_ip_network(self, ip_network_str: str) -> bool:
+        """Removes an IP/network from the whitelist."""
+        ip_network_str = ip_network_str.strip()
+        try:
+            network_to_remove = ipaddress.ip_network(ip_network_str, strict=False)
+            if network_to_remove in self.ip_networks:
+                self.ip_networks.remove(network_to_remove)
+                logger.info(f"Removed IP/Network from whitelist (in memory): {network_to_remove}")
+                return True
+            return False # Not found
+        except ValueError:
+            logger.warning(f"Attempted to remove invalid IP/Network format: {ip_network_str}")
+            return False
+            
+    def remove_domain(self, domain_str: str) -> bool:
+        """Removes a domain from the whitelist."""
+        domain_str = domain_str.strip().lower()
+        if domain_str in self.domains:
+            self.domains.remove(domain_str)
+            logger.info(f"Removed domain from whitelist (in memory): {domain_str}")
+            return True
+        return False # Not found
+
+    def save_whitelist(self):
+        """Saves the current whitelist entries back to the file."""
+        logger.info(f"Saving whitelist to {self.filepath}")
+        try:
+            with open(self.filepath, 'w', encoding='utf-8') as f:
+                # Write IPs/Networks, sorted for consistency
+                sorted_ips = sorted([str(net) for net in self.ip_networks])
+                for ip_entry in sorted_ips:
+                    f.write(f"{ip_entry}\n")
+                
+                # Write Domains, sorted for consistency
+                sorted_domains = sorted(list(self.domains))
+                for domain_entry in sorted_domains:
+                    f.write(f"{domain_entry}\n")
+            logger.info(f"Whitelist saved successfully to {self.filepath}.")
+            return True
+        except IOError as e:
+            logger.error(f"Could not write whitelist file {self.filepath}: {e}", exc_info=True)
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error saving whitelist: {e}", exc_info=True)
+            return False
 
     def load_whitelist(self):
         """Loads whitelist entries from the specified file."""
@@ -107,5 +190,3 @@ def get_whitelist():
         logger.debug("Creating singleton Whitelist instance.")
         _whitelist_instance = Whitelist()
     return _whitelist_instance
-
-

@@ -112,7 +112,7 @@ def packet_callback(pkt):
             return # Stop processing this packet
 
         # If we reach here, the packet involves non-whitelisted IPs
-        logger.debug(f"Processing packet: {src_ip} -> {dst_ip}")
+        #logger.debug(f"Processing packet: {src_ip} -> {dst_ip}")
 
         # --- Protocol and Port Identification ---
         proto_name = "other"
@@ -527,164 +527,145 @@ def aggregate_minute_data():
 
 
 # --- Network Interface Handling ---
-def get_scapy_iface_dict():
-    """Attempts to get Scapy's internal interface dictionary."""
-    try:
-        # Access Scapy's interface data (structure might vary slightly)
-        return scapy_conf.ifaces.data
-    except AttributeError:
-        logger.warning("Could not access scapy_conf.ifaces.data for detailed interface info.")
-        return None
-
 def list_interfaces_cross_platform():
     """
-    Lists available network interfaces using Scapy and psutil (if available).
-    Tries to provide user-friendly names and associated IP addresses.
-
-    Returns:
-        tuple: (dict: {index: scapy_name}, dict: {scapy_name: friendly_name})
-               Returns empty dictionaries if no interfaces are found or an error occurs.
+    Lists available network interfaces using psutil and Scapy.
+    Prioritizes psutil for richer details and user-friendly names,
+    then maps to Scapy interfaces for actual sniffing.
+    Filters out interfaces with friendly_names starting with NPF for display.
     """
-    scapy_if_names = []
-    try:
-        scapy_if_names = get_if_list() # Get basic list of interface names Scapy sees
-        logger.debug(f"Scapy get_if_list() found: {scapy_if_names}")
-    except Exception as e:
-         logger.error(f"Error calling Scapy's get_if_list(): {e}", exc_info=True)
-         print(f"\nERROR: Could not retrieve interface list using Scapy: {e}")
-         return {}, {} # Return empty dicts on failure
-
-    if not scapy_if_names:
-         logger.warning("Scapy's get_if_list() returned empty.")
-         # Optionally, try psutil enumeration directly? For now, rely on Scapy finding something.
-
-    scapy_iface_details = get_scapy_iface_dict() # Get Scapy's detailed view if possible
-    numbered_interfaces = {} # Map display index to scapy_name
-    scapy_to_friendly = {} # Map scapy_name to friendly name for confirmation message
-    interface_details_list = [] # List of tuples for sorting and display
-
     logger.info("Attempting to list and identify network interfaces...")
+    pre_filter_interfaces = [] # Store all found interfaces before filtering for display
 
-    # Try using psutil for richer details (IP, UP status, potentially better names)
-    if psutil:
-        logger.debug("Using psutil for enhanced interface details.")
+    try:
+        scapy_raw_interfaces = get_if_list()
+        # Map Scapy interface name (stringified) to original Scapy interface object
+        scapy_interfaces_map = {str(name): name for name in scapy_raw_interfaces}
+    except Exception as e:
+        logger.error(f"Scapy get_if_list() failed: {e}. Interface listing might be incomplete.", exc_info=True)
+        scapy_interfaces_map = {}
+
+    scapy_mac_to_name_obj = {} # Maps MAC to original Scapy interface object
+    for name_str, name_obj in scapy_interfaces_map.items():
         try:
-            psutil_if_addrs = psutil.net_if_addrs()
-            psutil_if_stats = psutil.net_if_stats()
-
-            # Create mappings based on MAC address to link Scapy names to psutil details
-            scapy_macs = {} # {scapy_name: mac_address}
-            for name in scapy_if_names:
-                 try:
-                      hwaddr = get_if_hwaddr(name)
-                      if hwaddr and hwaddr != "00:00:00:00:00:00": # Ignore zero MACs
-                           scapy_macs[name] = hwaddr.lower()
-                 except (OSError, ValueError, TypeError, AttributeError) as e: # Catch potential errors in get_if_hwaddr
-                     logger.warning(f"Could not get MAC for Scapy interface '{name}': {e}")
-
-
-            psutil_mac_to_friendly = {} # {mac_address: friendly_name}
-            psutil_mac_to_ips = defaultdict(list) # {mac_address: [ip1, ip2]}
-            psutil_mac_to_status = {} # {mac_address: is_up (bool)}
-
-            for name, addrs in psutil_if_addrs.items():
-                mac = None
-                ips = []
-                is_up = psutil_if_stats.get(name, None)
-                status_str = f"UP" if is_up and is_up.isup else "DOWN" if is_up else "Status N/A"
-
-                for addr in addrs:
-                    if addr.family == psutil.AF_LINK and hasattr(addr, 'address'):
-                         mac = addr.address.lower().replace('-', ':')
-                    elif addr.family == socket.AF_INET and hasattr(addr, 'address'): # IPv4
-                         ips.append(addr.address)
-                    elif addr.family == socket.AF_INET6 and hasattr(addr, 'address'): # IPv6
-                        # Optionally filter link-local (fe80::) or include? For now, include.
-                        ips.append(addr.address)
-
-                if mac and mac != "00:00:00:00:00:00":
-                    psutil_mac_to_friendly[mac] = name # Use psutil name as friendly name
-                    psutil_mac_to_ips[mac].extend(ips)
-                    if is_up is not None: psutil_mac_to_status[mac] = status_str
-
-            # Match Scapy interfaces to psutil details via MAC
-            found_scapy_names = set()
-            for scapy_name, scapy_mac in scapy_macs.items():
-                 if scapy_mac in psutil_mac_to_friendly:
-                      friendly_name = psutil_mac_to_friendly[scapy_mac]
-                      ips_list = psutil_mac_to_ips.get(scapy_mac, ['N/A'])
-                      ip_str = ', '.join(ips_list) if ips_list else 'N/A'
-                      status = psutil_mac_to_status.get(scapy_mac, 'Status N/A')
-                      interface_details_list.append((scapy_name, friendly_name, ip_str, status))
-                      found_scapy_names.add(scapy_name)
-                 #else: Scapy interface MAC not found in psutil data
-
-            # Add Scapy interfaces not matched via MAC (use Scapy's potentially limited info)
-            for scapy_name in scapy_if_names:
-                 if scapy_name not in found_scapy_names:
-                      friendly_name = str(scapy_name) # Default to scapy name
-                      ip_str = 'N/A'
-                      status = 'Status N/A'
-                      # Try to get slightly better info from Scapy's internal dict if available
-                      if scapy_iface_details and scapy_name in scapy_iface_details:
-                          scapy_obj = scapy_iface_details[scapy_name]
-                          # Use description if available, else name attribute, else original name
-                          friendly_name = getattr(scapy_obj, 'description', getattr(scapy_obj, 'name', scapy_name))
-                          ip_str = getattr(scapy_obj, 'ip', 'N/A') # Scapy might only store one IP
-                          # Scapy often doesn't have reliable 'UP/DOWN' status here
-                      interface_details_list.append((scapy_name, friendly_name, ip_str, status))
-
+            hwaddr = get_if_hwaddr(name_obj)
+            if hwaddr and hwaddr != "00:00:00:00:00:00":
+                scapy_mac_to_name_obj[hwaddr.lower()] = name_obj
         except Exception as e:
-             logger.error(f"Error using psutil for interface details: {e}", exc_info=True)
+            logger.debug(f"Could not get MAC for Scapy interface '{name_str}': {e}")
 
-             interface_details_list = [] # Clear potentially partial list
+    # 1. Use psutil to get interface details
+    try:
+        psutil_if_addrs = psutil.net_if_addrs()
+        psutil_if_stats = psutil.net_if_stats()
+        
+        processed_scapy_names_objs = set() # Store Scapy objects that have been processed
 
+        for psutil_name_str, addrs in psutil_if_addrs.items():
+            ips = []
+            mac_address = None
+            for addr in addrs:
+                if addr.family == psutil.AF_LINK:
+                    mac_address = addr.address.lower().replace('-', ':')
+                elif addr.family == socket.AF_INET:
+                    ips.append(addr.address)
+                elif addr.family == socket.AF_INET6:
+                    ips.append(addr.address)
 
-    # Fallback or if psutil failed: Use only Scapy information
-    if not psutil or not interface_details_list:
-        logger.warning("Falling back to Scapy-only interface listing.")
-        interface_details_list = [] # Ensure list is clear if psutil failed midway
-        for name in scapy_if_names:
-             friendly_name = str(name) # Default to string representation of Scapy name
-             ip_str = 'N/A'
-             status = 'Status N/A'
-             # Try to get better name/IP from Scapy's internal dictionary
-             if scapy_iface_details and name in scapy_iface_details:
-                 scapy_obj = scapy_iface_details[name]
-                 friendly_name = getattr(scapy_obj, 'description', getattr(scapy_obj, 'name', name))
-                 ip_str = getattr(scapy_obj, 'ip', 'N/A')
-             interface_details_list.append((name, friendly_name, ip_str, status))
+            status_info = psutil_if_stats.get(psutil_name_str)
+            status = "UP" if status_info and status_info.isup else "DOWN" if status_info else "N/A"
+            
+            scapy_name_obj_to_use = None
+            
+            # Try matching by psutil name (string) with Scapy interface names (strings)
+            if psutil_name_str in scapy_interfaces_map:
+                scapy_name_obj_to_use = scapy_interfaces_map[psutil_name_str]
+            # Fallback to MAC address matching
+            elif mac_address and mac_address in scapy_mac_to_name_obj:
+                scapy_name_obj_to_use = scapy_mac_to_name_obj[mac_address]
+            
+            if scapy_name_obj_to_use:
+                pre_filter_interfaces.append({
+                    "friendly_name": psutil_name_str, # Use psutil name as friendly name
+                    "status": status,
+                    "ips": ips if ips else ["N/A"],
+                    "scapy_name": scapy_name_obj_to_use, # This is the Scapy object
+                    "mac": mac_address if mac_address else "N/A"
+                })
+                processed_scapy_names_objs.add(scapy_name_obj_to_use)
+            else:
+                # psutil interface without a Scapy match. Could be listed as non-sniffable if desired.
+                # For now, only list interfaces that have a Scapy counterpart for sniffing.
+                logger.debug(f"psutil interface '{psutil_name_str}' (MAC: {mac_address}) not matched to any Scapy interface. Skipping for selection.")
+
+        # 2. Add Scapy interfaces that psutil might have missed or not matched
+        for name_str, name_obj in scapy_interfaces_map.items():
+            if name_obj not in processed_scapy_names_objs:
+                ips_scapy = ["N/A"] 
+                try: # Scapy's direct IP info is less reliable
+                    ip_s = scapy_conf.ifaces.data.get(name_obj, {}).get('ip', 'N/A')
+                    if ip_s and ip_s != '0.0.0.0': ips_scapy = [ip_s]
+                except Exception: pass 
+
+                pre_filter_interfaces.append({
+                    "friendly_name": name_str, # Use Scapy's string name as friendly name
+                    "status": "N/A", 
+                    "ips": ips_scapy,
+                    "scapy_name": name_obj, # Scapy object
+                    "mac": get_if_hwaddr(name_obj) if get_if_hwaddr(name_obj) != "00:00:00:00:00:00" else "N/A"
+                })
+                
+    except Exception as e:
+        logger.error(f"Error gathering interface details: {e}", exc_info=True)
+        # Fallback to Scapy-only if psutil processing fails significantly
+        if not pre_filter_interfaces:
+            logger.warning("Falling back to Scapy-only interface listing due to error.")
+            for name_str, name_obj in scapy_interfaces_map.items():
+                ips_scapy = ["N/A"]
+                try:
+                    ip_s = scapy_conf.ifaces.data.get(name_obj, {}).get('ip', 'N/A')
+                    if ip_s and ip_s != '0.0.0.0': ips_scapy = [ip_s]
+                except: pass
+                pre_filter_interfaces.append({
+                    "friendly_name": name_str,
+                    "status": "N/A",
+                    "ips": ips_scapy,
+                    "scapy_name": name_obj,
+                    "mac": get_if_hwaddr(name_obj) if get_if_hwaddr(name_obj) != "00:00:00:00:00:00" else "N/A"
+                })
+
+    # Filter for display: remove interfaces where friendly_name starts with \Device\NPF_
+    # The underlying scapy_name might still be an NPF string if that's how Scapy sees a real adapter.
+    detailed_interfaces = [
+        iface for iface in pre_filter_interfaces
+        if not str(iface.get("friendly_name", "")).startswith("\\Device\\NPF_")
+    ]
+
+    if not detailed_interfaces:
+        logger.critical("No usable network interfaces were found (after NPF filtering for display).")
+        print("\nERROR: No network interfaces found. Cannot start capture.")
+        return []
+
+    # Sort interfaces: UP status first, then by friendly name
+    detailed_interfaces.sort(key=lambda x: (x['status'] != 'UP', str(x['friendly_name'])))
+
+    # Assign display index
+    for i, iface in enumerate(detailed_interfaces):
+        iface['idx'] = i + 1
 
     # --- Display Interfaces to User ---
     print("\nAvailable Network Interfaces:")
-    print("-" * 70)
-    # Sort primarily by status (UP preferred), then by friendly name
-    interface_details_list.sort(key=lambda x: (x[3] != 'UP', x[1]))
-
-    idx = 1
-    for scapy_name, friendly_name_raw, ip_addr, status in interface_details_list:
-        # Ensure names are decoded/represented correctly for printing
-        try:
-            display_friendly_name = repr(friendly_name_raw) if isinstance(friendly_name_raw, bytes) else str(friendly_name_raw)
-            # Scapy name might be complex, show its representation
-            display_scapy_name = repr(scapy_name) # repr handles bytes/complex objects safely
-        except Exception: # Catch potential errors during repr/str conversion
-            display_friendly_name = str(friendly_name_raw) # Fallback
-            display_scapy_name = str(scapy_name) # Fallback
-
-        print(f"{idx:>2}: {display_friendly_name:<35} Status: {status:<10} IP: {ip_addr:<20}") # Scapy Name: {display_scapy_name}
-        numbered_interfaces[idx] = scapy_name # Store the actual name needed by Scapy
-        scapy_to_friendly[scapy_name] = display_friendly_name # Store display name for confirmation
-        idx += 1
-
-    print("-" * 70)
-
-    if not numbered_interfaces:
-        logger.critical("No usable network interfaces were found by Scapy.")
-        print("\nERROR: No network interfaces found. Cannot start capture.")
-        return {}, {} # Return empty dictionaries
-
-    return numbered_interfaces, scapy_to_friendly
+    print("-" * 80)
+    print(f"{'Idx':<4} {'Name':<30} {'Status':<10} {'IP Addresses':<30}") # Adjusted Name width
+    print("-" * 80)
+    for iface in detailed_interfaces:
+        ips_str = ', '.join(iface['ips'])
+        # Ensure friendly_name is a string for printing and formatting
+        display_friendly_name = str(iface['friendly_name'])
+        print(f"{iface['idx']:<4} {display_friendly_name:<30} {iface['status']:<10} {ips_str:<30}")
+    print("-" * 80)
+    
+    return detailed_interfaces
 # --- End Network Interface Handling ---
 
 
@@ -745,71 +726,76 @@ def stop_capture():
 
 # --- Interface Selection Prompt ---
 def select_interfaces():
-     """
-     Lists available interfaces and prompts the user to select one or more.
+    """
+    Lists available interfaces and prompts the user to select one or more.
+    Uses the new list_interfaces_cross_platform() return format.
 
-     Returns:
-         list or None: A list of selected Scapy interface names if confirmed,
-                       or None if selection is cancelled or fails.
-     """
-     numbered_interfaces, scapy_to_friendly = list_interfaces_cross_platform()
+    Returns:
+        list or None: A list of selected Scapy interface names (original Scapy objects/names)
+                      if confirmed, or None if selection is cancelled or fails.
+    """
+    available_interfaces = list_interfaces_cross_platform()
 
-     # Check if any interfaces were found
-     if not numbered_interfaces:
-          print("Exiting: No interfaces available for selection.")
-          return None # Indicate failure/nothing to select
+    if not available_interfaces:
+        # list_interfaces_cross_platform already prints an error message
+        logger.warning("No interfaces returned by list_interfaces_cross_platform.")
+        return None # Indicate failure/nothing to select
 
-     while True:
-          selected_input = input("Enter the number(s) of the interface(s) to monitor (e.g., 1 or 1,3): ")
-          try:
-               # Parse the input string into a list of integers
-               selected_indices = [int(i.strip()) for i in selected_input.split(",") if i.strip()]
-               if not selected_indices: # Handle empty input after split/strip
-                    print("No selection made. Please enter interface number(s).")
-                    continue
+    # Create a mapping from display index to the interface dictionary
+    # This helps in retrieving the full interface details based on user input
+    idx_to_iface_map = {iface['idx']: iface for iface in available_interfaces}
 
-               selected_scapy_names = [] # Store the actual Scapy names for valid selections
-               invalid_indices = []    # Store any invalid numbers entered
+    while True:
+        selected_input = input("Enter the number(s) of the interface(s) to monitor (e.g., 1 or 1,3): ")
+        try:
+            # Parse the input string into a list of integers
+            selected_indices = [int(i.strip()) for i in selected_input.split(",") if i.strip()]
+            if not selected_indices: # Handle empty input after split/strip
+                print("No selection made. Please enter interface number(s).")
+                continue
 
-               # Validate selected indices against the displayed list
-               for idx in selected_indices:
-                    if idx in numbered_interfaces:
-                         # Add the corresponding Scapy interface name
-                         selected_scapy_names.append(numbered_interfaces[idx])
-                    else:
-                         invalid_indices.append(idx)
+            selected_scapy_names = []    # Store the actual Scapy names for valid selections
+            selected_friendly_names = [] # Store friendly names for confirmation
+            invalid_indices = []         # Store any invalid numbers entered
 
-               # Report errors if any invalid numbers were entered
-               if invalid_indices:
-                    print(f"Error: Invalid interface number(s) entered: {invalid_indices}")
-                    # Optionally show valid range: print(f"Please choose from 1 to {len(numbered_interfaces)}.")
-                    continue # Ask again
+            # Validate selected indices against the displayed list
+            for idx_val in selected_indices:
+                if idx_val in idx_to_iface_map:
+                    iface_details = idx_to_iface_map[idx_val]
+                    selected_scapy_names.append(iface_details['scapy_name'])
+                    selected_friendly_names.append(iface_details['friendly_name'])
+                else:
+                    invalid_indices.append(idx_val)
 
-               # Check if at least one valid interface was selected
-               if not selected_scapy_names:
-                    print("No valid interfaces selected from the input.")
-                    continue # Ask again
+            # Report errors if any invalid numbers were entered
+            if invalid_indices:
+                valid_range_str = f"1 to {len(available_interfaces)}" if available_interfaces else "N/A"
+                print(f"Error: Invalid interface number(s) entered: {invalid_indices}. Valid range: {valid_range_str}")
+                continue # Ask again
 
-               # --- Confirmation ---
-               # Get friendly names for confirmation message
-               selected_friendly_names = [scapy_to_friendly.get(name, str(name)) for name in selected_scapy_names]
-               print(f"\nYou have selected: {', '.join(selected_friendly_names)}")
+            # Check if at least one valid interface was selected
+            if not selected_scapy_names:
+                print("No valid interfaces selected from the input.")
+                continue # Ask again
 
-               # Ask for confirmation to start sniffing
-               confirm = input("Start sniffing on these interfaces? (y/n): ").lower().strip()
-               if confirm == 'y':
-                    return selected_scapy_names # Return the list of Scapy names
-               elif confirm == 'n':
-                    print("Selection cancelled by user.")
-                    return None # Indicate cancellation
-               else:
-                    print("Invalid confirmation input. Please enter 'y' or 'n'.")
-                    # Loop back to ask for confirmation again (or could go back to index selection)
+            # --- Confirmation ---
+            print(f"\nYou have selected: {', '.join(map(str,selected_friendly_names))}") # Ensure friendly names are strings
 
-          except ValueError:
-               print("Invalid input. Please enter only numbers, separated by commas if multiple.")
-          except Exception as e:
-               logger.error(f"Error during interface selection process: {e}", exc_info=True)
-               print(f"An unexpected error occurred during selection: {e}")
-               return None # Indicate failure
+            # Ask for confirmation to start sniffing
+            confirm = input("Start sniffing on these interfaces? (y/n): ").lower().strip()
+            if confirm == 'y':
+                return selected_scapy_names # Return the list of Scapy names/objects
+            elif confirm == 'n':
+                print("Selection cancelled by user.")
+                return None # Indicate cancellation
+            else:
+                print("Invalid confirmation input. Please enter 'y' or 'n'.")
+                # Loop back to ask for confirmation again
+
+        except ValueError:
+            print("Invalid input. Please enter only numbers, separated by commas if multiple.")
+        except Exception as e:
+            logger.error(f"Error during interface selection process: {e}", exc_info=True)
+            print(f"An unexpected error occurred during selection: {e}")
+            return None # Indicate failure
 # --- End Interface Selection Prompt ---

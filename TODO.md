@@ -1,8 +1,3 @@
-unterschiedliche attack strategien hinzufügen
-steuerung des ESP mit ? Webinterface,cmd line?
-
---- NEW SUGGESTIONS (Botnet Detection Tool) ---
-
 **I. Enhancements to Existing Detection Mechanisms:**
 
 *   **Advanced Scan Detection (`data_manager.py`):**

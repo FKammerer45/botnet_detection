@@ -80,12 +80,37 @@ botnet_detection/
     cd botnet_detection
     ```
 
+1.5. **Create and Activate Virtual Environment (Recommended)**:
+    It's highly recommended to use a virtual environment to manage project dependencies.
+
+    *   **Create the virtual environment** (e.g., named `venv`):
+        ```bash
+        python -m venv venv 
+        ```
+        (On some systems, you might need `python3` instead of `python`)
+
+    *   **Activate the virtual environment**:
+        *   Windows (Command Prompt):
+            ```bash
+            .\venv\Scripts\activate
+            ```
+        *   Windows (PowerShell):
+            ```bash
+            .\venv\Scripts\Activate.ps1
+            ```
+            (If you get an error about script execution policy, you may need to run: `Set-ExecutionPolicy Unrestricted -Scope Process` first, then try activating again.)
+        *   Linux / macOS (bash/zsh):
+            ```bash
+            source venv/bin/activate
+            ```
+    You should see the virtual environment's name (e.g., `(venv)`) in your terminal prompt once activated. All subsequent `pip install` commands will install packages into this environment.
+
 2.  **Install Dependencies**:
-    Navigate to the directory containing `requirements.txt` (likely the project root or `localscripts/detectionscript/`) and run:
+    Ensure your virtual environment is activated. Navigate to the directory containing `requirements.txt` (likely the project root, where you cloned the repository) and run:
     ```bash
     pip install -r requirements.txt
     ```
-    (If `requirements.txt` is in the root, run from there. If it's specific to `detectionscript`, `cd` there first or adjust path).
+    (If `requirements.txt` is in the root, run from there. If it's specific to `detectionscript`, `cd` there first or adjust path, but typically it's in the root).
 
 3.  **Navigate to the Script Directory**:
     ```bash

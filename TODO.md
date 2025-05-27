@@ -1,6 +1,6 @@
 **I. Enhancements to Existing Detection Mechanisms:**
 
-*   **Advanced Scan Detection (`data_manager.py`):**
+*   **Advanced Port Scan Detection (`data_manager.py`):**
     *   Improve stealth scan detection (e.g., sliding windows).
     *   Configurable internal vs. external scan flagging.
 *   **Smarter Threat Intelligence (`blocklist_integration.py`, `main.py`):**

@@ -7,12 +7,14 @@ from core.config_manager import config
 
 logger = logging.getLogger(__name__)
 
+from ui.gui_tooltip import Tooltip
+
 class ScanConfigWindow:
     def __init__(self, master):
         """Initialize the Scan Detection Configuration window."""
         self.master = master
         self.master.title("Scan Detection Config")
-        self.master.geometry("600x280") # Adjusted window size
+        self.master.geometry("600x400") # Adjusted window size
         logger.info("Initializing ScanConfigWindow.")
 
         main_frame = ttk.Frame(self.master, padding="10")
@@ -23,46 +25,63 @@ class ScanConfigWindow:
         desc_font = ("TkDefaultFont", 8, "italic")
 
         # --- Time Window ---
-        ttk.Label(main_frame, text="Time Window (s):").grid(row=0, column=0, sticky=tk.W, pady=5, padx=5)
+        time_window_label = ttk.Label(main_frame, text="Time Window (s):")
+        time_window_label.grid(row=0, column=0, sticky=tk.W, pady=5, padx=5)
         self.time_window_var = tk.StringVar(value=str(config.scan_time_window))
         time_window_entry = ttk.Entry(main_frame, textvariable=self.time_window_var, width=10)
         time_window_entry.grid(row=0, column=1, sticky=tk.W, pady=5)
-        ttk.Label(main_frame, text="Time (s) for analyzing SYN packets for scan patterns.", font=desc_font).grid(row=0, column=2, sticky=tk.W, pady=5, padx=5)
+        self.create_tooltip(time_window_label, "The time window in seconds to analyze packets for scan patterns.")
+        self.create_tooltip(time_window_entry, "The time window in seconds to analyze packets for scan patterns.")
 
         # --- Distinct Ports Threshold ---
-        ttk.Label(main_frame, text="Ports Threshold:").grid(row=1, column=0, sticky=tk.W, pady=5, padx=5)
+        ports_thresh_label = ttk.Label(main_frame, text="Ports Threshold:")
+        ports_thresh_label.grid(row=1, column=0, sticky=tk.W, pady=5, padx=5)
         self.ports_thresh_var = tk.StringVar(value=str(config.scan_distinct_ports_threshold))
         ports_thresh_entry = ttk.Entry(main_frame, textvariable=self.ports_thresh_var, width=10)
         ports_thresh_entry.grid(row=1, column=1, sticky=tk.W, pady=5)
-        ttk.Label(main_frame, text="SYNs to distinct ports on one host to flag port scan.", font=desc_font).grid(row=1, column=2, sticky=tk.W, pady=5, padx=5)
+        self.create_tooltip(ports_thresh_label, "Number of connections to distinct ports on a single host to trigger a port scan alert.")
+        self.create_tooltip(ports_thresh_entry, "Number of connections to distinct ports on a single host to trigger a port scan alert.")
 
         # --- Distinct Hosts Threshold ---
-        ttk.Label(main_frame, text="Hosts Threshold:").grid(row=2, column=0, sticky=tk.W, pady=5, padx=5)
+        hosts_thresh_label = ttk.Label(main_frame, text="Hosts Threshold:")
+        hosts_thresh_label.grid(row=2, column=0, sticky=tk.W, pady=5, padx=5)
         self.hosts_thresh_var = tk.StringVar(value=str(config.scan_distinct_hosts_threshold))
         hosts_thresh_entry = ttk.Entry(main_frame, textvariable=self.hosts_thresh_var, width=10)
         hosts_thresh_entry.grid(row=2, column=1, sticky=tk.W, pady=5)
-        ttk.Label(main_frame, text="SYNs to distinct hosts to flag host scan.", font=desc_font).grid(row=2, column=2, sticky=tk.W, pady=5, padx=5)
+        self.create_tooltip(hosts_thresh_label, "Number of connections to distinct hosts to trigger a host scan alert.")
+        self.create_tooltip(hosts_thresh_entry, "Number of connections to distinct hosts to trigger a host scan alert.")
 
         # --- Scan Check Interval ---
-        ttk.Label(main_frame, text="Scan Check Interval (s):").grid(row=3, column=0, sticky=tk.W, pady=5, padx=5)
+        scan_check_interval_label = ttk.Label(main_frame, text="Scan Check Interval (s):")
+        scan_check_interval_label.grid(row=3, column=0, sticky=tk.W, pady=5, padx=5)
         self.scan_check_interval_var = tk.StringVar(value=str(config.scan_check_interval))
         scan_check_interval_entry = ttk.Entry(main_frame, textvariable=self.scan_check_interval_var, width=10)
         scan_check_interval_entry.grid(row=3, column=1, sticky=tk.W, pady=5)
-        ttk.Label(main_frame, text="Interval (s) between per-IP scan checks (rate-limit).", font=desc_font).grid(row=3, column=2, sticky=tk.W, pady=5, padx=5)
+        self.create_tooltip(scan_check_interval_label, "The interval in seconds between per-IP scan checks to limit resource usage.")
+        self.create_tooltip(scan_check_interval_entry, "The interval in seconds between per-IP scan checks to limit resource usage.")
 
         # --- Enable/Disable Flags ---
         self.enable_stealth_scan_var = tk.BooleanVar(value=config.enable_stealth_scan_detection)
-        ttk.Checkbutton(main_frame, text="Enable Stealth Scan Detection", variable=self.enable_stealth_scan_var).grid(row=4, column=0, columnspan=2, sticky=tk.W, pady=5, padx=5)
+        stealth_scan_cb = ttk.Checkbutton(main_frame, text="Enable Stealth Scan Detection", variable=self.enable_stealth_scan_var)
+        stealth_scan_cb.grid(row=4, column=0, columnspan=2, sticky=tk.W, pady=5, padx=5)
+        self.create_tooltip(stealth_scan_cb, "Enable detection of stealthy scan techniques like FIN, NULL, and XMAS scans.")
         self.flag_internal_scans_var = tk.BooleanVar(value=config.flag_internal_scans)
-        ttk.Checkbutton(main_frame, text="Flag Internal Scans", variable=self.flag_internal_scans_var).grid(row=5, column=0, columnspan=2, sticky=tk.W, pady=5, padx=5)
+        internal_scans_cb = ttk.Checkbutton(main_frame, text="Flag Internal Scans", variable=self.flag_internal_scans_var)
+        internal_scans_cb.grid(row=5, column=0, columnspan=2, sticky=tk.W, pady=5, padx=5)
+        self.create_tooltip(internal_scans_cb, "Flag scans originating from and targeting internal networks.")
         self.flag_external_scans_var = tk.BooleanVar(value=config.flag_external_scans)
-        ttk.Checkbutton(main_frame, text="Flag External Scans", variable=self.flag_external_scans_var).grid(row=6, column=0, columnspan=2, sticky=tk.W, pady=5, padx=5)
+        external_scans_cb = ttk.Checkbutton(main_frame, text="Flag External Scans", variable=self.flag_external_scans_var)
+        external_scans_cb.grid(row=6, column=0, columnspan=2, sticky=tk.W, pady=5, padx=5)
+        self.create_tooltip(external_scans_cb, "Flag scans originating from or targeting external networks.")
 
         # --- Local Networks ---
-        ttk.Label(main_frame, text="Local Networks (CIDR):").grid(row=7, column=0, sticky=tk.W, pady=5, padx=5)
+        local_networks_label = ttk.Label(main_frame, text="Local Networks (CIDR):")
+        local_networks_label.grid(row=7, column=0, sticky=tk.W, pady=5, padx=5)
         self.local_networks_var = tk.StringVar(value=', '.join(config.local_networks))
         local_networks_entry = ttk.Entry(main_frame, textvariable=self.local_networks_var, width=40)
         local_networks_entry.grid(row=7, column=1, columnspan=2, sticky=tk.W, pady=5)
+        self.create_tooltip(local_networks_label, "A comma-separated list of local network ranges in CIDR notation.")
+        self.create_tooltip(local_networks_entry, "A comma-separated list of local network ranges in CIDR notation.")
 
 
         # --- Buttons ---
@@ -74,6 +93,11 @@ class ScanConfigWindow:
         cancel_button.pack(side=tk.LEFT, padx=5)
 
         self.master.protocol("WM_DELETE_WINDOW", lambda: (logger.info("ScanConfigWindow closed."), self.master.destroy()))
+
+    def create_tooltip(self, widget, text):
+        tooltip = Tooltip(widget, text)
+        widget.bind("<Enter>", lambda event: tooltip.showtip())
+        widget.bind("<Leave>", lambda event: tooltip.hidetip())
 
     def save_and_apply(self):
         """Validate inputs, update config object, save config file, and close."""

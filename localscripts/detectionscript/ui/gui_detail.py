@@ -68,6 +68,10 @@ class DetailWindow:
         self.notebook.add(self.anomaly_frame, text="Rate Anomaly")
         self._setup_anomaly_tab()
 
+        self.beaconing_frame = ttk.Frame(self.notebook)
+        self.notebook.add(self.beaconing_frame, text="Beaconing")
+        self._setup_beaconing_tab()
+
         self._update_scheduled = None
         self.update_gui() 
         self.master.protocol("WM_DELETE_WINDOW", self.on_close)
@@ -156,6 +160,16 @@ class DetailWindow:
             self.anomaly_tree.column(col, width=widths[col], anchor=tk.W)
         self.anomaly_tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
+    def _setup_beaconing_tab(self):
+        columns = ("destination", "interval", "tolerance", "occurrences")
+        self.beaconing_tree = ttk.Treeview(self.beaconing_frame, columns=columns, show="headings")
+        headers = {"destination": "Destination", "interval": "Interval (s)", "tolerance": "Tolerance (s)", "occurrences": "Occurrences"}
+        widths = {"destination": 150, "interval": 100, "tolerance": 100, "occurrences": 100}
+        for col in columns:
+            self.beaconing_tree.heading(col, text=headers[col], anchor=tk.W)
+            self.beaconing_tree.column(col, width=widths[col], anchor=tk.W)
+        self.beaconing_tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
     def update_gui(self):
         if not self.master.winfo_exists():
             logger.warning(f"Detail window for {self.source_ip} closed, stopping updates.")
@@ -180,6 +194,7 @@ class DetailWindow:
             self._update_dns_queries_tab(source_ip_exists, ip_entry_snapshot)
             self._update_scan_activity_tab(source_ip_exists, ip_entry_snapshot, flag_scan_enabled, scan_ports_detected, scan_hosts_detected)
             self._update_anomaly_tab(source_ip_exists, ip_entry_snapshot)
+            self._update_beaconing_tab(source_ip_exists, ip_entry_snapshot)
 
         except Exception as e:
             logger.error(f"Error during detail GUI update for {self.source_ip}: {e}", exc_info=True)
@@ -365,6 +380,40 @@ class DetailWindow:
         else:
             for row in anomaly_data_for_table:
                 self.anomaly_tree.insert("", tk.END, values=row)
+
+    def _update_beaconing_tab(self, source_ip_exists, ip_snapshot):
+        self.beaconing_tree.delete(*self.beaconing_tree.get_children())
+        if not source_ip_exists:
+            self.beaconing_tree.insert("", tk.END, values=("(Source IP data unavailable)", "", "", ""))
+            return
+
+        beaconing_data_for_table = []
+        if ip_snapshot and ip_snapshot.get("beaconing_detected"):
+            for dest_ip, dest_data in ip_snapshot.get("destinations", {}).items():
+                timestamps = sorted(list(dest_data["timestamps"]))
+                if len(timestamps) < config.beaconing_min_occurrences:
+                    continue
+                
+                intervals = [timestamps[i] - timestamps[i-1] for i in range(1, len(timestamps))]
+                if not intervals:
+                    continue
+
+                mean_interval = sum(intervals) / len(intervals)
+                
+                if abs(mean_interval - config.beaconing_interval_seconds) <= config.beaconing_tolerance_seconds:
+                    consistent_beacons = 0
+                    for interval in intervals:
+                        if abs(interval - config.beaconing_interval_seconds) <= config.beaconing_tolerance_seconds:
+                            consistent_beacons += 1
+                    
+                    if consistent_beacons + 1 >= config.beaconing_min_occurrences:
+                        beaconing_data_for_table.append((dest_ip, f"{mean_interval:.2f}", config.beaconing_tolerance_seconds, len(timestamps)))
+
+        if not beaconing_data_for_table:
+            self.beaconing_tree.insert("", tk.END, values=("No beaconing detected.", "", "", ""))
+        else:
+            for row in beaconing_data_for_table:
+                self.beaconing_tree.insert("", tk.END, values=row)
 
     def sort_data(self, data, column, ascending, columns, extra_data_indices=None):
         try:

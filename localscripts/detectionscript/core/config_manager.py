@@ -44,6 +44,11 @@ class AppConfig:
         self.rate_anomaly_sensitivity = 5.0
         self.rate_anomaly_min_packets = 50
         self.rate_anomaly_protocols_to_track = {"tcp", "udp", "icmp"}
+        # Beaconing Detection
+        self.enable_beaconing_detection = True
+        self.beaconing_interval_seconds = 60
+        self.beaconing_tolerance_seconds = 5
+        self.beaconing_min_occurrences = 3
         # Unsafe Rules
         self.unsafe_ports = {23, 445, 3389, 1080, 3128, 6667}
         self.unsafe_protocols = {"telnet", "ftp", "irc", "pop3", "imap"}
@@ -122,6 +127,12 @@ class AppConfig:
             self.rate_anomaly_min_packets = self.parser.getint('RateAnomaly', 'rate_anomaly_min_packets', fallback=self.rate_anomaly_min_packets)
             self.rate_anomaly_protocols_to_track = self._get_set_from_config('RateAnomaly', 'rate_anomaly_protocols_to_track', self.rate_anomaly_protocols_to_track)
 
+            # Beaconing Detection
+            self.enable_beaconing_detection = self.parser.getboolean('BeaconingDetection', 'enable_beaconing_detection', fallback=self.enable_beaconing_detection)
+            self.beaconing_interval_seconds = self.parser.getint('BeaconingDetection', 'beaconing_interval_seconds', fallback=self.beaconing_interval_seconds)
+            self.beaconing_tolerance_seconds = self.parser.getint('BeaconingDetection', 'beaconing_tolerance_seconds', fallback=self.beaconing_tolerance_seconds)
+            self.beaconing_min_occurrences = self.parser.getint('BeaconingDetection', 'beaconing_min_occurrences', fallback=self.beaconing_min_occurrences)
+
             # Unsafe Rules
             self.unsafe_ports = self._get_set_from_config('UnsafeRules', 'ports', self.unsafe_ports, item_type=int)
             self.unsafe_protocols = self._get_set_from_config('UnsafeRules', 'protocols', self.unsafe_protocols, item_type=str)
@@ -142,7 +153,7 @@ class AppConfig:
         logger.info(f"Attempting to save configuration to {self.filepath}")
         try:
             # Ensure sections exist before setting
-            sections = ['General', 'Thresholds', 'ScanDetection', 'RateAnomaly', 'UnsafeRules', 'Blocklists_IP', 'Blocklists_DNS', 'Display']
+            sections = ['General', 'Thresholds', 'ScanDetection', 'RateAnomaly', 'BeaconingDetection', 'UnsafeRules', 'Blocklists_IP', 'Blocklists_DNS', 'Display']
             for section in sections:
                 if not self.parser.has_section(section): self.parser.add_section(section)
 
@@ -168,6 +179,12 @@ class AppConfig:
             self.parser.set('RateAnomaly', 'rate_anomaly_sensitivity', str(self.rate_anomaly_sensitivity))
             self.parser.set('RateAnomaly', 'rate_anomaly_min_packets', str(self.rate_anomaly_min_packets))
             self.parser.set('RateAnomaly', 'rate_anomaly_protocols_to_track', ', '.join(sorted(list(self.rate_anomaly_protocols_to_track))))
+
+            # Beaconing Detection
+            self.parser.set('BeaconingDetection', 'enable_beaconing_detection', str(self.enable_beaconing_detection))
+            self.parser.set('BeaconingDetection', 'beaconing_interval_seconds', str(self.beaconing_interval_seconds))
+            self.parser.set('BeaconingDetection', 'beaconing_tolerance_seconds', str(self.beaconing_tolerance_seconds))
+            self.parser.set('BeaconingDetection', 'beaconing_min_occurrences', str(self.beaconing_min_occurrences))
     
             # Unsafe Rules
             self.parser.set('UnsafeRules', 'ports', ', '.join(map(str, sorted(list(self.unsafe_ports)))))

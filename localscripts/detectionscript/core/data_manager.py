@@ -40,6 +40,10 @@ class NetworkDataManager:
         self.rate_anomaly_sensitivity = config.rate_anomaly_sensitivity
         self.rate_anomaly_min_packets = config.rate_anomaly_min_packets
         self.rate_anomaly_protocols_to_track = config.rate_anomaly_protocols_to_track
+        self.enable_beaconing_detection = config.enable_beaconing_detection
+        self.beaconing_interval_seconds = config.beaconing_interval_seconds
+        self.beaconing_tolerance_seconds = config.beaconing_tolerance_seconds
+        self.beaconing_min_occurrences = config.beaconing_min_occurrences
         self.tracked_protocols_temporal = config.tracked_protocols_temporal
         self.MAX_MINUTES_TEMPORAL = MAX_MINUTES_TEMPORAL
 
@@ -75,6 +79,7 @@ class NetworkDataManager:
                      "detected_scan_ports": False, "detected_scan_hosts": False,
                      "rate_anomaly_detected": False,
                      "protocol_stats": defaultdict(lambda: {"mean": 0, "std": 0, "count": 0}),
+                     "beaconing_detected": False,
                      "is_malicious_source": False
                  }
             
@@ -201,6 +206,37 @@ class NetworkDataManager:
         ip_entry["last_scan_check_time"] = now
         return detected_port_scan_flag or detected_host_scan_flag
 
+    def _check_for_beaconing(self, ip, ip_entry, now):
+        if not self.enable_beaconing_detection:
+            return
+
+        ip_entry["beaconing_detected"] = False
+        for dest_ip, dest_data in ip_entry["destinations"].items():
+            if self._is_internal_ip(dest_ip) or self.whitelist.is_ip_whitelisted(dest_ip):
+                continue
+
+            timestamps = sorted(list(dest_data["timestamps"]))
+            if len(timestamps) < self.beaconing_min_occurrences:
+                continue
+
+            intervals = [timestamps[i] - timestamps[i-1] for i in range(1, len(timestamps))]
+            if not intervals:
+                continue
+
+            mean_interval = sum(intervals) / len(intervals)
+            
+            if abs(mean_interval - self.beaconing_interval_seconds) <= self.beaconing_tolerance_seconds:
+                # Check for consistency
+                consistent_beacons = 0
+                for interval in intervals:
+                    if abs(interval - self.beaconing_interval_seconds) <= self.beaconing_tolerance_seconds:
+                        consistent_beacons += 1
+                
+                if consistent_beacons + 1 >= self.beaconing_min_occurrences:
+                    ip_entry["beaconing_detected"] = True
+                    logger.warning(f"Beaconing DETECTED from {ip} to {dest_ip} at interval ~{mean_interval:.2f}s")
+                    return # Found beaconing, no need to check other destinations
+
     def _check_for_rate_anomalies(self, ip, ip_entry, now):
         if not self.enable_rate_anomaly_detection:
             return
@@ -263,6 +299,7 @@ class NetworkDataManager:
                      self._check_for_scans(ip, ip_entry, now)
                 
                 self._check_for_rate_anomalies(ip, ip_entry, now)
+                self._check_for_beaconing(ip, ip_entry, now)
 
                 source_ip_malicious_info = identify_malicious_ip(ip)
                 if source_ip_malicious_info:
@@ -307,6 +344,7 @@ class NetworkDataManager:
                     "detected_scan_ports": data_entry.get("detected_scan_ports", False),
                     "detected_scan_hosts": data_entry.get("detected_scan_hosts", False),
                     "rate_anomaly_detected": data_entry.get("rate_anomaly_detected", False),
+                    "beaconing_detected": data_entry.get("beaconing_detected", False),
                 }
                 while entry_copy["timestamps"] and entry_copy["timestamps"][0] < prune_timestamp:
                     entry_copy["timestamps"].popleft()
@@ -345,6 +383,7 @@ class NetworkDataManager:
                     "rate_anomaly_detected": original_entry.get("rate_anomaly_detected", False),
                     "protocol_stats": defaultdict(lambda: {"mean": 0, "std": 0, "count": 0},
                                              {k: v.copy() for k,v in original_entry.get("protocol_stats", {}).items()}),
+                    "beaconing_detected": original_entry.get("beaconing_detected", False),
                     "detected_scan_hosts": original_entry.get("detected_scan_hosts", False),
                     "is_malicious_source": original_entry.get("is_malicious_source", False)
                 }

@@ -20,6 +20,8 @@ from ui.gui_detail import DetailWindow
 # DnsMonitorWindow is removed
 from ui.gui_scan_config import ScanConfigWindow
 from ui.gui_whitelist_manager import WhitelistManagerWindow
+from ui.gui_beaconing_config import BeaconingConfigWindow
+from ui.gui_tooltip import Tooltip
 
 logger = logging.getLogger(__name__)
 whitelist = get_whitelist() # Get the singleton instance
@@ -49,6 +51,7 @@ class PacketStatsGUI:
         self.scan_config_window_ref = None
         self.blocklist_manager_window_ref = None
         self.whitelist_manager_window_ref = None
+        self.beaconing_config_window_ref = None
 
         try:
             logger.info("Downloading/loading blocklists (if needed)...")
@@ -190,6 +193,7 @@ class PacketStatsGUI:
         row2_frame.pack(fill=tk.X, pady=2)
         tk.Button(row2_frame, text="Conf Unsafe", command=self.configure_unsafe).pack(side=tk.LEFT, padx=3)
         tk.Button(row2_frame, text="Conf Scan", command=self.configure_scan).pack(side=tk.LEFT, padx=3)
+        tk.Button(row2_frame, text="Conf Beaconing", command=self.configure_beaconing).pack(side=tk.LEFT, padx=3)
         tk.Button(row2_frame, text="Blocklists", command=self.open_blocklist_manager).pack(side=tk.LEFT, padx=3)
         tk.Button(row2_frame, text="Whitelist", command=self.open_whitelist_manager).pack(side=tk.LEFT, padx=3)
         tk.Button(row2_frame, text="Temporal", command=self.open_temporal_analysis).pack(side=tk.LEFT, padx=3)
@@ -285,6 +289,16 @@ class PacketStatsGUI:
         self.whitelist_manager_window_ref = top
         wlm_instance = WhitelistManagerWindow(top)
         top.protocol("WM_DELETE_WINDOW", lambda t=top, wi=wlm_instance: (wi.master.destroy(), self._clear_window_reference(t, "whitelist_manager_window_ref")))
+
+    def configure_beaconing(self):
+        logger.debug("Opening Beaconing Detection Configuration window.")
+        if self.beaconing_config_window_ref and self.beaconing_config_window_ref.winfo_exists():
+            self.beaconing_config_window_ref.lift()
+            return
+        top = tk.Toplevel(self.master)
+        self.beaconing_config_window_ref = top
+        beaconing_instance = BeaconingConfigWindow(top)
+        top.protocol("WM_DELETE_WINDOW", lambda t=top, bi=beaconing_instance: (bi.master.destroy(), self._clear_window_reference(t, "beaconing_config_window_ref")))
 
     def get_flag_unsafe(self): return self.flag_unsafe_var.get()
     def get_flag_malicious(self): return self.flag_malicious_var.get()
@@ -430,29 +444,3 @@ class PacketStatsGUI:
         else:
             self.current_sort_column = column
             self.current_sort_ascending = True
-
-class Tooltip:
-    def __init__(self, widget, text):
-        self.widget = widget
-        self.text = text
-        self.tooltip_window = None
-
-    def showtip(self):
-        if self.tooltip_window or not self.text:
-            return
-        x, y, _, _ = self.widget.bbox("insert")
-        x += self.widget.winfo_rootx() + 25
-        y += self.widget.winfo_rooty() + 25
-        self.tooltip_window = tw = tk.Toplevel(self.widget)
-        tw.wm_overrideredirect(True)
-        tw.wm_geometry(f"+{x}+{y}")
-        label = tk.Label(tw, text=self.text, justify=tk.LEFT,
-                      background="#ffffe0", relief=tk.SOLID, borderwidth=1,
-                      font=("tahoma", "8", "normal"))
-        label.pack(ipadx=1)
-
-    def hidetip(self):
-        tw = self.tooltip_window
-        self.tooltip_window = None
-        if tw:
-            tw.destroy()

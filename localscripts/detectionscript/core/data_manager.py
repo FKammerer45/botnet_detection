@@ -88,6 +88,14 @@ class NetworkDataManager:
             ip_entry["timestamps"].append(pkt_time)
             ip_entry["last_seen"] = pkt_time
 
+            one_second_ago = pkt_time - 1.0
+            while ip_entry["timestamps"] and ip_entry["timestamps"][0] < one_second_ago:
+                ip_entry["timestamps"].popleft()
+            
+            packets_per_second = len(ip_entry["timestamps"])
+            if packets_per_second > ip_entry["max_per_sec"]:
+                ip_entry["max_per_sec"] = packets_per_second
+
             dest_entry = ip_entry["destinations"][dst_ip]
             dest_entry["total"] += 1
             dest_entry["timestamps"].append(pkt_time)

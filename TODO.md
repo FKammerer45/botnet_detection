@@ -1,16 +1,9 @@
 **I. Enhancements to Existing Detection Mechanisms:**
 
-*   **Advanced Port Scan Detection (`data_manager.py`):**
-    *   Improve stealth scan detection (e.g., sliding windows).
-    *   Configurable internal vs. external scan flagging.
-*   **Refined Anomaly Detection (Packet Rates in `data_manager.py`):**
-    *   Detect protocol-specific rate anomalies (e.g., unusual spike in DNS or ICMP traffic from one host).
 
 **II. New Detection Features:**
 
-*   **Periodic Beaconing Detection (`data_manager.py`):**
-    *   Identify regular, timed C&C connections by analyzing connection intervals to external hosts.
-    *   Configurable: interval parameters, tolerance, min occurrences.
+
 *   **JA3/JA3S TLS Fingerprinting (`capture.py`, `data_manager.py`, `blocklist_integration.py`):**
     *   Compute JA3/JA3S hashes for TLS handshakes.
         *   **What:** JA3 fingerprints how a client initiates a TLS (HTTPS) session by hashing fields from the Client Hello. JA3S fingerprints the server's response (Server Hello).

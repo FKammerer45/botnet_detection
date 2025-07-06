@@ -167,13 +167,21 @@ class PacketStatsGUI:
         self.threshold_entry.pack(side=tk.LEFT, padx=(0, 10))
         self.threshold_var.trace_add("write", self.update_threshold_config)
         self.flag_unsafe_var = tk.BooleanVar(value=True)
-        tk.Checkbutton(row1_frame, text="Flag Unsafe", variable=self.flag_unsafe_var).pack(side=tk.LEFT, padx=2)
+        cb_unsafe = tk.Checkbutton(row1_frame, text="Flag Insecure Protocols", variable=self.flag_unsafe_var)
+        cb_unsafe.pack(side=tk.LEFT, padx=2)
+        self.create_tooltip(cb_unsafe, "Flags traffic on unencrypted or legacy ports/protocols (e.g., Telnet, FTP).")
         self.flag_malicious_var = tk.BooleanVar(value=True)
-        tk.Checkbutton(row1_frame, text="Flag Malicious IP", variable=self.flag_malicious_var).pack(side=tk.LEFT, padx=2)
+        cb_malicious = tk.Checkbutton(row1_frame, text="Flag Malicious IP", variable=self.flag_malicious_var)
+        cb_malicious.pack(side=tk.LEFT, padx=2)
+        self.create_tooltip(cb_malicious, "Flags traffic to/from IPs found on configured blocklists.")
         self.flag_dns_var = tk.BooleanVar(value=True)
-        tk.Checkbutton(row1_frame, text="Flag Bad DNS", variable=self.flag_dns_var).pack(side=tk.LEFT, padx=2)
+        cb_dns = tk.Checkbutton(row1_frame, text="Flag Malicious DNS", variable=self.flag_dns_var)
+        cb_dns.pack(side=tk.LEFT, padx=2)
+        self.create_tooltip(cb_dns, "Flags DNS queries for domains found on configured blocklists.")
         self.flag_scan_var = tk.BooleanVar(value=True)
-        tk.Checkbutton(row1_frame, text="Flag Scan", variable=self.flag_scan_var).pack(side=tk.LEFT, padx=2)
+        cb_scan = tk.Checkbutton(row1_frame, text="Flag Port Scan", variable=self.flag_scan_var)
+        cb_scan.pack(side=tk.LEFT, padx=2)
+        self.create_tooltip(cb_scan, "Flags hosts that appear to be performing port or host scans.")
         row2_frame = tk.Frame(config_frame)
         row2_frame.pack(fill=tk.X, pady=2)
         tk.Button(row2_frame, text="Conf Unsafe", command=self.configure_unsafe).pack(side=tk.LEFT, padx=3)
@@ -200,6 +208,11 @@ class PacketStatsGUI:
         self.tree.tag_configure(TAG_ALERT, background=COLOR_ALERT_BG)
         self.tree.bind("<Double-1>", self.on_double_click)
         self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+    def create_tooltip(self, widget, text):
+        tooltip = Tooltip(widget, text)
+        widget.bind("<Enter>", lambda event: tooltip.showtip())
+        widget.bind("<Leave>", lambda event: tooltip.hidetip())
 
     def update_threshold_config(self, *args):
         try:
@@ -412,3 +425,29 @@ class PacketStatsGUI:
         else:
             self.current_sort_column = column
             self.current_sort_ascending = True
+
+class Tooltip:
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tooltip_window = None
+
+    def showtip(self):
+        if self.tooltip_window or not self.text:
+            return
+        x, y, _, _ = self.widget.bbox("insert")
+        x += self.widget.winfo_rootx() + 25
+        y += self.widget.winfo_rooty() + 25
+        self.tooltip_window = tw = tk.Toplevel(self.widget)
+        tw.wm_overrideredirect(True)
+        tw.wm_geometry(f"+{x}+{y}")
+        label = tk.Label(tw, text=self.text, justify=tk.LEFT,
+                      background="#ffffe0", relief=tk.SOLID, borderwidth=1,
+                      font=("tahoma", "8", "normal"))
+        label.pack(ipadx=1)
+
+    def hidetip(self):
+        tw = self.tooltip_window
+        self.tooltip_window = None
+        if tw:
+            tw.destroy()

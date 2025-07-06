@@ -258,10 +258,10 @@ class DetailWindow:
                 self.threat_tree.insert("", tk.END, values=("No recorded malicious hits", "", "", ""))
                 return
             for mal_ip, hit_info in malicious_hits.items():
-                bl_names = ', '.join(sorted(list(hit_info.get("blocklists", set()))))
+                bl_descriptions = ', '.join(sorted(list(hit_info.get("blocklists", {}).values())))
                 direction = hit_info.get("direction", "N/A")
                 count = hit_info.get("count", 0)
-                threat_data_for_table.append((mal_ip, bl_names, direction, count))
+                threat_data_for_table.append((mal_ip, bl_descriptions, direction, count))
         
         if not threat_data_for_table: # Should be caught by 'if not malicious_hits' earlier
             self.threat_tree.insert("", tk.END, values=("No malicious hits to display", "", "", ""))

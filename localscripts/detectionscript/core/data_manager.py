@@ -96,8 +96,11 @@ class NetworkDataManager:
                             try:
                                 qname_bytes = dns_layer.qd[i].qname
                                 qname = qname_bytes.decode('utf-8', errors='ignore').rstrip('.').lower()
-                                if is_domain_malicious(qname): # Using imported function
-                                    ip_entry["suspicious_dns"].append({"timestamp": pkt_time, "qname": qname, "reason": "Blocklist Hit"})
+                                malicious_domain_info = is_domain_malicious(qname)
+                                if malicious_domain_info:
+                                    for list_url, description in malicious_domain_info.items():
+                                        reason = f"Blocklist Hit: {description}" if description else "Blocklist Hit"
+                                        ip_entry["suspicious_dns"].append({"timestamp": pkt_time, "qname": qname, "reason": reason})
                             except Exception as dns_ex:
                                 logger.error(f"Error processing DNS query: {dns_ex}", exc_info=False)
             
@@ -188,24 +191,24 @@ class NetworkDataManager:
                 if (now - ip_entry.get("last_scan_check_time", 0)) > self.scan_check_interval:
                      self._check_for_scans(ip, ip_entry, now)
 
-                source_ip_malicious_lists = identify_malicious_ip(ip)
-                if source_ip_malicious_lists:
-                     ip_entry["is_malicious_source"] = True
-                     mal_hits = ip_entry.setdefault("malicious_hits", {})
-                     hit_entry = mal_hits.setdefault(ip, {"blocklists": set(), "count": 0, "direction": "source"})
-                     hit_entry["blocklists"].update(source_ip_malicious_lists)
-                     hit_entry["count"] = ip_entry.get("total", 1)
-                     ip_entry["contacted_malicious_ip"] = True
+                source_ip_malicious_info = identify_malicious_ip(ip)
+                if source_ip_malicious_info:
+                    ip_entry["is_malicious_source"] = True
+                    mal_hits = ip_entry.setdefault("malicious_hits", {})
+                    hit_entry = mal_hits.setdefault(ip, {"blocklists": {}, "count": 0, "direction": "source"})
+                    hit_entry["blocklists"].update(source_ip_malicious_info)
+                    hit_entry["count"] = ip_entry.get("total", 1)
+                    ip_entry["contacted_malicious_ip"] = True
 
                 for dst_ip in list(ip_entry.get("destinations", {}).keys()):
-                     dest_ip_malicious_lists = identify_malicious_ip(dst_ip)
-                     if dest_ip_malicious_lists:
-                         ip_entry["contacted_malicious_ip"] = True
-                         mal_hits = ip_entry.setdefault("malicious_hits", {})
-                         hit_entry = mal_hits.setdefault(dst_ip, {"blocklists": set(), "count": 0, "direction": "outbound"})
-                         hit_entry["blocklists"].update(dest_ip_malicious_lists)
-                         if dst_ip in ip_entry.get("destinations", {}):
-                             hit_entry["count"] = ip_entry["destinations"][dst_ip].get("total", hit_entry["count"])
+                    dest_ip_malicious_info = identify_malicious_ip(dst_ip)
+                    if dest_ip_malicious_info:
+                        ip_entry["contacted_malicious_ip"] = True
+                        mal_hits = ip_entry.setdefault("malicious_hits", {})
+                        hit_entry = mal_hits.setdefault(dst_ip, {"blocklists": {}, "count": 0, "direction": "outbound"})
+                        hit_entry["blocklists"].update(dest_ip_malicious_info)
+                        if dst_ip in ip_entry.get("destinations", {}):
+                            hit_entry["count"] = ip_entry["destinations"][dst_ip].get("total", hit_entry["count"])
             
             if ips_to_prune:
                 for ip_to_prune in ips_to_prune:

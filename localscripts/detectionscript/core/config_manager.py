@@ -41,14 +41,15 @@ class AppConfig:
 
         # Blocklists (URLs only, description is ignored here but useful in INI)
         self.ip_blocklist_urls = {
-            "https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/dshield.netset",
-            "https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/spamhaus_drop.netset",
-            "https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/spamhaus_edrop.netset",
-            "https://feodotracker.abuse.ch/downloads/ipblocklist_aggressive.txt",
+            "https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/dshield.netset": "DShield All",
+            "https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/spamhaus_drop.netset": "Spamhaus DROP",
+            "https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/spamhaus_edrop.netset": "Spamhaus eDROP",
+            "https://feodotracker.abuse.ch/downloads/ipblocklist_aggressive.txt": "Feodo Tracker Aggressive",
         }
         self.dns_blocklist_urls = {
-             "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts",
+             "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts": "StevenBlack Hosts",
         }
+        self.blocklist_update_interval_hours = 24 # New setting for auto-updates
 
         # Display
         self.tracked_protocols_temporal = {"tcp", "udp", "icmp", "other"}
@@ -107,10 +108,9 @@ class AppConfig:
             self.unsafe_protocols = self._get_set_from_config('UnsafeRules', 'protocols', self.unsafe_protocols, item_type=str)
 
             # Blocklists
-            ip_blocklist_dict = self._get_dict_from_config_section('Blocklists_IP')
-            self.ip_blocklist_urls = set(ip_blocklist_dict.keys())
-            dns_blocklist_dict = self._get_dict_from_config_section('Blocklists_DNS')
-            self.dns_blocklist_urls = set(dns_blocklist_dict.keys())
+            self.ip_blocklist_urls = self._get_dict_from_config_section('Blocklists_IP')
+            self.dns_blocklist_urls = self._get_dict_from_config_section('Blocklists_DNS')
+            self.blocklist_update_interval_hours = self.parser.getint('Blocklists', 'update_interval_hours', fallback=self.blocklist_update_interval_hours)
 
             # Display
             self.tracked_protocols_temporal = self._get_set_from_config('Display', 'tracked_protocols_temporal', self.tracked_protocols_temporal, item_type=str)
@@ -147,10 +147,12 @@ class AppConfig:
             self.parser.set('Display', 'tracked_protocols_temporal', ', '.join(sorted(list(self.tracked_protocols_temporal))))
 
             # Blocklists - Overwrite sections completely
+            if not self.parser.has_section('Blocklists'): self.parser.add_section('Blocklists')
+            self.parser.set('Blocklists', 'update_interval_hours', str(self.blocklist_update_interval_hours))
             self.parser.remove_section('Blocklists_IP'); self.parser.add_section('Blocklists_IP')
-            for url in sorted(list(self.ip_blocklist_urls)): self.parser.set('Blocklists_IP', url, "") # Save URL as key
+            for url, desc in self.ip_blocklist_urls.items(): self.parser.set('Blocklists_IP', url, desc)
             self.parser.remove_section('Blocklists_DNS'); self.parser.add_section('Blocklists_DNS')
-            for url in sorted(list(self.dns_blocklist_urls)): self.parser.set('Blocklists_DNS', url, "") # Save URL as key
+            for url, desc in self.dns_blocklist_urls.items(): self.parser.set('Blocklists_DNS', url, desc)
 
             with open(self.filepath, 'w') as configfile:
                 self.parser.write(configfile)

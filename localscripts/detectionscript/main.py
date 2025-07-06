@@ -41,6 +41,7 @@ try:
     from core.data_manager import NetworkDataManager # Import NetworkDataManager
     # Import the specific functions/event needed from capture
     from core.capture import capture_packets, select_interfaces, stop_capture, capture_stop_event
+    from core.blocklist_integration import start_periodic_blocklist_updates, stop_periodic_blocklist_updates
     from ui.gui_main import PacketStatsGUI
 except ImportError as e:
     # Log AFTER basicConfig is set up
@@ -88,6 +89,11 @@ def main():
     capture_thread = threading.Thread(target=capture_packets, args=(selected_interfaces, data_manager), daemon=False)
     capture_thread.start()
 
+    # --- Start Periodic Blocklist Update Thread ---
+    logger.info("Starting periodic blocklist update thread...")
+    blocklist_update_thread = start_periodic_blocklist_updates()
+
+
     # --- Initialize and Run GUI ---
     logger.info("Initializing GUI...")
     root = tk.Tk()
@@ -107,6 +113,9 @@ def main():
 
         # 1. Signal the capture thread to stop
         stop_capture()
+        if blocklist_update_thread:
+            stop_periodic_blocklist_updates()
+
 
         # 2. Wait for the capture thread to finish
         logger.info("Waiting for capture thread to join...")
@@ -115,6 +124,15 @@ def main():
             logger.warning("Capture thread did not join within timeout!")
         else:
             logger.info("Capture thread joined successfully.")
+        
+        if blocklist_update_thread and blocklist_update_thread.is_alive():
+            logger.info("Waiting for blocklist update thread to join...")
+            blocklist_update_thread.join(timeout=5.0)
+            if blocklist_update_thread.is_alive():
+                logger.warning("Blocklist update thread did not join within timeout!")
+            else:
+                logger.info("Blocklist update thread joined successfully.")
+
 
         # 3. Explicitly shut down logging (optional, do last)
         logger.info("Shutting down logging system.")

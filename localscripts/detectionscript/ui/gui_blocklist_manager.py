@@ -58,15 +58,29 @@ class BlocklistManagerWindow:
         self.new_url_var = tk.StringVar()
         new_url_entry = ttk.Entry(add_frame, textvariable=self.new_url_var, width=60)
         new_url_entry.grid(row=0, column=1, padx=5, pady=5, sticky=tk.EW)
+        
+        ttk.Label(add_frame, text="Description:").grid(row=1, column=0, padx=5, pady=5, sticky=tk.W)
+        self.new_desc_var = tk.StringVar()
+        new_desc_entry = ttk.Entry(add_frame, textvariable=self.new_desc_var, width=60)
+        new_desc_entry.grid(row=1, column=1, padx=5, pady=5, sticky=tk.EW)
 
-        ttk.Label(add_frame, text="Type:").grid(row=1, column=0, padx=5, pady=5, sticky=tk.W)
+        ttk.Label(add_frame, text="Type:").grid(row=2, column=0, padx=5, pady=5, sticky=tk.W)
         self.new_url_type_var = tk.StringVar(value="IP") # Default to IP
         url_type_combo = ttk.Combobox(add_frame, textvariable=self.new_url_type_var, values=["IP", "DNS"], state="readonly", width=5)
-        url_type_combo.grid(row=1, column=1, padx=5, pady=5, sticky=tk.W)
+        url_type_combo.grid(row=2, column=1, padx=5, pady=5, sticky=tk.W)
         
         add_button = ttk.Button(add_frame, text="Add Blocklist", command=self.add_new_blocklist)
-        add_button.grid(row=1, column=2, padx=10, pady=5, sticky=tk.E)
+        add_button.grid(row=2, column=2, padx=10, pady=5, sticky=tk.E)
         add_frame.columnconfigure(1, weight=1)
+
+        # --- Update Interval Section ---
+        update_frame = ttk.LabelFrame(main_frame, text="Automatic Updates", padding="10")
+        update_frame.pack(fill=tk.X, pady=10)
+        ttk.Label(update_frame, text="Update Interval (hours):").grid(row=0, column=0, padx=5, pady=5, sticky=tk.W)
+        self.update_interval_var = tk.StringVar(value=str(config.blocklist_update_interval_hours))
+        update_interval_entry = ttk.Entry(update_frame, textvariable=self.update_interval_var, width=8)
+        update_interval_entry.grid(row=0, column=1, padx=5, pady=5, sticky=tk.W)
+        ttk.Label(update_frame, text="(0 to disable)").grid(row=0, column=2, padx=5, pady=5, sticky=tk.W)
 
 
         # --- Buttons ---
@@ -114,26 +128,29 @@ class BlocklistManagerWindow:
         scrollbar.pack(side="right", fill="y")
 
         # Populate checkboxes
-        # Use the current config object's sets directly
+        # Use the current config object's dicts directly
         current_urls_for_type = config.ip_blocklist_urls if list_type == "ip" else config.dns_blocklist_urls
-        sorted_urls = sorted(list(url_set)) # url_set is passed for initial population, but active state from current_urls_for_type
+        sorted_urls = sorted(list(url_set.keys())) # url_set is passed for initial population, but active state from current_urls_for_type
 
         for url in sorted_urls:
             is_active = url in current_urls_for_type # Check against current config state
             var = tk.BooleanVar(value=is_active)
-            self.checkbox_vars[url] = var 
-
-            display_url = url
+            self.checkbox_vars[url] = var
+            
+            desc = url_set.get(url, "")
+            display_text = f"{url} ({desc})" if desc else url
+            
             max_display_len = 50 # Adjusted for potentially narrower panes
-            if len(url) > max_display_len:
-                display_url = url[:max_display_len//2 - 2] + "..." + url[-max_display_len//2 + 1:]
+            if len(display_text) > max_display_len:
+                display_text = display_text[:max_display_len//2 - 2] + "..." + display_text[-max_display_len//2 + 1:]
 
-            cb = ttk.Checkbutton(scrollable_frame, text=display_url, variable=var)
+            cb = ttk.Checkbutton(scrollable_frame, text=display_text, variable=var)
             cb.pack(anchor="w", padx=2)
 
     def add_new_blocklist(self):
         """Adds a new blocklist URL to the config object and refreshes the UI."""
         new_url = self.new_url_var.get().strip()
+        new_desc = self.new_desc_var.get().strip()
         url_type = self.new_url_type_var.get() # "IP" or "DNS"
 
         if not new_url:
@@ -151,10 +168,10 @@ class BlocklistManagerWindow:
             return
 
         if url_type == "IP":
-            config.ip_blocklist_urls.add(new_url)
+            config.ip_blocklist_urls[new_url] = new_desc
             logger.info(f"Added new IP blocklist URL (in memory): {new_url}")
         elif url_type == "DNS":
-            config.dns_blocklist_urls.add(new_url)
+            config.dns_blocklist_urls[new_url] = new_desc
             logger.info(f"Added new DNS blocklist URL (in memory): {new_url}")
         else:
             messagebox.showerror("Internal Error", "Invalid blocklist type selected.", parent=self.master)
@@ -162,6 +179,7 @@ class BlocklistManagerWindow:
         
         self._refresh_all_blocklist_displays() # Refresh UI to show the new URL
         self.new_url_var.set("") # Clear input field
+        self.new_desc_var.set("") # Clear input field
         messagebox.showinfo("URL Added", f"'{new_url}' added as {url_type} blocklist.\nClick 'Save & Apply Changes' to make it permanent.", parent=self.master)
 
 
@@ -195,10 +213,23 @@ class BlocklistManagerWindow:
              # If inactive, it's simply not added to the new sets
 
         # Update the config object
-        config.ip_blocklist_urls = new_ip_urls
-        config.dns_blocklist_urls = new_dns_urls
+        config.ip_blocklist_urls = {url: config.ip_blocklist_urls.get(url, "") for url in new_ip_urls}
+        config.dns_blocklist_urls = {url: config.dns_blocklist_urls.get(url, "") for url in new_dns_urls}
+        try:
+            interval_hours = int(self.update_interval_var.get())
+            if interval_hours >= 0:
+                config.blocklist_update_interval_hours = interval_hours
+            else:
+                messagebox.showwarning("Invalid Interval", "Update interval must be a non-negative number.", parent=self.master)
+                return
+        except ValueError:
+            messagebox.showwarning("Invalid Interval", "Update interval must be a valid number.", parent=self.master)
+            return
+
         logger.debug(f"Updated config IP URLs: {config.ip_blocklist_urls}")
         logger.debug(f"Updated config DNS URLs: {config.dns_blocklist_urls}")
+        logger.debug(f"Updated blocklist update interval: {config.blocklist_update_interval_hours} hours")
+
 
         # Save the updated config to config.ini
         config.save_config()

@@ -5,6 +5,8 @@ import csv
 import ipaddress
 import logging
 import re
+import time
+import threading
 
 # Import config and whitelist function
 from core.config_manager import config
@@ -16,6 +18,7 @@ logger = logging.getLogger(__name__)
 whitelist = get_whitelist() # Get the singleton instance
 
 # Data storage (populated by load_blocklists)
+blocklist_info = {}
 malicious_networks = []
 malicious_domains = set()
 
@@ -40,10 +43,21 @@ def download_blocklists(force_download=False):
     if not os.path.exists(DOWNLOAD_DIR):
         try: os.mkdir(DOWNLOAD_DIR); logger.info(f"Created dir: {DOWNLOAD_DIR}")
         except OSError as e: logger.error(f"Failed create dir {DOWNLOAD_DIR}: {e}", exc_info=True); return
-    all_urls = config.ip_blocklist_urls.union(config.dns_blocklist_urls)
+    
+    global blocklist_info
+    blocklist_info.clear()
+    ip_blocklist_dict = config._get_dict_from_config_section('Blocklists_IP')
+    dns_blocklist_dict = config._get_dict_from_config_section('Blocklists_DNS')
+    
+    for url, desc in ip_blocklist_dict.items():
+        blocklist_info[url] = {"type": "ip", "description": desc}
+    for url, desc in dns_blocklist_dict.items():
+        blocklist_info[url] = {"type": "dns", "description": desc}
+
+    all_urls = set(blocklist_info.keys())
     logger.info(f"Checking/Downloading {len(all_urls)} blocklists...")
-    for url in all_urls:
-        list_type = "dns" if url in config.dns_blocklist_urls else "ip"
+    for url, info in blocklist_info.items():
+        list_type = info["type"]
         local_path = os.path.join(DOWNLOAD_DIR, get_local_filename(url, list_type))
         if os.path.exists(local_path) and not force_download: logger.debug(f"Skip download, exists: {os.path.basename(local_path)}"); continue
         logger.debug(f"Download [{list_type.upper()}]: {url} -> {local_path}")
@@ -184,30 +198,87 @@ def _parse_dns_file_to_set(domain_set, filepath, list_identifier):
     return count
 
 # --- Checking Functions ---
-def identify_malicious_ip(ip_str: str) -> set:
+def identify_malicious_ip(ip_str: str) -> dict:
     """Checks IP against blocklist, ignoring whitelist."""
-    global malicious_networks
+    global malicious_networks, blocklist_info
     # *** Use the whitelist instance ***
-    if whitelist.is_ip_whitelisted(ip_str): logger.debug(f"IP {ip_str} whitelisted."); return set()
-    matched_lists = set()
+    if whitelist.is_ip_whitelisted(ip_str): logger.debug(f"IP {ip_str} whitelisted."); return {}
+    matched_lists = {}
     try:
         ip_obj = ipaddress.ip_address(ip_str)
         for network, list_identifier in malicious_networks:
-            if ip_obj in network: matched_lists.add(list_identifier)
+            if ip_obj in network:
+                if list_identifier not in matched_lists:
+                    matched_lists[list_identifier] = blocklist_info.get(list_identifier, {}).get('description', 'N/A')
     except ValueError: logger.debug(f"Invalid IP for blocklist lookup: {ip_str}")
     except Exception as e: logger.error(f"IP blocklist lookup error '{ip_str}': {e}", exc_info=True)
     return matched_lists
 
-def is_domain_malicious(domain: str) -> bool:
+def is_domain_malicious(domain: str) -> dict:
     """Checks domain against blocklist, ignoring whitelist."""
-    global malicious_domains
-    if not domain: return False
+    global malicious_domains, blocklist_info
+    if not domain: return {}
     domain_lower = domain.lower().strip('.')
     # *** Use the whitelist instance ***
-    if whitelist.is_domain_whitelisted(domain_lower): logger.debug(f"Domain {domain_lower} whitelisted."); return False
-    if domain_lower in malicious_domains: logger.debug(f"Exact domain blocklist match: '{domain_lower}'"); return True
+    if whitelist.is_domain_whitelisted(domain_lower): logger.debug(f"Domain {domain_lower} whitelisted."); return {}
+    
+    matched_lists = {}
+    
+    # Check for exact match
+    if domain_lower in malicious_domains:
+        for list_identifier in malicious_domains[domain_lower]:
+            if list_identifier not in matched_lists:
+                matched_lists[list_identifier] = blocklist_info.get(list_identifier, {}).get('description', 'N/A')
+        logger.debug(f"Exact domain blocklist match: '{domain_lower}'")
+        return matched_lists
+
+    # Check for parent domain match
     parts = domain_lower.split('.')
     for i in range(1, len(parts) - 1):
         parent_domain = '.'.join(parts[i:])
-        if parent_domain in malicious_domains: logger.debug(f"Parent domain blocklist match: '{parent_domain}' for query '{domain_lower}'"); return True
-    return False
+        if parent_domain in malicious_domains:
+            for list_identifier in malicious_domains[parent_domain]:
+                if list_identifier not in matched_lists:
+                    matched_lists[list_identifier] = blocklist_info.get(list_identifier, {}).get('description', 'N/A')
+            logger.debug(f"Parent domain blocklist match: '{parent_domain}' for query '{domain_lower}'")
+            return matched_lists
+            
+    return matched_lists
+
+# --- Periodic Update Functionality ---
+update_stop_event = threading.Event()
+
+def _periodic_update_task():
+    """The actual task run in a thread to update blocklists."""
+    interval_hours = config.blocklist_update_interval_hours
+    if not isinstance(interval_hours, (int, float)) or interval_hours <= 0:
+        logger.info("Blocklist auto-updating is disabled (interval <= 0). Thread exiting.")
+        return
+
+    interval_seconds = interval_hours * 3600
+    logger.info(f"Blocklist auto-update thread started. Update interval: {interval_hours} hours.")
+
+    while not update_stop_event.wait(interval_seconds):
+        logger.info("Periodic blocklist update triggered.")
+        try:
+            download_blocklists(force_download=True)
+            load_blocklists()
+            logger.info("Periodic blocklist update finished successfully.")
+        except Exception as e:
+            logger.error(f"Error during periodic blocklist update: {e}", exc_info=True)
+
+    logger.info("Blocklist auto-update thread received stop signal and is exiting.")
+
+def start_periodic_blocklist_updates():
+    """Starts the background thread for periodic blocklist updates if enabled."""
+    if config.blocklist_update_interval_hours > 0:
+        update_thread = threading.Thread(target=_periodic_update_task, daemon=True)
+        update_thread.name = "BlocklistUpdateThread"
+        update_thread.start()
+        return update_thread
+    return None
+
+def stop_periodic_blocklist_updates():
+    """Signals the periodic update thread to stop."""
+    logger.info("Signaling blocklist auto-update thread to stop.")
+    update_stop_event.set()

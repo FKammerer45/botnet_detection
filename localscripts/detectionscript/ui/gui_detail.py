@@ -64,6 +64,10 @@ class DetailWindow:
         self.notebook.add(self.scan_activity_frame, text="Scan Activity")
         self._setup_scan_activity_tab()
 
+        self.anomaly_frame = ttk.Frame(self.notebook)
+        self.notebook.add(self.anomaly_frame, text="Rate Anomaly")
+        self._setup_anomaly_tab()
+
         self._update_scheduled = None
         self.update_gui() 
         self.master.protocol("WM_DELETE_WINDOW", self.on_close)
@@ -133,14 +137,24 @@ class DetailWindow:
         ttk.Separator(self.scan_activity_frame, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=5)
         targets_frame = ttk.LabelFrame(self.scan_activity_frame, text="Detected Scan Targets/Ports")
         targets_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        columns = ("target_ip", "scanned_ports")
+        columns = ("target_ip", "scanned_ports", "scan_types")
         self.scan_targets_tree = ttk.Treeview(targets_frame, columns=columns, show="headings")
-        headers = {"target_ip": "Target IP", "scanned_ports": "Scanned Ports"}
-        widths = {"target_ip": 150, "scanned_ports": 300}
+        headers = {"target_ip": "Target IP", "scanned_ports": "Scanned Ports", "scan_types": "Scan Types"}
+        widths = {"target_ip": 150, "scanned_ports": 250, "scan_types": 100}
         for col in columns:
             self.scan_targets_tree.heading(col, text=headers[col], anchor=tk.W)
             self.scan_targets_tree.column(col, width=widths[col], anchor=tk.W)
         self.scan_targets_tree.pack(fill=tk.BOTH, expand=True)
+
+    def _setup_anomaly_tab(self):
+        columns = ("protocol", "count", "mean", "std_dev", "threshold")
+        self.anomaly_tree = ttk.Treeview(self.anomaly_frame, columns=columns, show="headings")
+        headers = {"protocol": "Protocol", "count": "Packets", "mean": "Mean", "std_dev": "Std Dev", "threshold": "Threshold"}
+        widths = {"protocol": 100, "count": 80, "mean": 80, "std_dev": 80, "threshold": 80}
+        for col in columns:
+            self.anomaly_tree.heading(col, text=headers[col], anchor=tk.W)
+            self.anomaly_tree.column(col, width=widths[col], anchor=tk.W)
+        self.anomaly_tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
     def update_gui(self):
         if not self.master.winfo_exists():
@@ -165,6 +179,7 @@ class DetailWindow:
             self._update_threat_tab(source_ip_exists, ip_entry_snapshot, flag_malicious_enabled)
             self._update_dns_queries_tab(source_ip_exists, ip_entry_snapshot)
             self._update_scan_activity_tab(source_ip_exists, ip_entry_snapshot, flag_scan_enabled, scan_ports_detected, scan_hosts_detected)
+            self._update_anomaly_tab(source_ip_exists, ip_entry_snapshot)
 
         except Exception as e:
             logger.error(f"Error during detail GUI update for {self.source_ip}: {e}", exc_info=True)
@@ -312,21 +327,44 @@ class DetailWindow:
 
         scan_target_details = []
         if (scan_ports_detected or scan_hosts_detected) and ip_snapshot:
-            syn_targets = ip_snapshot.get("syn_targets", {})
-            for target_ip, details in syn_targets.items():
+            scan_targets = ip_snapshot.get("scan_targets", {})
+            for target_ip, details in scan_targets.items():
                 ports_str = ", ".join(map(str, sorted(list(details.get("ports", set())))))
+                scan_types_str = ", ".join(sorted(list(details.get("scan_types", set()))))
                 if not ports_str: ports_str = "(Host scan)" if scan_hosts_detected else "N/A"
-                scan_target_details.append((target_ip, ports_str))
+                scan_target_details.append((target_ip, ports_str, scan_types_str))
         
         if not scan_target_details and (scan_ports_detected or scan_hosts_detected):
-             self.scan_targets_tree.insert("", tk.END, values=("Scan detected, but no specific targets/ports logged.", ""))
+             self.scan_targets_tree.insert("", tk.END, values=("Scan detected, but no specific targets/ports logged.", "", ""))
         elif not scan_target_details:
-            self.scan_targets_tree.insert("", tk.END, values=("No scan targets to display.", ""))
+            self.scan_targets_tree.insert("", tk.END, values=("No scan targets to display.", "", ""))
         else:
             try: scan_target_details.sort(key=lambda x: ipaddress.ip_address(x[0]))
             except: pass # Ignore sort error
             for row in scan_target_details:
                 self.scan_targets_tree.insert("", tk.END, values=row)
+
+    def _update_anomaly_tab(self, source_ip_exists, ip_snapshot):
+        self.anomaly_tree.delete(*self.anomaly_tree.get_children())
+        if not source_ip_exists:
+            self.anomaly_tree.insert("", tk.END, values=("(Source IP data unavailable)", "", "", "", ""))
+            return
+
+        anomaly_data_for_table = []
+        if ip_snapshot:
+            protocol_stats = ip_snapshot.get("protocol_stats", {})
+            for proto, stats in protocol_stats.items():
+                count = stats.get("count", 0)
+                mean = stats.get("mean", 0)
+                std_dev = stats.get("std", 0)
+                threshold = mean + (std_dev * config.rate_anomaly_sensitivity)
+                anomaly_data_for_table.append((proto, count, f"{mean:.2f}", f"{std_dev:.2f}", f"{threshold:.2f}"))
+        
+        if not anomaly_data_for_table:
+            self.anomaly_tree.insert("", tk.END, values=("No anomaly data to display.", "", "", "", ""))
+        else:
+            for row in anomaly_data_for_table:
+                self.anomaly_tree.insert("", tk.END, values=row)
 
     def sort_data(self, data, column, ascending, columns, extra_data_indices=None):
         try:
@@ -364,3 +402,4 @@ class DetailWindow:
         setattr(self, sort_asc_attr, new_ascending)
         logger.debug(f"Set detail table sort: Column='{column}', Ascending={new_ascending}")
         self.update_gui()
+

@@ -6,6 +6,7 @@ from collections import deque, defaultdict
 import ipaddress # For sorting IP addresses if needed
 
 from scapy.all import DNS # For type hinting or specific field access
+import ipaddress
 
 from .config_manager import config
 from .whitelist_manager import get_whitelist
@@ -31,6 +32,14 @@ class NetworkDataManager:
         self.scan_distinct_ports_threshold = config.scan_distinct_ports_threshold
         self.scan_distinct_hosts_threshold = config.scan_distinct_hosts_threshold
         self.scan_check_interval = config.scan_check_interval
+        self.enable_stealth_scan_detection = config.enable_stealth_scan_detection
+        self.flag_internal_scans = config.flag_internal_scans
+        self.flag_external_scans = config.flag_external_scans
+        self.local_networks = [ipaddress.ip_network(net) for net in config.local_networks]
+        self.enable_rate_anomaly_detection = config.enable_rate_anomaly_detection
+        self.rate_anomaly_sensitivity = config.rate_anomaly_sensitivity
+        self.rate_anomaly_min_packets = config.rate_anomaly_min_packets
+        self.rate_anomaly_protocols_to_track = config.rate_anomaly_protocols_to_track
         self.tracked_protocols_temporal = config.tracked_protocols_temporal
         self.MAX_MINUTES_TEMPORAL = MAX_MINUTES_TEMPORAL
 
@@ -61,9 +70,11 @@ class NetworkDataManager:
                      "protocols": defaultdict(lambda: {"total": 0, "timestamps": deque(maxlen=self._packet_deque_maxlen), "max_per_sec": 0}),
                      "malicious_hits": {}, "contacted_malicious_ip": False,
                      "suspicious_dns": [],
-                     "syn_targets": defaultdict(lambda: {"ports": set(), "first_syn_time": 0.0}),
+                     "scan_targets": defaultdict(lambda: {"ports": set(), "first_seen": 0.0, "scan_types": set()}),
                      "last_scan_check_time": 0.0,
                      "detected_scan_ports": False, "detected_scan_hosts": False,
+                     "rate_anomaly_detected": False,
+                     "protocol_stats": defaultdict(lambda: {"mean": 0, "std": 0, "count": 0}),
                      "is_malicious_source": False
                  }
             
@@ -81,12 +92,22 @@ class NetworkDataManager:
             proto_entry["total"] += 1
             proto_entry["timestamps"].append(pkt_time)
 
-            if proto_name == "tcp" and tcp_flags is not None and tcp_flags.S and not tcp_flags.A:
-                syn_target_entry = ip_entry["syn_targets"][dst_ip]
-                if not syn_target_entry["first_syn_time"]:
-                    syn_target_entry["first_syn_time"] = pkt_time
+            if proto_name == "tcp" and tcp_flags is not None:
+                scan_target_entry = ip_entry["scan_targets"][dst_ip]
+                if not scan_target_entry["first_seen"]:
+                    scan_target_entry["first_seen"] = pkt_time
                 if port_used is not None:
-                    syn_target_entry["ports"].add(port_used)
+                    scan_target_entry["ports"].add(port_used)
+                
+                if tcp_flags.S and not tcp_flags.A:
+                    scan_target_entry["scan_types"].add("SYN")
+                elif self.enable_stealth_scan_detection:
+                    if tcp_flags.F:
+                        scan_target_entry["scan_types"].add("FIN")
+                    if int(tcp_flags) == 0:
+                        scan_target_entry["scan_types"].add("NULL")
+                    if tcp_flags.F and tcp_flags.P and tcp_flags.U:
+                        scan_target_entry["scan_types"].add("XMAS")
 
             if is_dns_traffic and raw_pkt.haslayer(DNS):
                 dns_layer = raw_pkt[DNS]
@@ -125,11 +146,21 @@ class NetworkDataManager:
             elif "other" in self.tracked_protocols_temporal: 
                 cdata["protocol_count"][("other", None)] += 1
 
+    def _is_internal_ip(self, ip_str):
+        try:
+            ip_obj = ipaddress.ip_address(ip_str)
+            for net in self.local_networks:
+                if ip_obj in net:
+                    return True
+        except ValueError:
+            return False
+        return False
+
     def _check_for_scans(self, ip, ip_entry, now):
         ip_entry["detected_scan_ports"] = False
         ip_entry["detected_scan_hosts"] = False
         if self.whitelist.is_ip_whitelisted(ip):
-            ip_entry["syn_targets"].clear()
+            ip_entry["scan_targets"].clear()
             return False
 
         scan_window_start = now - self.scan_time_window
@@ -137,20 +168,27 @@ class NetworkDataManager:
         detected_host_scan_flag = False
         unique_targets_in_window_count = 0
         
-        dst_ips_synced = list(ip_entry.get("syn_targets", {}).keys())
-        for dst_ip in dst_ips_synced:
-            if dst_ip not in ip_entry["syn_targets"]: continue
-            target_data = ip_entry["syn_targets"][dst_ip]
-            first_syn_time = target_data.get("first_syn_time", 0)
+        is_source_internal = self._is_internal_ip(ip)
 
-            if first_syn_time >= scan_window_start:
-                unique_targets_in_window_count += 1
-                port_count = len(target_data.get("ports", set()))
-                if not detected_port_scan_flag and port_count > self.scan_distinct_ports_threshold:
-                    if not self.whitelist.is_ip_whitelisted(dst_ip):
-                        detected_port_scan_flag = True
+        dst_ips_scanned = list(ip_entry.get("scan_targets", {}).keys())
+        for dst_ip in dst_ips_scanned:
+            if dst_ip not in ip_entry["scan_targets"]: continue
+            target_data = ip_entry["scan_targets"][dst_ip]
+            first_seen_time = target_data.get("first_seen", 0)
+
+            if first_seen_time >= scan_window_start:
+                is_dest_internal = self._is_internal_ip(dst_ip)
+                
+                if (is_source_internal and not is_dest_internal and self.flag_external_scans) or \
+                   (is_source_internal and is_dest_internal and self.flag_internal_scans) or \
+                   (not is_source_internal and self.flag_external_scans):
+                    unique_targets_in_window_count += 1
+                    port_count = len(target_data.get("ports", set()))
+                    if not detected_port_scan_flag and port_count > self.scan_distinct_ports_threshold:
+                        if not self.whitelist.is_ip_whitelisted(dst_ip):
+                            detected_port_scan_flag = True
             else:
-                del ip_entry["syn_targets"][dst_ip]
+                del ip_entry["scan_targets"][dst_ip]
         
         if unique_targets_in_window_count > self.scan_distinct_hosts_threshold:
             detected_host_scan_flag = True
@@ -162,6 +200,39 @@ class NetworkDataManager:
         ip_entry["detected_scan_hosts"] = detected_host_scan_flag
         ip_entry["last_scan_check_time"] = now
         return detected_port_scan_flag or detected_host_scan_flag
+
+    def _check_for_rate_anomalies(self, ip, ip_entry, now):
+        if not self.enable_rate_anomaly_detection:
+            return
+
+        ip_entry["rate_anomaly_detected"] = False
+        for proto_key, cdata in ip_entry["protocols"].items():
+            proto_name, _ = proto_key
+            if proto_name not in self.rate_anomaly_protocols_to_track:
+                continue
+
+            stats = ip_entry["protocol_stats"][proto_name]
+            
+            # Welford's algorithm for running variance
+            new_count = stats["count"] + 1
+            delta = cdata["total"] - stats["mean"]
+            new_mean = stats["mean"] + delta / new_count
+            delta2 = cdata["total"] - new_mean
+            new_m2 = stats.get("m2", 0) + delta * delta2
+            
+            stats["count"] = new_count
+            stats["mean"] = new_mean
+            stats["m2"] = new_m2
+
+            if new_count > 1:
+                variance = new_m2 / (new_count -1)
+                stats["std"] = variance ** 0.5
+            
+            if stats["count"] > 1 and cdata["total"] > self.rate_anomaly_min_packets:
+                threshold = stats["mean"] + (stats["std"] * self.rate_anomaly_sensitivity)
+                if cdata["total"] > threshold:
+                    ip_entry["rate_anomaly_detected"] = True
+                    logger.warning(f"Rate anomaly DETECTED for {ip} on protocol {proto_name}: {cdata['total']} packets > threshold {threshold:.2f}")
 
     def aggregate_minute_data(self):
         now = time.time()
@@ -190,6 +261,8 @@ class NetworkDataManager:
                     continue
                 if (now - ip_entry.get("last_scan_check_time", 0)) > self.scan_check_interval:
                      self._check_for_scans(ip, ip_entry, now)
+                
+                self._check_for_rate_anomalies(ip, ip_entry, now)
 
                 source_ip_malicious_info = identify_malicious_ip(ip)
                 if source_ip_malicious_info:
@@ -233,6 +306,7 @@ class NetworkDataManager:
                     "suspicious_dns": list(data_entry.get("suspicious_dns", [])), 
                     "detected_scan_ports": data_entry.get("detected_scan_ports", False),
                     "detected_scan_hosts": data_entry.get("detected_scan_hosts", False),
+                    "rate_anomaly_detected": data_entry.get("rate_anomaly_detected", False),
                 }
                 while entry_copy["timestamps"] and entry_copy["timestamps"][0] < prune_timestamp:
                     entry_copy["timestamps"].popleft()
@@ -260,13 +334,17 @@ class NetworkDataManager:
                                               for proto_key, proto_data in original_entry.get("protocols", {}).items()}),
                     "malicious_hits": {k: v.copy() for k, v in original_entry.get("malicious_hits", {}).items()}, 
                     "contacted_malicious_ip": original_entry.get("contacted_malicious_ip", False),
-                    "suspicious_dns": list(original_entry.get("suspicious_dns", [])), 
-                    "syn_targets": defaultdict(lambda: {"ports": set(), "first_syn_time": 0.0},
-                                               {dst_ip: {"ports": set(details.get("ports", set())), 
-                                                         "first_syn_time": details.get("first_syn_time", 0.0)}
-                                                for dst_ip, details in original_entry.get("syn_targets", {}).items()}),
+                    "suspicious_dns": list(original_entry.get("suspicious_dns", [])),
+                    "scan_targets": defaultdict(lambda: {"ports": set(), "first_seen": 0.0, "scan_types": set()},
+                                               {dst_ip: {"ports": set(details.get("ports", set())),
+                                                         "first_seen": details.get("first_seen", 0.0),
+                                                         "scan_types": set(details.get("scan_types", set()))}
+                                                for dst_ip, details in original_entry.get("scan_targets", {}).items()}),
                     "last_scan_check_time": original_entry.get("last_scan_check_time", 0.0),
                     "detected_scan_ports": original_entry.get("detected_scan_ports", False),
+                    "rate_anomaly_detected": original_entry.get("rate_anomaly_detected", False),
+                    "protocol_stats": defaultdict(lambda: {"mean": 0, "std": 0, "count": 0},
+                                             {k: v.copy() for k,v in original_entry.get("protocol_stats", {}).items()}),
                     "detected_scan_hosts": original_entry.get("detected_scan_hosts", False),
                     "is_malicious_source": original_entry.get("is_malicious_source", False)
                 }

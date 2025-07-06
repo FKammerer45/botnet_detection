@@ -182,6 +182,10 @@ class PacketStatsGUI:
         cb_scan = tk.Checkbutton(row1_frame, text="Flag Port Scan", variable=self.flag_scan_var)
         cb_scan.pack(side=tk.LEFT, padx=2)
         self.create_tooltip(cb_scan, "Flags hosts that appear to be performing port or host scans.")
+        self.flag_rate_anomaly_var = tk.BooleanVar(value=True)
+        cb_rate_anomaly = tk.Checkbutton(row1_frame, text="Flag Rate Anomaly", variable=self.flag_rate_anomaly_var)
+        cb_rate_anomaly.pack(side=tk.LEFT, padx=2)
+        self.create_tooltip(cb_rate_anomaly, "Flags hosts with unusual traffic rates for specific protocols.")
         row2_frame = tk.Frame(config_frame)
         row2_frame.pack(fill=tk.X, pady=2)
         tk.Button(row2_frame, text="Conf Unsafe", command=self.configure_unsafe).pack(side=tk.LEFT, padx=3)
@@ -369,9 +373,10 @@ class PacketStatsGUI:
                 is_malicious_triggered = flag_malicious_enabled and data.get("contacted_malicious_ip", False)
                 is_dns_triggered = flag_dns_enabled and bool(data.get("suspicious_dns"))
                 is_scan_detected = flag_scan_enabled and (data.get("detected_scan_ports", False) or data.get("detected_scan_hosts", False))
+                is_rate_anomaly_detected = self.flag_rate_anomaly_var.get() and data.get("rate_anomaly_detected", False)
                 
                 should_flag_row = (is_over_threshold or is_unsafe_triggered or
-                                   is_malicious_triggered or is_dns_triggered or is_scan_detected)
+                                   is_malicious_triggered or is_dns_triggered or is_scan_detected or is_rate_anomaly_detected)
                 data_for_table.append((ip, total_packets, packets_per_minute,
                                        packets_per_second, max_packets_sec, should_flag_row))
 

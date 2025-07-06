@@ -35,6 +35,15 @@ class AppConfig:
         self.scan_distinct_ports_threshold = 15
         self.scan_distinct_hosts_threshold = 10
         self.scan_check_interval = 5
+        self.enable_stealth_scan_detection = True
+        self.flag_internal_scans = True
+        self.flag_external_scans = True
+        self.local_networks = {"192.168.0.0/16", "10.0.0.0/8", "172.16.0.0/12"}
+        # Rate Anomaly
+        self.enable_rate_anomaly_detection = True
+        self.rate_anomaly_sensitivity = 5.0
+        self.rate_anomaly_min_packets = 50
+        self.rate_anomaly_protocols_to_track = {"tcp", "udp", "icmp"}
         # Unsafe Rules
         self.unsafe_ports = {23, 445, 3389, 1080, 3128, 6667}
         self.unsafe_protocols = {"telnet", "ftp", "irc", "pop3", "imap"}
@@ -101,7 +110,17 @@ class AppConfig:
             self.scan_time_window = self.parser.getint('ScanDetection', 'time_window_seconds', fallback=self.scan_time_window)
             self.scan_distinct_ports_threshold = self.parser.getint('ScanDetection', 'distinct_ports_threshold', fallback=self.scan_distinct_ports_threshold)
             self.scan_distinct_hosts_threshold = self.parser.getint('ScanDetection', 'distinct_hosts_threshold', fallback=self.scan_distinct_hosts_threshold)
-            self.scan_check_interval = self.parser.getfloat('ScanDetection', 'scan_check_interval', fallback=float(self.scan_check_interval)) # Use getfloat or getint
+            self.scan_check_interval = self.parser.getfloat('ScanDetection', 'scan_check_interval', fallback=float(self.scan_check_interval))
+            self.enable_stealth_scan_detection = self.parser.getboolean('ScanDetection', 'enable_stealth_scan_detection', fallback=self.enable_stealth_scan_detection)
+            self.flag_internal_scans = self.parser.getboolean('ScanDetection', 'flag_internal_scans', fallback=self.flag_internal_scans)
+            self.flag_external_scans = self.parser.getboolean('ScanDetection', 'flag_external_scans', fallback=self.flag_external_scans)
+            self.local_networks = self._get_set_from_config('ScanDetection', 'local_networks', self.local_networks)
+
+            # Rate Anomaly
+            self.enable_rate_anomaly_detection = self.parser.getboolean('RateAnomaly', 'enable_rate_anomaly_detection', fallback=self.enable_rate_anomaly_detection)
+            self.rate_anomaly_sensitivity = self.parser.getfloat('RateAnomaly', 'rate_anomaly_sensitivity', fallback=self.rate_anomaly_sensitivity)
+            self.rate_anomaly_min_packets = self.parser.getint('RateAnomaly', 'rate_anomaly_min_packets', fallback=self.rate_anomaly_min_packets)
+            self.rate_anomaly_protocols_to_track = self._get_set_from_config('RateAnomaly', 'rate_anomaly_protocols_to_track', self.rate_anomaly_protocols_to_track)
 
             # Unsafe Rules
             self.unsafe_ports = self._get_set_from_config('UnsafeRules', 'ports', self.unsafe_ports, item_type=int)
@@ -123,7 +142,7 @@ class AppConfig:
         logger.info(f"Attempting to save configuration to {self.filepath}")
         try:
             # Ensure sections exist before setting
-            sections = ['General', 'Thresholds', 'ScanDetection', 'UnsafeRules', 'Blocklists_IP', 'Blocklists_DNS', 'Display']
+            sections = ['General', 'Thresholds', 'ScanDetection', 'RateAnomaly', 'UnsafeRules', 'Blocklists_IP', 'Blocklists_DNS', 'Display']
             for section in sections:
                 if not self.parser.has_section(section): self.parser.add_section(section)
 
@@ -139,6 +158,16 @@ class AppConfig:
             self.parser.set('ScanDetection', 'distinct_ports_threshold', str(self.scan_distinct_ports_threshold))
             self.parser.set('ScanDetection', 'distinct_hosts_threshold', str(self.scan_distinct_hosts_threshold))
             self.parser.set('ScanDetection', 'scan_check_interval', str(self.scan_check_interval))
+            self.parser.set('ScanDetection', 'enable_stealth_scan_detection', str(self.enable_stealth_scan_detection))
+            self.parser.set('ScanDetection', 'flag_internal_scans', str(self.flag_internal_scans))
+            self.parser.set('ScanDetection', 'flag_external_scans', str(self.flag_external_scans))
+            self.parser.set('ScanDetection', 'local_networks', ', '.join(sorted(list(self.local_networks))))
+
+            # Rate Anomaly
+            self.parser.set('RateAnomaly', 'enable_rate_anomaly_detection', str(self.enable_rate_anomaly_detection))
+            self.parser.set('RateAnomaly', 'rate_anomaly_sensitivity', str(self.rate_anomaly_sensitivity))
+            self.parser.set('RateAnomaly', 'rate_anomaly_min_packets', str(self.rate_anomaly_min_packets))
+            self.parser.set('RateAnomaly', 'rate_anomaly_protocols_to_track', ', '.join(sorted(list(self.rate_anomaly_protocols_to_track))))
     
             # Unsafe Rules
             self.parser.set('UnsafeRules', 'ports', ', '.join(map(str, sorted(list(self.unsafe_ports)))))

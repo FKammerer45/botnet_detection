@@ -50,9 +50,24 @@ class ScanConfigWindow:
         scan_check_interval_entry.grid(row=3, column=1, sticky=tk.W, pady=5)
         ttk.Label(main_frame, text="Interval (s) between per-IP scan checks (rate-limit).", font=desc_font).grid(row=3, column=2, sticky=tk.W, pady=5, padx=5)
 
+        # --- Enable/Disable Flags ---
+        self.enable_stealth_scan_var = tk.BooleanVar(value=config.enable_stealth_scan_detection)
+        ttk.Checkbutton(main_frame, text="Enable Stealth Scan Detection", variable=self.enable_stealth_scan_var).grid(row=4, column=0, columnspan=2, sticky=tk.W, pady=5, padx=5)
+        self.flag_internal_scans_var = tk.BooleanVar(value=config.flag_internal_scans)
+        ttk.Checkbutton(main_frame, text="Flag Internal Scans", variable=self.flag_internal_scans_var).grid(row=5, column=0, columnspan=2, sticky=tk.W, pady=5, padx=5)
+        self.flag_external_scans_var = tk.BooleanVar(value=config.flag_external_scans)
+        ttk.Checkbutton(main_frame, text="Flag External Scans", variable=self.flag_external_scans_var).grid(row=6, column=0, columnspan=2, sticky=tk.W, pady=5, padx=5)
+
+        # --- Local Networks ---
+        ttk.Label(main_frame, text="Local Networks (CIDR):").grid(row=7, column=0, sticky=tk.W, pady=5, padx=5)
+        self.local_networks_var = tk.StringVar(value=', '.join(config.local_networks))
+        local_networks_entry = ttk.Entry(main_frame, textvariable=self.local_networks_var, width=40)
+        local_networks_entry.grid(row=7, column=1, columnspan=2, sticky=tk.W, pady=5)
+
+
         # --- Buttons ---
         button_frame = ttk.Frame(main_frame)
-        button_frame.grid(row=4, column=0, columnspan=3, pady=20) # columnspan adjusted
+        button_frame.grid(row=8, column=0, columnspan=3, pady=20) # columnspan adjusted
         save_button = ttk.Button(button_frame, text="Save & Apply", command=self.save_and_apply)
         save_button.pack(side=tk.LEFT, padx=5)
         cancel_button = ttk.Button(button_frame, text="Cancel", command=self.master.destroy)
@@ -76,11 +91,18 @@ class ScanConfigWindow:
             config.scan_distinct_ports_threshold = new_ports_thresh
             config.scan_distinct_hosts_threshold = new_hosts_thresh
             config.scan_check_interval = new_scan_check_interval
+            config.enable_stealth_scan_detection = self.enable_stealth_scan_var.get()
+            config.flag_internal_scans = self.flag_internal_scans_var.get()
+            config.flag_external_scans = self.flag_external_scans_var.get()
+            config.local_networks = {net.strip() for net in self.local_networks_var.get().split(',')}
+
 
             logger.info(
                 f"Applied new scan detection settings: Window={config.scan_time_window}s, "
                 f"PortsThresh={config.scan_distinct_ports_threshold}, HostsThresh={config.scan_distinct_hosts_threshold}, "
-                f"CheckInterval={config.scan_check_interval}s"
+                f"CheckInterval={config.scan_check_interval}s, "
+                f"StealthScan={config.enable_stealth_scan_detection}, "
+                f"InternalScan={config.flag_internal_scans}, ExternalScan={config.flag_external_scans}"
             )
 
             # *** Save changes to config.ini ***

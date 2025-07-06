@@ -3,9 +3,6 @@
 *   **Advanced Port Scan Detection (`data_manager.py`):**
     *   Improve stealth scan detection (e.g., sliding windows).
     *   Configurable internal vs. external scan flagging.
-*   **Smarter Threat Intelligence (`blocklist_integration.py`, `main.py`):**
-    *   Periodic (automatic) blocklist updates and reloading.
-    *   Add more infos to the specific Hit from the blocklist
 *   **Refined Anomaly Detection (Packet Rates in `data_manager.py`):**
     *   Detect protocol-specific rate anomalies (e.g., unusual spike in DNS or ICMP traffic from one host).
 

@@ -25,6 +25,7 @@ from ui.gui_dns_config import DnsConfigWindow
 from ui.gui_local_network_config import LocalNetworkConfigWindow
 from ui.gui_scoring_config import ScoringConfigWindow
 from ui.gui_tooltip import Tooltip
+from ui.components.configuration_frame import ConfigurationFrame
 
 logger = logging.getLogger(__name__)
 whitelist = get_whitelist() # Get the singleton instance
@@ -74,7 +75,9 @@ class PacketStatsGUI:
         top_frame = tk.Frame(self.master)
         top_frame.pack(fill=tk.X, padx=10, pady=5)
         self.add_description_frame(top_frame)
-        self.add_configuration_frame(top_frame)
+        self.configuration_frame = ConfigurationFrame(top_frame, self)
+        self.configuration_frame.pack(fill=tk.X)
+
 
         table_frame = tk.Frame(self.master)
         table_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
@@ -164,60 +167,6 @@ class PacketStatsGUI:
         desc_text = ("Monitor network activity. Double-click IP for details.\n"
                      f"Rows flagged {TAG_ALERT} based on Threshold and enabled Flags.")
         tk.Label(parent_frame, text=desc_text, justify=tk.LEFT).pack(side=tk.TOP, anchor="w", pady=(0, 5))
-
-    def add_configuration_frame(self, parent_frame):
-        config_frame = tk.Frame(parent_frame)
-        config_frame.pack(side=tk.TOP, fill=tk.X, anchor='w')
-        row1_frame = tk.Frame(config_frame)
-        row1_frame.pack(fill=tk.X, pady=2)
-        tk.Label(row1_frame, text="Pkts/Min Threshold:").pack(side=tk.LEFT, padx=(0, 2))
-        self.threshold_var = tk.StringVar(value=str(config.max_packets_per_minute))
-        self.threshold_entry = tk.Entry(row1_frame, width=8, textvariable=self.threshold_var)
-        self.threshold_entry.pack(side=tk.LEFT, padx=(0, 10))
-        self.threshold_var.trace_add("write", self.update_threshold_config)
-        self.flag_unsafe_var = tk.BooleanVar(value=True)
-        cb_unsafe = tk.Checkbutton(row1_frame, text="Flag Insecure Protocols", variable=self.flag_unsafe_var)
-        cb_unsafe.pack(side=tk.LEFT, padx=2)
-        self.create_tooltip(cb_unsafe, "Flags traffic on unencrypted or legacy ports/protocols (e.g., Telnet, FTP).")
-        self.flag_malicious_var = tk.BooleanVar(value=True)
-        cb_malicious = tk.Checkbutton(row1_frame, text="Flag Malicious IP", variable=self.flag_malicious_var)
-        cb_malicious.pack(side=tk.LEFT, padx=2)
-        self.create_tooltip(cb_malicious, "Flags traffic to/from IPs found on configured blocklists.")
-        self.flag_dns_var = tk.BooleanVar(value=True)
-        cb_dns = tk.Checkbutton(row1_frame, text="Flag Malicious DNS", variable=self.flag_dns_var)
-        cb_dns.pack(side=tk.LEFT, padx=2)
-        self.create_tooltip(cb_dns, "Flags DNS queries for domains found on configured blocklists.")
-        self.flag_scan_var = tk.BooleanVar(value=True)
-        cb_scan = tk.Checkbutton(row1_frame, text="Flag Port Scan", variable=self.flag_scan_var)
-        cb_scan.pack(side=tk.LEFT, padx=2)
-        self.create_tooltip(cb_scan, "Flags hosts that appear to be performing port or host scans.")
-        self.flag_rate_anomaly_var = tk.BooleanVar(value=True)
-        cb_rate_anomaly = tk.Checkbutton(row1_frame, text="Flag Rate Anomaly", variable=self.flag_rate_anomaly_var)
-        cb_rate_anomaly.pack(side=tk.LEFT, padx=2)
-        self.create_tooltip(cb_rate_anomaly, "Flags hosts with unusual traffic rates for specific protocols.")
-        self.flag_ja3_var = tk.BooleanVar(value=True)
-        cb_ja3 = tk.Checkbutton(row1_frame, text="Flag JA3/S", variable=self.flag_ja3_var)
-        cb_ja3.pack(side=tk.LEFT, padx=2)
-        self.create_tooltip(cb_ja3, "Flags hosts with malicious JA3/JA3S fingerprints.")
-        self.flag_dns_analysis_var = tk.BooleanVar(value=True)
-        cb_dns_analysis = tk.Checkbutton(row1_frame, text="Flag DNS Analysis", variable=self.flag_dns_analysis_var)
-        cb_dns_analysis.pack(side=tk.LEFT, padx=2)
-        self.create_tooltip(cb_dns_analysis, "Flags hosts with suspicious DNS activity (DGA, tunneling).")
-        self.flag_local_threat_var = tk.BooleanVar(value=True)
-        cb_local_threat = tk.Checkbutton(row1_frame, text="Flag Local Threats", variable=self.flag_local_threat_var)
-        cb_local_threat.pack(side=tk.LEFT, padx=2)
-        self.create_tooltip(cb_local_threat, "Flags local network threats like ARP spoofing and ICMP anomalies.")
-        row2_frame = tk.Frame(config_frame)
-        row2_frame.pack(fill=tk.X, pady=2)
-        tk.Button(row2_frame, text="Conf Unsafe", command=self.configure_unsafe).pack(side=tk.LEFT, padx=3)
-        tk.Button(row2_frame, text="Conf Scan", command=self.configure_scan).pack(side=tk.LEFT, padx=3)
-        tk.Button(row2_frame, text="Conf Beaconing", command=self.configure_beaconing).pack(side=tk.LEFT, padx=3)
-        tk.Button(row2_frame, text="Conf DNS", command=self.configure_dns).pack(side=tk.LEFT, padx=3)
-        tk.Button(row2_frame, text="Conf Local Net", command=self.configure_local_network).pack(side=tk.LEFT, padx=3)
-        tk.Button(row2_frame, text="Conf Scoring", command=self.configure_scoring).pack(side=tk.LEFT, padx=3)
-        tk.Button(row2_frame, text="Blocklists", command=self.open_blocklist_manager).pack(side=tk.LEFT, padx=3)
-        tk.Button(row2_frame, text="Whitelist", command=self.open_whitelist_manager).pack(side=tk.LEFT, padx=3)
-        tk.Button(row2_frame, text="Temporal", command=self.open_temporal_analysis).pack(side=tk.LEFT, padx=3)
 
     def add_table_frame(self, parent_frame):
         columns = ("ip", "score", "total", "per_minute", "per_second", "max_per_sec")
@@ -486,8 +435,17 @@ class PacketStatsGUI:
         try:
             col_index = column_map[column]
             reverse_sort = not ascending
-            if column == "ip": key_func = lambda x: ipaddress.ip_address(str(x[col_index]))
-            else: key_func = lambda x: float(x[col_index]) if isinstance(x[col_index], (int, float)) else 0.0
+            if column == "ip":
+                def ip_key(item):
+                    try:
+                        ip = ipaddress.ip_address(str(item[col_index]))
+                        return (ip.version, ip)
+                    except ValueError:
+                        return (-1, item[col_index]) # Fallback for invalid IPs
+                key_func = ip_key
+            else:
+                key_func = lambda x: float(x[col_index]) if isinstance(x[col_index], (int, float)) else 0.0
+            
             return sorted(data, key=key_func, reverse=reverse_sort)
         except Exception as e:
             logger.error(f"Sorting error on column '{column}': {e}", exc_info=True)

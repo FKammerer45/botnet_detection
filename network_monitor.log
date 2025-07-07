@@ -6,3 +6,102 @@ Traceback (most recent call last):
   File "C:\Users\kamme\OneDrive\Desktop\uni\Master\PraktikeschProjek\botnet_detection\botnet_detection\localscripts\detectionscript\core\capture.py", line 14, in <module>
     from core.ja3_crypto import JA3
 ImportError: cannot import name 'JA3' from 'core.ja3_crypto' (C:\Users\kamme\OneDrive\Desktop\uni\Master\PraktikeschProjek\botnet_detection\botnet_detection\localscripts\detectionscript\core\ja3_crypto.py)
+2025-07-07 16:33:22,084 - core.whitelist_manager - INFO - Loading whitelist from whitelist.txt
+2025-07-07 16:33:22,085 - core.whitelist_manager - INFO - Whitelist loading complete. Loaded 0 IP/Network entries and 0 Domain entries.
+2025-07-07 16:33:22,449 - __main__ - WARNING - Application not running as administrator/root. Packet capture may fail.
+2025-07-07 16:33:22,450 - __main__ - INFO - Application starting...
+2025-07-07 16:33:22,450 - __main__ - INFO - Whitelist instance created/retrieved.
+2025-07-07 16:33:22,450 - __main__ - INFO - Initializing NetworkDataManager...
+2025-07-07 16:33:22,450 - core.data_manager - INFO - Initializing NetworkDataManager.
+2025-07-07 16:33:22,450 - core.data_manager - INFO - DataManager calculated timestamp deque maxlen: 90000
+2025-07-07 16:33:22,450 - __main__ - INFO - NetworkDataManager initialized.
+2025-07-07 16:33:22,450 - core.capture - INFO - Attempting to list and identify network interfaces...
+2025-07-07 16:35:05,103 - __main__ - INFO - Starting packet capture thread...
+2025-07-07 16:35:05,103 - core.capture - INFO - Packet capture thread started. Sniffing on: \Device\NPF_{07D3FDD8-3D05-452B-831D-96019F9D3D8A}, \Device\NPF_{4907781C-B481-4A25-8DCD-059BBACA9FC2}, \Device\NPF_{611A2DE0-2404-49E2-BBEA-372082D50A48}, \Device\NPF_{4907781C-B481-4A25-8DCD-059BBACA9FC2}
+2025-07-07 16:35:05,103 - __main__ - INFO - Starting periodic blocklist update thread...
+2025-07-07 16:35:05,104 - core.capture - INFO - Using packet filter: "ip or ip6 or (udp port 53) or (tcp port 53)"
+2025-07-07 16:35:05,104 - core.capture - INFO - Sniffing with 1.0s timeout loop for graceful shutdown.
+2025-07-07 16:35:05,104 - core.blocklist_integration - INFO - Blocklist auto-update thread started. Update interval: 24 hours.
+2025-07-07 16:35:05,104 - __main__ - INFO - Initializing GUI...
+2025-07-07 16:35:05,141 - ui.gui_main - INFO - Initializing PacketStatsGUI...
+2025-07-07 16:35:05,141 - ui.gui_main - INFO - Downloading/loading blocklists (if needed)...
+2025-07-07 16:35:05,142 - core.blocklist_integration - INFO - Created dir: blocklists
+2025-07-07 16:35:05,142 - core.config_manager - WARNING - Section '[Blocklists_IP]' not found in config file.
+2025-07-07 16:35:05,142 - core.config_manager - WARNING - Section '[Blocklists_DNS]' not found in config file.
+2025-07-07 16:35:05,142 - core.blocklist_integration - INFO - Checking/Downloading 1 blocklists...
+2025-07-07 16:35:05,142 - core.blocklist_integration - INFO - Download check finished.
+2025-07-07 16:35:05,142 - core.blocklist_integration - INFO - Loading configured blocklists...
+2025-07-07 16:35:05,142 - core.blocklist_integration - INFO - Loading 4 IP blocklists...
+2025-07-07 16:35:05,142 - core.blocklist_integration - WARNING - IP file not found: blocklists\ip_dshield.netset.
+2025-07-07 16:35:05,143 - core.blocklist_integration - WARNING - IP file not found: blocklists\ip_spamhaus_drop.netset.
+2025-07-07 16:35:05,143 - core.blocklist_integration - WARNING - IP file not found: blocklists\ip_spamhaus_edrop.netset.
+2025-07-07 16:35:05,143 - core.blocklist_integration - WARNING - IP file not found: blocklists\ip_ipblocklist_aggressive.txt.
+2025-07-07 16:35:05,143 - core.blocklist_integration - INFO - Loading 1 DNS blocklists...
+2025-07-07 16:35:05,143 - core.blocklist_integration - WARNING - DNS file not found: blocklists\dns_raw_githubusercontent_com_StevenBlack_hosts_master_hosts.
+2025-07-07 16:35:05,143 - core.blocklist_integration - INFO - Loading 1 JA3 blocklists...
+2025-07-07 16:35:05,143 - core.blocklist_integration - WARNING - JA3 file not found: blocklists\ip_ja3.csv.
+2025-07-07 16:35:05,143 - core.blocklist_integration - INFO - Loading 0 JA3S blocklists...
+2025-07-07 16:35:05,143 - core.blocklist_integration - INFO - Blocklist loading complete. Files: 0, IPs: 0, DNS: 0, JA3: 0, JA3S: 0
+2025-07-07 16:35:05,143 - ui.gui_main - INFO - Blocklists processed.
+2025-07-07 16:35:05,148 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-07-07 16:35:05
+2025-07-07 16:35:05,148 - ui.gui_main - INFO - PacketStatsGUI initialized.
+2025-07-07 16:35:05,148 - __main__ - INFO - Starting Tkinter mainloop...
+2025-07-07 16:35:27,325 - ui.gui_main - INFO - Double-clicked IP: 192.168.0.34. Opening detail window.
+2025-07-07 16:35:27,326 - ui.gui_detail - INFO - Opening detail window for IP: 192.168.0.34
+2025-07-07 16:35:30,648 - ui.gui_detail - INFO - Closing detail window for IP: 192.168.0.34
+2025-07-07 16:35:31,834 - config.globals - DEBUG - Globals module loaded (most config now in core.config_manager).
+2025-07-07 16:35:32,435 - core.whitelist_manager - DEBUG - Creating singleton Whitelist instance.
+2025-07-07 16:35:32,435 - core.whitelist_manager - INFO - Loading whitelist from whitelist.txt
+2025-07-07 16:35:32,435 - core.whitelist_manager - INFO - Whitelist loading complete. Loaded 0 IP/Network entries and 0 Domain entries.
+2025-07-07 16:35:32,631 - matplotlib - DEBUG - matplotlib data path: C:\Users\kamme\OneDrive\Desktop\uni\Master\PraktikeschProjek\botnet_detection\botnet_detection\.venv\Lib\site-packages\matplotlib\mpl-data
+2025-07-07 16:35:32,638 - matplotlib - DEBUG - CONFIGDIR=C:\Users\kamme\.matplotlib
+2025-07-07 16:35:32,639 - matplotlib - DEBUG - interactive is False
+2025-07-07 16:35:32,639 - matplotlib - DEBUG - platform is win32
+2025-07-07 16:35:32,670 - matplotlib - DEBUG - CACHEDIR=C:\Users\kamme\.matplotlib
+2025-07-07 16:35:32,671 - matplotlib.font_manager - DEBUG - Using fontManager instance from C:\Users\kamme\.matplotlib\fontlist-v390.json
+2025-07-07 16:35:32,818 - __main__ - WARNING - Application not running as administrator/root. Packet capture may fail.
+2025-07-07 16:35:32,818 - __main__ - INFO - Application starting...
+2025-07-07 16:35:32,819 - __main__ - INFO - Whitelist instance created/retrieved.
+2025-07-07 16:35:32,819 - __main__ - INFO - Initializing NetworkDataManager...
+2025-07-07 16:35:32,819 - core.data_manager - INFO - Initializing NetworkDataManager.
+2025-07-07 16:35:32,819 - core.data_manager - INFO - DataManager calculated timestamp deque maxlen: 90000
+2025-07-07 16:35:32,819 - __main__ - INFO - NetworkDataManager initialized.
+2025-07-07 16:35:32,819 - core.capture - INFO - Attempting to list and identify network interfaces...
+2025-07-07 16:36:05,148 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-07-07 16:36:05
+2025-07-07 16:36:05,150 - core.data_manager - INFO - DataManager: Aggregated data for 52 IP-minute entries.
+2025-07-07 16:36:05,151 - core.data_manager - WARNING - Host Scan DETECTED from 2a02:810d:b110:7400:407a:e0ae:9104:2f1a
+2025-07-07 16:36:05,154 - core.data_manager - WARNING - DGA DETECTED for 2a02:810d:b110:7400:407a:e0ae:9104:2f1a: optimizationguide-pa.googleapis.com (length: 35, entropy: 3.52)
+2025-07-07 16:36:05,155 - core.data_manager - WARNING - DGA DETECTED for 2a02:810d:b110:7400:407a:e0ae:9104:2f1a: returnyoutubedislikeapi.com (length: 27, entropy: 3.73)
+2025-07-07 16:36:05,157 - core.data_manager - WARNING - Host Scan DETECTED from 192.168.0.34
+2025-07-07 16:36:05,160 - core.data_manager - WARNING - Port Scan DETECTED from 2a02:810d:b110:7400:e7f:b2ff:fe66:ab02
+2025-07-07 16:36:05,161 - core.data_manager - WARNING - Port Scan DETECTED from 192.168.0.1
+2025-07-07 16:36:32,028 - ui.gui_main - INFO - Main application on_close triggered.
+2025-07-07 16:36:32,029 - ui.gui_main - INFO - Destroying main application window.
+2025-07-07 16:36:32,049 - ui.gui_main - INFO - Main application window destroyed.
+2025-07-07 16:36:32,049 - __main__ - INFO - Tkinter mainloop finished.
+2025-07-07 16:36:32,050 - __main__ - INFO - Initiating shutdown sequence...
+2025-07-07 16:36:32,050 - core.capture - INFO - Signaling packet capture thread to stop.
+2025-07-07 16:36:32,050 - core.blocklist_integration - INFO - Signaling blocklist auto-update thread to stop.
+2025-07-07 16:36:32,050 - __main__ - INFO - Waiting for capture thread to join...
+2025-07-07 16:36:32,050 - core.blocklist_integration - INFO - Blocklist auto-update thread received stop signal and is exiting.
+2025-07-07 16:36:32,699 - core.capture - INFO - Capture thread received stop signal and is exiting gracefully.
+2025-07-07 16:36:32,699 - __main__ - INFO - Capture thread joined successfully.
+2025-07-07 16:36:32,700 - __main__ - INFO - Shutting down logging system.
+2025-07-07 16:39:09,462 - config.globals - DEBUG - Globals module loaded (most config now in core.config_manager).
+2025-07-07 16:39:10,067 - core.whitelist_manager - DEBUG - Creating singleton Whitelist instance.
+2025-07-07 16:39:10,067 - core.whitelist_manager - INFO - Loading whitelist from whitelist.txt
+2025-07-07 16:39:10,068 - core.whitelist_manager - INFO - Whitelist loading complete. Loaded 0 IP/Network entries and 0 Domain entries.
+2025-07-07 16:39:10,258 - matplotlib - DEBUG - matplotlib data path: C:\Users\kamme\OneDrive\Desktop\uni\Master\PraktikeschProjek\botnet_detection\botnet_detection\.venv\Lib\site-packages\matplotlib\mpl-data
+2025-07-07 16:39:10,265 - matplotlib - DEBUG - CONFIGDIR=C:\Users\kamme\.matplotlib
+2025-07-07 16:39:10,266 - matplotlib - DEBUG - interactive is False
+2025-07-07 16:39:10,266 - matplotlib - DEBUG - platform is win32
+2025-07-07 16:39:10,303 - matplotlib - DEBUG - CACHEDIR=C:\Users\kamme\.matplotlib
+2025-07-07 16:39:10,305 - matplotlib.font_manager - DEBUG - Using fontManager instance from C:\Users\kamme\.matplotlib\fontlist-v390.json
+2025-07-07 16:39:10,448 - __main__ - WARNING - Application not running as administrator/root. Packet capture may fail.
+2025-07-07 16:39:10,448 - __main__ - INFO - Application starting...
+2025-07-07 16:39:10,448 - __main__ - INFO - Whitelist instance created/retrieved.
+2025-07-07 16:39:10,449 - __main__ - INFO - Initializing NetworkDataManager...
+2025-07-07 16:39:10,449 - core.data_manager - INFO - Initializing NetworkDataManager.
+2025-07-07 16:39:10,449 - core.data_manager - INFO - DataManager calculated timestamp deque maxlen: 90000
+2025-07-07 16:39:10,449 - __main__ - INFO - NetworkDataManager initialized.
+2025-07-07 16:39:10,449 - core.capture - INFO - Attempting to list and identify network interfaces...

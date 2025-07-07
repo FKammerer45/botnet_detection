@@ -128,9 +128,13 @@ botnet_detection/
 For detailed instructions on how to use the tool, please refer to the in-app documentation by clicking the "Help" button on the main window.
 
 ---
-*The following sections relate to the ESP32 part of the project, if applicable.*
+*The following section relates to the optional ESP32 component of the project.*
 
-## ESP32 Script Credentials
+## ESP32 Test Script (Optional)
+
+This project includes an optional ESP32 script located in the `src/` directory. This script is intended for testing purposes only and is not required to run the main detection tool. It can be used to generate various types of network traffic to test the detection capabilities of the Python application.
+
+### ESP32 Script Credentials
 
 For the ESP32 script to work, you need to create a `credentials.h` file to store your Wi-Fi credentials. This ensures that sensitive information like your SSID and password is not exposed in the repository.
 
@@ -147,4 +151,4 @@ Include this file in your ESP32 project, and ensure it is added to `.gitignore` 
 
 ## License
 
-This project is licensed under the MIT License. (Assuming MIT, please add a `LICENSE` file if one doesn't exist).
+This project is licensed under the MIT License.

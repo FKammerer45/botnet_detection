@@ -1,4 +1,5 @@
 # ui/tabs/protocols_tab.py
+import time
 import tkinter as tk
 from tkinter import ttk
 from collections import deque

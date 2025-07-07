@@ -41,6 +41,11 @@ class DocumentationWindow(tk.Toplevel):
                 for doc in os.listdir(os.path.join(self.docs_path, section)):
                     if doc.endswith(".md"):
                         self.tree.insert(section_node, "end", text=doc.replace(".md", "").replace("_", " ").title(), values=[os.path.join(self.docs_path, section, doc)])
+                    elif os.path.isdir(os.path.join(self.docs_path, section, doc)):
+                        sub_section_node = self.tree.insert(section_node, "end", text=doc.replace("_", " ").title(), open=True)
+                        for sub_doc in os.listdir(os.path.join(self.docs_path, section, doc)):
+                            if sub_doc.endswith(".md"):
+                                self.tree.insert(sub_section_node, "end", text=sub_doc.replace(".md", "").replace("_", " ").title(), values=[os.path.join(self.docs_path, section, doc, sub_doc)])
 
     def on_tree_select(self, event):
         selected_item = self.tree.selection()[0]

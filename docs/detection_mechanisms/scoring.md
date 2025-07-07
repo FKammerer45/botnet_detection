@@ -24,8 +24,4 @@ Each detection mechanism contributes a certain number of points to the total sco
 | | Rate Anomaly Detected | 15 |
 | **Low-Severity Indicators** | Use of Unsafe Protocol/Port | 2 |
 
-## How to Interpret the Score
 
--   **0-39 (Green):** Low risk. No significant threats detected.
--   **40-69 (Yellow):** Medium risk. Suspicious activity has been detected. Further investigation is recommended.
--   **70-100 (Red):** High risk. Multiple or high-severity threats have been detected. This IP should be considered malicious.

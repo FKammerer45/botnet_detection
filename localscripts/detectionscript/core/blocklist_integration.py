@@ -21,6 +21,8 @@ whitelist = get_whitelist() # Get the singleton instance
 blocklist_info = {}
 malicious_networks = []
 malicious_domains = set()
+malicious_ja3 = set()
+malicious_ja3s = set()
 
 # --- Utility Functions ---
 def get_local_filename(url, list_type="ip"):
@@ -55,6 +57,9 @@ def download_blocklists(force_download=False):
         blocklist_info[url] = {"type": "dns", "description": desc}
 
     all_urls = set(blocklist_info.keys())
+    all_urls.update(config.ja3_blocklist_urls.keys())
+    all_urls.update(config.ja3s_blocklist_urls.keys())
+    
     logger.info(f"Checking/Downloading {len(all_urls)} blocklists...")
     for url, info in blocklist_info.items():
         list_type = info["type"]
@@ -105,7 +110,34 @@ def load_blocklists():
             except Exception as e: logger.error(f"Parse DNS file error {local_path}: {e}", exc_info=True)
          else: logger.warning(f"DNS file not found: {local_path}.")
     malicious_networks = new_network_list; malicious_domains = new_domain_set
-    logger.info(f"Blocklist loading complete. Files: {loaded_files}, IPs: {total_ip_entries}, DNS: {total_dns_entries}")
+    
+    # Load JA3 Lists
+    logger.info(f"Loading {len(config.ja3_blocklist_urls)} JA3 blocklists...")
+    for url in config.ja3_blocklist_urls:
+        local_path = os.path.join(DOWNLOAD_DIR, get_local_filename(url, "ja3"))
+        if os.path.exists(local_path):
+            logger.debug(f"Parsing [JA3]: {os.path.basename(local_path)}")
+            try:
+                count = _parse_dns_file_to_set(malicious_ja3, local_path, url)
+                if count > 0: logger.info(f"Loaded {count} JA3 entries from {os.path.basename(local_path)}"); loaded_files += 1
+                else: logger.warning(f"No JA3 entries loaded from {os.path.basename(local_path)}.")
+            except Exception as e: logger.error(f"Parse JA3 file error {local_path}: {e}", exc_info=True)
+        else: logger.warning(f"JA3 file not found: {local_path}.")
+
+    # Load JA3S Lists
+    logger.info(f"Loading {len(config.ja3s_blocklist_urls)} JA3S blocklists...")
+    for url in config.ja3s_blocklist_urls:
+        local_path = os.path.join(DOWNLOAD_DIR, get_local_filename(url, "ja3s"))
+        if os.path.exists(local_path):
+            logger.debug(f"Parsing [JA3S]: {os.path.basename(local_path)}")
+            try:
+                count = _parse_dns_file_to_set(malicious_ja3s, local_path, url)
+                if count > 0: logger.info(f"Loaded {count} JA3S entries from {os.path.basename(local_path)}"); loaded_files += 1
+                else: logger.warning(f"No JA3S entries loaded from {os.path.basename(local_path)}.")
+            except Exception as e: logger.error(f"Parse JA3S file error {local_path}: {e}", exc_info=True)
+        else: logger.warning(f"JA3S file not found: {local_path}.")
+
+    logger.info(f"Blocklist loading complete. Files: {loaded_files}, IPs: {total_ip_entries}, DNS: {total_dns_entries}, JA3: {len(malicious_ja3)}, JA3S: {len(malicious_ja3s)}")
 
 # --- IP Parsing Functions ---
 def _add_ip_entry_to_list(network_list, network_obj, list_identifier):
@@ -213,6 +245,16 @@ def identify_malicious_ip(ip_str: str) -> dict:
     except ValueError: logger.debug(f"Invalid IP for blocklist lookup: {ip_str}")
     except Exception as e: logger.error(f"IP blocklist lookup error '{ip_str}': {e}", exc_info=True)
     return matched_lists
+
+def is_ja3_malicious(ja3_hash: str) -> bool:
+    """Checks JA3 hash against blocklist."""
+    global malicious_ja3
+    return ja3_hash in malicious_ja3
+
+def is_ja3s_malicious(ja3s_hash: str) -> bool:
+    """Checks JA3S hash against blocklist."""
+    global malicious_ja3s
+    return ja3s_hash in malicious_ja3s
 
 def is_domain_malicious(domain: str) -> dict:
     """Checks domain against blocklist, ignoring whitelist."""

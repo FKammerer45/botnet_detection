@@ -14,7 +14,7 @@ class BlocklistManagerWindow:
         """Initialize the blocklist manager GUI using config."""
         self.master = master
         self.master.title("Blocklist Manager")
-        self.master.geometry("750x700") # Increased height
+        self.master.geometry("1600x800") # Increased height
         logger.info("Initializing BlocklistManagerWindow.")
 
         # Store checkbox variables locally: {url: tk.BooleanVar}
@@ -47,6 +47,12 @@ class BlocklistManagerWindow:
       
         self.dns_list_frame_container = ttk.LabelFrame(paned_window, text="DNS Blocklists")
         paned_window.add(self.dns_list_frame_container)
+
+        self.ja3_list_frame_container = ttk.LabelFrame(paned_window, text="JA3 Blocklists")
+        paned_window.add(self.ja3_list_frame_container)
+
+        self.ja3s_list_frame_container = ttk.LabelFrame(paned_window, text="JA3S Blocklists")
+        paned_window.add(self.ja3s_list_frame_container)
     
         self._refresh_all_blocklist_displays() # Initial population
 
@@ -66,7 +72,7 @@ class BlocklistManagerWindow:
 
         ttk.Label(add_frame, text="Type:").grid(row=2, column=0, padx=5, pady=5, sticky=tk.W)
         self.new_url_type_var = tk.StringVar(value="IP") # Default to IP
-        url_type_combo = ttk.Combobox(add_frame, textvariable=self.new_url_type_var, values=["IP", "DNS"], state="readonly", width=5)
+        url_type_combo = ttk.Combobox(add_frame, textvariable=self.new_url_type_var, values=["IP", "DNS", "JA3", "JA3S"], state="readonly", width=5)
         url_type_combo.grid(row=2, column=1, padx=5, pady=5, sticky=tk.W)
         
         add_button = ttk.Button(add_frame, text="Add Blocklist", command=self.add_new_blocklist)
@@ -110,6 +116,12 @@ class BlocklistManagerWindow:
         self._clear_frame_widgets(self.dns_list_frame_container)
         self._setup_list_ui(self.dns_list_frame_container, config.dns_blocklist_urls, "dns")
 
+        self._clear_frame_widgets(self.ja3_list_frame_container)
+        self._setup_list_ui(self.ja3_list_frame_container, config.ja3_blocklist_urls, "ja3")
+
+        self._clear_frame_widgets(self.ja3s_list_frame_container)
+        self._setup_list_ui(self.ja3s_list_frame_container, config.ja3s_blocklist_urls, "ja3s")
+
     def _setup_list_ui(self, parent_frame, url_set, list_type):
         """Creates the scrollable checkbox list for a given set of URLs."""
         # Frame for checkboxes with scrollbar
@@ -129,7 +141,14 @@ class BlocklistManagerWindow:
 
         # Populate checkboxes
         # Use the current config object's dicts directly
-        current_urls_for_type = config.ip_blocklist_urls if list_type == "ip" else config.dns_blocklist_urls
+        if list_type == "ip":
+            current_urls_for_type = config.ip_blocklist_urls
+        elif list_type == "dns":
+            current_urls_for_type = config.dns_blocklist_urls
+        elif list_type == "ja3":
+            current_urls_for_type = config.ja3_blocklist_urls
+        else: # ja3s
+            current_urls_for_type = config.ja3s_blocklist_urls
         sorted_urls = sorted(list(url_set.keys())) # url_set is passed for initial population, but active state from current_urls_for_type
 
         for url in sorted_urls:
@@ -173,6 +192,12 @@ class BlocklistManagerWindow:
         elif url_type == "DNS":
             config.dns_blocklist_urls[new_url] = new_desc
             logger.info(f"Added new DNS blocklist URL (in memory): {new_url}")
+        elif url_type == "JA3":
+            config.ja3_blocklist_urls[new_url] = new_desc
+            logger.info(f"Added new JA3 blocklist URL (in memory): {new_url}")
+        elif url_type == "JA3S":
+            config.ja3s_blocklist_urls[new_url] = new_desc
+            logger.info(f"Added new JA3S blocklist URL (in memory): {new_url}")
         else:
             messagebox.showerror("Internal Error", "Invalid blocklist type selected.", parent=self.master)
             return
@@ -188,33 +213,33 @@ class BlocklistManagerWindow:
         logger.info("Applying blocklist changes...")
         new_ip_urls = set()
         new_dns_urls = set()
+        new_ja3_urls = set()
+        new_ja3s_urls = set()
 
         # Update the sets based on checkbox states
         for url, var in self.checkbox_vars.items():
-             is_active = var.get()
-             # Determine if it was originally an IP or DNS list to add back correctly
-             # This relies on the initial population based on config sets
-             # A more robust way might store type alongside checkbox_vars if lists could be added dynamically
-
-             # Check if URL exists in either original config set
-             is_ip_list = url in config.ip_blocklist_urls
-             is_dns_list = url in config.dns_blocklist_urls
-
-             if is_active:
-                 if is_ip_list:
-                     new_ip_urls.add(url)
-                 elif is_dns_list: # Check if it was a DNS list
-                     new_dns_urls.add(url)
-                 else:
-                     # Should not happen if list is only populated from config
-                     logger.warning(f"URL '{url}' from checkbox_vars not found in initial config sets. Assuming IP list.")
-                     new_ip_urls.add(url) # Default assumption or skip?
-
-             # If inactive, it's simply not added to the new sets
+            is_active = var.get()
+            # Determine if it was originally an IP or DNS list to add back correctly
+            # This relies on the initial population based on config sets
+            # A more robust way might store type alongside checkbox_vars if lists could be added dynamically
+            if url in config.ip_blocklist_urls:
+                if is_active:
+                    new_ip_urls.add(url)
+            elif url in config.dns_blocklist_urls:
+                if is_active:
+                    new_dns_urls.add(url)
+            elif url in config.ja3_blocklist_urls:
+                if is_active:
+                    new_ja3_urls.add(url)
+            elif url in config.ja3s_blocklist_urls:
+                if is_active:
+                    new_ja3s_urls.add(url)
 
         # Update the config object
         config.ip_blocklist_urls = {url: config.ip_blocklist_urls.get(url, "") for url in new_ip_urls}
         config.dns_blocklist_urls = {url: config.dns_blocklist_urls.get(url, "") for url in new_dns_urls}
+        config.ja3_blocklist_urls = {url: config.ja3_blocklist_urls.get(url, "") for url in new_ja3_urls}
+        config.ja3s_blocklist_urls = {url: config.ja3s_blocklist_urls.get(url, "") for url in new_ja3s_urls}
         try:
             interval_hours = int(self.update_interval_var.get())
             if interval_hours >= 0:
@@ -228,6 +253,8 @@ class BlocklistManagerWindow:
 
         logger.debug(f"Updated config IP URLs: {config.ip_blocklist_urls}")
         logger.debug(f"Updated config DNS URLs: {config.dns_blocklist_urls}")
+        logger.debug(f"Updated config JA3 URLs: {config.ja3_blocklist_urls}")
+        logger.debug(f"Updated config JA3S URLs: {config.ja3s_blocklist_urls}")
         logger.debug(f"Updated blocklist update interval: {config.blocklist_update_interval_hours} hours")
 
 

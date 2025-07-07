@@ -1,0 +1,8 @@
+2025-07-07 14:35:37,825 - core.whitelist_manager - WARNING - Whitelist file 'whitelist.txt' not found. No entries loaded.
+2025-07-07 14:35:37,901 - __main__ - CRITICAL - Failed to import core components: cannot import name 'JA3' from 'core.ja3_crypto' (C:\Users\kamme\OneDrive\Desktop\uni\Master\PraktikeschProjek\botnet_detection\botnet_detection\localscripts\detectionscript\core\ja3_crypto.py)
+Traceback (most recent call last):
+  File "C:\Users\kamme\OneDrive\Desktop\uni\Master\PraktikeschProjek\botnet_detection\botnet_detection\localscripts\detectionscript\main.py", line 43, in <module>
+    from core.capture import capture_packets, select_interfaces, stop_capture, capture_stop_event
+  File "C:\Users\kamme\OneDrive\Desktop\uni\Master\PraktikeschProjek\botnet_detection\botnet_detection\localscripts\detectionscript\core\capture.py", line 14, in <module>
+    from core.ja3_crypto import JA3
+ImportError: cannot import name 'JA3' from 'core.ja3_crypto' (C:\Users\kamme\OneDrive\Desktop\uni\Master\PraktikeschProjek\botnet_detection\botnet_detection\localscripts\detectionscript\core\ja3_crypto.py)

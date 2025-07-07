@@ -11,7 +11,7 @@ import ipaddress
 from .config_manager import config
 from .whitelist_manager import get_whitelist
 from config.globals import MAX_MINUTES_TEMPORAL
-from .blocklist_integration import identify_malicious_ip, is_domain_malicious
+from .blocklist_integration import identify_malicious_ip, is_domain_malicious, is_ja3_malicious, is_ja3s_malicious
 
 
 logger = logging.getLogger(__name__)
@@ -44,6 +44,7 @@ class NetworkDataManager:
         self.beaconing_interval_seconds = config.beaconing_interval_seconds
         self.beaconing_tolerance_seconds = config.beaconing_tolerance_seconds
         self.beaconing_min_occurrences = config.beaconing_min_occurrences
+        self.enable_ja3_detection = config.enable_ja3_detection
         self.tracked_protocols_temporal = config.tracked_protocols_temporal
         self.MAX_MINUTES_TEMPORAL = MAX_MINUTES_TEMPORAL
 
@@ -61,7 +62,7 @@ class NetworkDataManager:
             logger.error(f"DataManager: Error calculating deque maxlen: {e}. Using default: {_DEFAULT_DEQUE_MAXLEN}")
             self._packet_deque_maxlen = _DEFAULT_DEQUE_MAXLEN
 
-    def process_packet_data(self, src_ip, dst_ip, proto_name, port_used, pkt_time, tcp_flags, is_dns_traffic, raw_pkt):
+    def process_packet_data(self, src_ip, dst_ip, proto_name, port_used, pkt_time, tcp_flags, is_dns_traffic, ja3, ja3s, raw_pkt):
         if self.whitelist.is_ip_whitelisted(src_ip) or self.whitelist.is_ip_whitelisted(dst_ip):
             return
 
@@ -80,6 +81,8 @@ class NetworkDataManager:
                      "rate_anomaly_detected": False,
                      "protocol_stats": defaultdict(lambda: {"mean": 0, "std": 0, "count": 0}),
                      "beaconing_detected": False,
+                     "malicious_ja3": None,
+                     "malicious_ja3s": None,
                      "is_malicious_source": False
                  }
             
@@ -138,6 +141,12 @@ class NetworkDataManager:
                             except Exception as dns_ex:
                                 logger.error(f"Error processing DNS query: {dns_ex}", exc_info=False)
             
+            if self.enable_ja3_detection:
+                if ja3 and is_ja3_malicious(ja3):
+                    ip_entry["malicious_ja3"] = ja3
+                if ja3s and is_ja3s_malicious(ja3s):
+                    ip_entry["malicious_ja3s"] = ja3s
+
             minute_start = int(pkt_time // 60) * 60
             if src_ip not in self.current_minute_data:
                  self.current_minute_data[src_ip] = {"start_time": minute_start, "count": 0, "protocol_count": defaultdict(int)}

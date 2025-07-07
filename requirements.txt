@@ -2,3 +2,6 @@ scapy
 matplotlib
 psutil
 requests
+dpkt
+pyja3
+cryptography

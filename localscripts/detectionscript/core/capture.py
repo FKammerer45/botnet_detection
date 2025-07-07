@@ -8,8 +8,10 @@ import sys
 import functools # For functools.partial
 
 from scapy.all import sniff, IP, TCP, UDP, Ether, IPv6, DNS
+from scapy.layers.tls.all import *
 from scapy.layers.dns import DNSQR, DNSRR # Not directly used here anymore, but good for context
 from scapy.config import conf as scapy_conf
+from core.ja3 import Get as JA3
 from scapy.arch import get_if_list, get_if_hwaddr
 if platform.system() == "Windows":
     from scapy.arch.windows import get_windows_if_list
@@ -74,10 +76,23 @@ def packet_callback(data_manager, pkt): # Added data_manager argument
             proto_name_scapy = pkt.sprintf(f"%{'IP.proto' if is_ipv4 else 'IPv6.nh'}%")
             proto_name = proto_name_scapy.lower() if not proto_name_scapy.isdigit() else f"other({proto_num})"
 
+        ja3 = None
+        ja3s = None
+        if pkt.haslayer(TLS):
+            if pkt.haslayer(TLSClientHello):
+                try:
+                    ja3 = JA3(pkt[TLS][TLSClientHello]).ja3_fingerprint()
+                except Exception as e:
+                    logger.debug(f"Could not process JA3 hash: {e}")
+            elif pkt.haslayer(TLSServerHello):
+                # Note: The provided script does not include JA3S logic.
+                # This will need to be added if JA3S support is required.
+                pass
+
         # Pass extracted data to the NetworkDataManager instance
         data_manager.process_packet_data(
             src_ip, dst_ip, proto_name, port_used, pkt_time,
-            tcp_flags, is_dns_traffic, pkt # Pass raw packet for DNS layer access in DataManager
+            tcp_flags, is_dns_traffic, ja3, ja3s, pkt # Pass raw packet for DNS layer access in DataManager
         )
 
     except AttributeError as ae:

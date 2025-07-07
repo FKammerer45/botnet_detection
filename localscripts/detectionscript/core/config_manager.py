@@ -49,6 +49,12 @@ class AppConfig:
         self.beaconing_interval_seconds = 60
         self.beaconing_tolerance_seconds = 5
         self.beaconing_min_occurrences = 3
+        # JA3/JA3S Detection
+        self.enable_ja3_detection = True
+        self.ja3_blocklist_urls = {
+            "https://sslbl.abuse.ch/ja3-fingerprints/ja3.csv": "SSLBL JA3",
+        }
+        self.ja3s_blocklist_urls = {}
         # Unsafe Rules
         self.unsafe_ports = {23, 445, 3389, 1080, 3128, 6667}
         self.unsafe_protocols = {"telnet", "ftp", "irc", "pop3", "imap"}
@@ -133,6 +139,11 @@ class AppConfig:
             self.beaconing_tolerance_seconds = self.parser.getint('BeaconingDetection', 'beaconing_tolerance_seconds', fallback=self.beaconing_tolerance_seconds)
             self.beaconing_min_occurrences = self.parser.getint('BeaconingDetection', 'beaconing_min_occurrences', fallback=self.beaconing_min_occurrences)
 
+            # JA3/JA3S Detection
+            self.enable_ja3_detection = self.parser.getboolean('JA3Detection', 'enable_ja3_detection', fallback=self.enable_ja3_detection)
+            self.ja3_blocklist_urls = self._get_dict_from_config_section('Blocklists_JA3')
+            self.ja3s_blocklist_urls = self._get_dict_from_config_section('Blocklists_JA3S')
+
             # Unsafe Rules
             self.unsafe_ports = self._get_set_from_config('UnsafeRules', 'ports', self.unsafe_ports, item_type=int)
             self.unsafe_protocols = self._get_set_from_config('UnsafeRules', 'protocols', self.unsafe_protocols, item_type=str)
@@ -153,7 +164,7 @@ class AppConfig:
         logger.info(f"Attempting to save configuration to {self.filepath}")
         try:
             # Ensure sections exist before setting
-            sections = ['General', 'Thresholds', 'ScanDetection', 'RateAnomaly', 'BeaconingDetection', 'UnsafeRules', 'Blocklists_IP', 'Blocklists_DNS', 'Display']
+            sections = ['General', 'Thresholds', 'ScanDetection', 'RateAnomaly', 'BeaconingDetection', 'JA3Detection', 'UnsafeRules', 'Blocklists_IP', 'Blocklists_DNS', 'Blocklists_JA3', 'Blocklists_JA3S', 'Display']
             for section in sections:
                 if not self.parser.has_section(section): self.parser.add_section(section)
 
@@ -185,6 +196,13 @@ class AppConfig:
             self.parser.set('BeaconingDetection', 'beaconing_interval_seconds', str(self.beaconing_interval_seconds))
             self.parser.set('BeaconingDetection', 'beaconing_tolerance_seconds', str(self.beaconing_tolerance_seconds))
             self.parser.set('BeaconingDetection', 'beaconing_min_occurrences', str(self.beaconing_min_occurrences))
+
+            # JA3/JA3S Detection
+            self.parser.set('JA3Detection', 'enable_ja3_detection', str(self.enable_ja3_detection))
+            self.parser.remove_section('Blocklists_JA3'); self.parser.add_section('Blocklists_JA3')
+            for url, desc in self.ja3_blocklist_urls.items(): self.parser.set('Blocklists_JA3', url, desc)
+            self.parser.remove_section('Blocklists_JA3S'); self.parser.add_section('Blocklists_JA3S')
+            for url, desc in self.ja3s_blocklist_urls.items(): self.parser.set('Blocklists_JA3S', url, desc)
     
             # Unsafe Rules
             self.parser.set('UnsafeRules', 'ports', ', '.join(map(str, sorted(list(self.unsafe_ports)))))

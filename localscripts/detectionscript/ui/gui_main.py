@@ -189,6 +189,10 @@ class PacketStatsGUI:
         cb_rate_anomaly = tk.Checkbutton(row1_frame, text="Flag Rate Anomaly", variable=self.flag_rate_anomaly_var)
         cb_rate_anomaly.pack(side=tk.LEFT, padx=2)
         self.create_tooltip(cb_rate_anomaly, "Flags hosts with unusual traffic rates for specific protocols.")
+        self.flag_ja3_var = tk.BooleanVar(value=True)
+        cb_ja3 = tk.Checkbutton(row1_frame, text="Flag JA3/S", variable=self.flag_ja3_var)
+        cb_ja3.pack(side=tk.LEFT, padx=2)
+        self.create_tooltip(cb_ja3, "Flags hosts with malicious JA3/JA3S fingerprints.")
         row2_frame = tk.Frame(config_frame)
         row2_frame.pack(fill=tk.X, pady=2)
         tk.Button(row2_frame, text="Conf Unsafe", command=self.configure_unsafe).pack(side=tk.LEFT, padx=3)
@@ -388,9 +392,10 @@ class PacketStatsGUI:
                 is_dns_triggered = flag_dns_enabled and bool(data.get("suspicious_dns"))
                 is_scan_detected = flag_scan_enabled and (data.get("detected_scan_ports", False) or data.get("detected_scan_hosts", False))
                 is_rate_anomaly_detected = self.flag_rate_anomaly_var.get() and data.get("rate_anomaly_detected", False)
+                is_ja3_detected = self.flag_ja3_var.get() and (data.get("malicious_ja3") or data.get("malicious_ja3s"))
                 
                 should_flag_row = (is_over_threshold or is_unsafe_triggered or
-                                   is_malicious_triggered or is_dns_triggered or is_scan_detected or is_rate_anomaly_detected)
+                                   is_malicious_triggered or is_dns_triggered or is_scan_detected or is_rate_anomaly_detected or is_ja3_detected)
                 data_for_table.append((ip, total_packets, packets_per_minute,
                                        packets_per_second, max_packets_sec, should_flag_row))
 

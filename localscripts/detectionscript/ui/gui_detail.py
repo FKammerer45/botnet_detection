@@ -9,6 +9,7 @@ import ipaddress
 # Import core components
 from core.config_manager import config
 from core.whitelist_manager import get_whitelist
+from ui.gui_tooltip import Tooltip
 # NetworkDataManager will be passed in via __init__
 
 logger = logging.getLogger(__name__)
@@ -72,6 +73,18 @@ class DetailWindow:
         self.notebook.add(self.beaconing_frame, text="Beaconing")
         self._setup_beaconing_tab()
 
+        self.dns_analysis_frame = ttk.Frame(self.notebook)
+        self.notebook.add(self.dns_analysis_frame, text="DNS Analysis")
+        self._setup_dns_analysis_tab()
+
+        self.local_network_frame = ttk.Frame(self.notebook)
+        self.notebook.add(self.local_network_frame, text="Local Network")
+        self._setup_local_network_tab()
+
+        self.scoring_frame = ttk.Frame(self.notebook)
+        self.notebook.add(self.scoring_frame, text="Scoring")
+        self._setup_scoring_tab()
+
         self._update_scheduled = None
         self.update_gui() 
         self.master.protocol("WM_DELETE_WINDOW", self.on_close)
@@ -87,6 +100,8 @@ class DetailWindow:
         except tk.TclError: pass
 
     def _setup_destinations_tab(self):
+        explanation = "Shows all destination IPs this host has communicated with, along with packet counts."
+        ttk.Label(self.dest_frame, text=explanation, wraplength=500, justify=tk.LEFT).pack(pady=(5, 10), padx=5, anchor=tk.W)
         columns = ("dst_ip", "total", "per_second", "max_per_sec")
         self.dest_tree = ttk.Treeview(self.dest_frame, columns=columns, show='headings')
         headers = {"dst_ip": "Destination IP", "total": "Total Packets", "per_second": "Packets/Sec", "max_per_sec": "Max P/S"}
@@ -99,6 +114,8 @@ class DetailWindow:
         self.dest_tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
     def _setup_protocols_tab(self):
+        explanation = "Shows all protocols and ports used by this host, along with packet counts."
+        ttk.Label(self.proto_frame, text=explanation, wraplength=500, justify=tk.LEFT).pack(pady=(5, 10), padx=5, anchor=tk.W)
         columns = ("proto_port", "total", "per_second", "max_per_sec")
         self.proto_tree = ttk.Treeview(self.proto_frame, columns=columns, show='headings')
         headers = {"proto_port": "Protocol/Port", "total": "Total Packets", "per_second": "Packets/Sec", "max_per_sec": "Max P/S"}
@@ -111,6 +128,8 @@ class DetailWindow:
         self.proto_tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
     def _setup_threat_tab(self):
+        explanation = "Shows all malicious IPs, domains, and JA3/S fingerprints this host has communicated with, based on loaded blocklists."
+        ttk.Label(self.threat_frame, text=explanation, wraplength=500, justify=tk.LEFT).pack(pady=(5, 10), padx=5, anchor=tk.W)
         columns = ("mal_ip", "blocklists", "direction", "count")
         self.threat_tree = ttk.Treeview(self.threat_frame, columns=columns, show="headings")
         headers = {"mal_ip": "Malicious IP", "blocklists": "Blocklists", "direction": "Dir", "count": "Count"}
@@ -122,6 +141,8 @@ class DetailWindow:
         self.threat_tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
     def _setup_dns_query_tab(self):
+        explanation = "Shows all suspicious DNS queries made by this host that were found in the blocklists."
+        ttk.Label(self.dns_query_frame, text=explanation, wraplength=500, justify=tk.LEFT).pack(pady=(5, 10), padx=5, anchor=tk.W)
         columns = ("timestamp", "qname", "reason")
         self.dns_tree = ttk.Treeview(self.dns_query_frame, columns=columns, show="headings")
         headers = {"timestamp": "Timestamp", "qname": "Queried Domain", "reason": "Reason"}
@@ -132,6 +153,8 @@ class DetailWindow:
         self.dns_tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
     def _setup_scan_activity_tab(self):
+        explanation = "Shows detected port and host scan activity originating from this host."
+        ttk.Label(self.scan_activity_frame, text=explanation, wraplength=500, justify=tk.LEFT).pack(pady=(5, 10), padx=5, anchor=tk.W)
         status_frame = ttk.Frame(self.scan_activity_frame, padding=(5,5))
         status_frame.pack(fill=tk.X)
         self.port_scan_status_var = tk.StringVar(value="Port Scan: Unknown")
@@ -151,6 +174,8 @@ class DetailWindow:
         self.scan_targets_tree.pack(fill=tk.BOTH, expand=True)
 
     def _setup_anomaly_tab(self):
+        explanation = "Shows detected traffic rate anomalies for specific protocols used by this host."
+        ttk.Label(self.anomaly_frame, text=explanation, wraplength=500, justify=tk.LEFT).pack(pady=(5, 10), padx=5, anchor=tk.W)
         columns = ("protocol", "count", "mean", "std_dev", "threshold")
         self.anomaly_tree = ttk.Treeview(self.anomaly_frame, columns=columns, show="headings")
         headers = {"protocol": "Protocol", "count": "Packets", "mean": "Mean", "std_dev": "Std Dev", "threshold": "Threshold"}
@@ -161,6 +186,8 @@ class DetailWindow:
         self.anomaly_tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
     def _setup_beaconing_tab(self):
+        explanation = "Shows detected Command & Control (C2) beaconing activity from this host to external destinations."
+        ttk.Label(self.beaconing_frame, text=explanation, wraplength=500, justify=tk.LEFT).pack(pady=(5, 10), padx=5, anchor=tk.W)
         columns = ("destination", "interval", "tolerance", "occurrences")
         self.beaconing_tree = ttk.Treeview(self.beaconing_frame, columns=columns, show="headings")
         headers = {"destination": "Destination", "interval": "Interval (s)", "tolerance": "Tolerance (s)", "occurrences": "Occurrences"}
@@ -169,6 +196,43 @@ class DetailWindow:
             self.beaconing_tree.heading(col, text=headers[col], anchor=tk.W)
             self.beaconing_tree.column(col, width=widths[col], anchor=tk.W)
         self.beaconing_tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+    def _setup_dns_analysis_tab(self):
+        explanation = "Shows advanced DNS analysis, including DGA and DNS tunneling detection."
+        ttk.Label(self.dns_analysis_frame, text=explanation, wraplength=500, justify=tk.LEFT).pack(pady=(5, 10), padx=5, anchor=tk.W)
+        status_frame = ttk.Frame(self.dns_analysis_frame, padding=(5,5))
+        status_frame.pack(fill=tk.X)
+        self.dga_status_var = tk.StringVar(value="DGA Detected: Unknown")
+        ttk.Label(status_frame, textvariable=self.dga_status_var).pack(anchor=tk.W)
+        self.dns_tunneling_status_var = tk.StringVar(value="DNS Tunneling Detected: Unknown")
+        ttk.Label(status_frame, textvariable=self.dns_tunneling_status_var).pack(anchor=tk.W)
+
+    def _setup_local_network_tab(self):
+        explanation = "Shows detected local network threats like ARP spoofing and ICMP anomalies."
+        ttk.Label(self.local_network_frame, text=explanation, wraplength=500, justify=tk.LEFT).pack(pady=(5, 10), padx=5, anchor=tk.W)
+        status_frame = ttk.Frame(self.local_network_frame, padding=(5,5))
+        status_frame.pack(fill=tk.X)
+        self.arp_spoof_status_var = tk.StringVar(value="ARP Spoofing Detected: Unknown")
+        ttk.Label(status_frame, textvariable=self.arp_spoof_status_var).pack(anchor=tk.W)
+        self.ping_sweep_status_var = tk.StringVar(value="Ping Sweep Detected: Unknown")
+        ttk.Label(status_frame, textvariable=self.ping_sweep_status_var).pack(anchor=tk.W)
+        self.icmp_tunneling_status_var = tk.StringVar(value="ICMP Tunneling Detected: Unknown")
+        ttk.Label(status_frame, textvariable=self.icmp_tunneling_status_var).pack(anchor=tk.W)
+
+    def _setup_scoring_tab(self):
+        explanation = "Shows the threat score for this IP and a breakdown of how it was calculated."
+        ttk.Label(self.scoring_frame, text=explanation, wraplength=500, justify=tk.LEFT).pack(pady=(5, 10), padx=5, anchor=tk.W)
+        
+        self.score_var = tk.StringVar(value="Score: 0/100")
+        ttk.Label(self.scoring_frame, textvariable=self.score_var, font=("TkDefaultFont", 14, "bold")).pack(pady=5)
+
+        columns = ("component", "points")
+        self.score_tree = ttk.Treeview(self.scoring_frame, columns=columns, show="headings")
+        self.score_tree.heading("component", text="Detection Component")
+        self.score_tree.heading("points", text="Points")
+        self.score_tree.column("component", anchor=tk.W)
+        self.score_tree.column("points", anchor=tk.CENTER, width=100)
+        self.score_tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
     def update_gui(self):
         if not self.master.winfo_exists():
@@ -195,6 +259,9 @@ class DetailWindow:
             self._update_scan_activity_tab(source_ip_exists, ip_entry_snapshot, flag_scan_enabled, scan_ports_detected, scan_hosts_detected)
             self._update_anomaly_tab(source_ip_exists, ip_entry_snapshot)
             self._update_beaconing_tab(source_ip_exists, ip_entry_snapshot)
+            self._update_dns_analysis_tab(source_ip_exists, ip_entry_snapshot)
+            self._update_local_network_tab(source_ip_exists, ip_entry_snapshot)
+            self._update_scoring_tab(source_ip_exists, ip_entry_snapshot)
 
         except Exception as e:
             logger.error(f"Error during detail GUI update for {self.source_ip}: {e}", exc_info=True)
@@ -284,7 +351,12 @@ class DetailWindow:
         threat_data_for_table = []
         if ip_snapshot:
             malicious_hits = ip_snapshot.get("malicious_hits", {})
-            if not malicious_hits:
+            if ip_snapshot.get("malicious_ja3"):
+                threat_data_for_table.append(("JA3", ip_snapshot["malicious_ja3"], "N/A", 1))
+            if ip_snapshot.get("malicious_ja3s"):
+                threat_data_for_table.append(("JA3S", ip_snapshot["malicious_ja3s"], "N/A", 1))
+
+            if not malicious_hits and not ip_snapshot.get("malicious_ja3") and not ip_snapshot.get("malicious_ja3s"):
                 self.threat_tree.insert("", tk.END, values=("No recorded malicious hits", "", "", ""))
                 return
             for mal_ip, hit_info in malicious_hits.items():
@@ -403,10 +475,10 @@ class DetailWindow:
                 if abs(mean_interval - config.beaconing_interval_seconds) <= config.beaconing_tolerance_seconds:
                     consistent_beacons = 0
                     for interval in intervals:
-                        if abs(interval - config.beaconing_interval_seconds) <= config.beaconing_tolerance_seconds:
+                        if abs(interval - config.beaconing_interval_seconds) <= self.beaconing_tolerance_seconds:
                             consistent_beacons += 1
                     
-                    if consistent_beacons + 1 >= config.beaconing_min_occurrences:
+                    if consistent_beacons + 1 >= self.beaconing_min_occurrences:
                         beaconing_data_for_table.append((dest_ip, f"{mean_interval:.2f}", config.beaconing_tolerance_seconds, len(timestamps)))
 
         if not beaconing_data_for_table:
@@ -414,6 +486,52 @@ class DetailWindow:
         else:
             for row in beaconing_data_for_table:
                 self.beaconing_tree.insert("", tk.END, values=row)
+
+    def _update_dns_analysis_tab(self, source_ip_exists, ip_snapshot):
+        if not source_ip_exists:
+            self.dga_status_var.set("DGA Detected: Source IP data unavailable")
+            self.dns_tunneling_status_var.set("DNS Tunneling Detected: Source IP data unavailable")
+            return
+
+        dga_detected = ip_snapshot.get("dga_detected", False)
+        dns_tunneling_detected = ip_snapshot.get("dns_tunneling_detected", False)
+
+        self.dga_status_var.set(f"DGA Detected: {'Yes' if dga_detected else 'No'}")
+        self.dns_tunneling_status_var.set(f"DNS Tunneling Detected: {'Yes' if dns_tunneling_detected else 'No'}")
+
+    def _update_local_network_tab(self, source_ip_exists, ip_snapshot):
+        if not source_ip_exists:
+            self.arp_spoof_status_var.set("ARP Spoofing Detected: Source IP data unavailable")
+            self.ping_sweep_status_var.set("Ping Sweep Detected: Source IP data unavailable")
+            self.icmp_tunneling_status_var.set("ICMP Tunneling Detected: Source IP data unavailable")
+            return
+
+        arp_spoof_detected = ip_snapshot.get("arp_spoof_detected", False)
+        ping_sweep_detected = ip_snapshot.get("ping_sweep_detected", False)
+        icmp_tunneling_detected = ip_snapshot.get("icmp_tunneling_detected", False)
+
+        self.arp_spoof_status_var.set(f"ARP Spoofing Detected: {'Yes' if arp_spoof_detected else 'No'}")
+        self.ping_sweep_status_var.set(f"Ping Sweep Detected: {'Yes' if ping_sweep_detected else 'No'}")
+        self.icmp_tunneling_status_var.set(f"ICMP Tunneling Detected: {'Yes' if icmp_tunneling_detected else 'No'}")
+
+    def _update_scoring_tab(self, source_ip_exists, ip_snapshot):
+        if not source_ip_exists:
+            self.score_var.set("Score: N/A")
+            self.score_tree.delete(*self.score_tree.get_children())
+            self.score_tree.insert("", tk.END, values=("Source IP data unavailable", ""))
+            return
+
+        score = ip_snapshot.get("score", 0)
+        self.score_var.set(f"Score: {score}/100")
+
+        self.score_tree.delete(*self.score_tree.get_children())
+        score_components = ip_snapshot.get("score_components", {})
+        if not score_components:
+            self.score_tree.insert("", tk.END, values=("No scoring components", ""))
+            return
+        
+        for component, points in sorted(score_components.items()):
+            self.score_tree.insert("", tk.END, values=(component, points))
 
     def sort_data(self, data, column, ascending, columns, extra_data_indices=None):
         try:
@@ -451,4 +569,3 @@ class DetailWindow:
         setattr(self, sort_asc_attr, new_ascending)
         logger.debug(f"Set detail table sort: Column='{column}', Ascending={new_ascending}")
         self.update_gui()
-

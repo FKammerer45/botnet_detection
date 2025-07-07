@@ -21,6 +21,9 @@ from ui.gui_detail import DetailWindow
 from ui.gui_scan_config import ScanConfigWindow
 from ui.gui_whitelist_manager import WhitelistManagerWindow
 from ui.gui_beaconing_config import BeaconingConfigWindow
+from ui.gui_dns_config import DnsConfigWindow
+from ui.gui_local_network_config import LocalNetworkConfigWindow
+from ui.gui_scoring_config import ScoringConfigWindow
 from ui.gui_tooltip import Tooltip
 
 logger = logging.getLogger(__name__)
@@ -32,7 +35,7 @@ AGGREGATION_INTERVAL_MS = 60000 # This will trigger data_manager.aggregate_minut
 PRUNE_SECONDS = 61 
 TAG_ALERT = "red" 
 COLOR_ALERT_BG = "#FF9999"
-WINDOW_GEOMETRY = "950x600"
+WINDOW_GEOMETRY = "1050x600"
 # --- End Constants ---
 
 class PacketStatsGUI:
@@ -52,6 +55,9 @@ class PacketStatsGUI:
         self.blocklist_manager_window_ref = None
         self.whitelist_manager_window_ref = None
         self.beaconing_config_window_ref = None
+        self.dns_config_window_ref = None
+        self.local_network_config_window_ref = None
+        self.scoring_config_window_ref = None
 
         try:
             logger.info("Downloading/loading blocklists (if needed)...")
@@ -62,7 +68,7 @@ class PacketStatsGUI:
             logger.error(f"Blocklist initialization error: {e}", exc_info=True)
             messagebox.showerror("Blocklist Error", f"Failed to load blocklists: {e}\nBlocklist features may be disabled.")
 
-        self.current_sort_column = "max_per_sec" 
+        self.current_sort_column = "score" 
         self.current_sort_ascending = False
 
         top_frame = tk.Frame(self.master)
@@ -193,22 +199,33 @@ class PacketStatsGUI:
         cb_ja3 = tk.Checkbutton(row1_frame, text="Flag JA3/S", variable=self.flag_ja3_var)
         cb_ja3.pack(side=tk.LEFT, padx=2)
         self.create_tooltip(cb_ja3, "Flags hosts with malicious JA3/JA3S fingerprints.")
+        self.flag_dns_analysis_var = tk.BooleanVar(value=True)
+        cb_dns_analysis = tk.Checkbutton(row1_frame, text="Flag DNS Analysis", variable=self.flag_dns_analysis_var)
+        cb_dns_analysis.pack(side=tk.LEFT, padx=2)
+        self.create_tooltip(cb_dns_analysis, "Flags hosts with suspicious DNS activity (DGA, tunneling).")
+        self.flag_local_threat_var = tk.BooleanVar(value=True)
+        cb_local_threat = tk.Checkbutton(row1_frame, text="Flag Local Threats", variable=self.flag_local_threat_var)
+        cb_local_threat.pack(side=tk.LEFT, padx=2)
+        self.create_tooltip(cb_local_threat, "Flags local network threats like ARP spoofing and ICMP anomalies.")
         row2_frame = tk.Frame(config_frame)
         row2_frame.pack(fill=tk.X, pady=2)
         tk.Button(row2_frame, text="Conf Unsafe", command=self.configure_unsafe).pack(side=tk.LEFT, padx=3)
         tk.Button(row2_frame, text="Conf Scan", command=self.configure_scan).pack(side=tk.LEFT, padx=3)
         tk.Button(row2_frame, text="Conf Beaconing", command=self.configure_beaconing).pack(side=tk.LEFT, padx=3)
+        tk.Button(row2_frame, text="Conf DNS", command=self.configure_dns).pack(side=tk.LEFT, padx=3)
+        tk.Button(row2_frame, text="Conf Local Net", command=self.configure_local_network).pack(side=tk.LEFT, padx=3)
+        tk.Button(row2_frame, text="Conf Scoring", command=self.configure_scoring).pack(side=tk.LEFT, padx=3)
         tk.Button(row2_frame, text="Blocklists", command=self.open_blocklist_manager).pack(side=tk.LEFT, padx=3)
         tk.Button(row2_frame, text="Whitelist", command=self.open_whitelist_manager).pack(side=tk.LEFT, padx=3)
         tk.Button(row2_frame, text="Temporal", command=self.open_temporal_analysis).pack(side=tk.LEFT, padx=3)
 
     def add_table_frame(self, parent_frame):
-        columns = ("ip", "total", "per_minute", "per_second", "max_per_sec")
+        columns = ("ip", "score", "total", "per_minute", "per_second", "max_per_sec")
         self.tree = ttk.Treeview(parent_frame, columns=columns, show="headings")
-        headers = {"ip": "IP Address", "total": "Total Pkts", "per_minute": "Pkts/Min",
+        headers = {"ip": "IP Address", "score": "Score", "total": "Total Pkts", "per_minute": "Pkts/Min",
                    "per_second": "Pkts/Sec", "max_per_sec": "Max P/S"}
-        widths = {"ip": 150, "total": 100, "per_minute": 100, "per_second": 100, "max_per_sec": 100}
-        anchors = {"ip": tk.W, "total": tk.CENTER, "per_minute": tk.CENTER,
+        widths = {"ip": 150, "score": 50, "total": 100, "per_minute": 100, "per_second": 100, "max_per_sec": 100}
+        anchors = {"ip": tk.W, "score": tk.CENTER, "total": tk.CENTER, "per_minute": tk.CENTER,
                    "per_second": tk.CENTER, "max_per_sec": tk.CENTER}
         for col in columns:
             self.tree.heading(col, text=headers[col], anchor=tk.CENTER,
@@ -304,6 +321,36 @@ class PacketStatsGUI:
         beaconing_instance = BeaconingConfigWindow(top)
         top.protocol("WM_DELETE_WINDOW", lambda t=top, bi=beaconing_instance: (bi.master.destroy(), self._clear_window_reference(t, "beaconing_config_window_ref")))
 
+    def configure_dns(self):
+        logger.debug("Opening DNS Analysis Configuration window.")
+        if self.dns_config_window_ref and self.dns_config_window_ref.winfo_exists():
+            self.dns_config_window_ref.lift()
+            return
+        top = tk.Toplevel(self.master)
+        self.dns_config_window_ref = top
+        dns_instance = DnsConfigWindow(top)
+        top.protocol("WM_DELETE_WINDOW", lambda t=top, di=dns_instance: (di.master.destroy(), self._clear_window_reference(t, "dns_config_window_ref")))
+
+    def configure_local_network(self):
+        logger.debug("Opening Local Network Detection Configuration window.")
+        if self.local_network_config_window_ref and self.local_network_config_window_ref.winfo_exists():
+            self.local_network_config_window_ref.lift()
+            return
+        top = tk.Toplevel(self.master)
+        self.local_network_config_window_ref = top
+        local_net_instance = LocalNetworkConfigWindow(top)
+        top.protocol("WM_DELETE_WINDOW", lambda t=top, lni=local_net_instance: (lni.master.destroy(), self._clear_window_reference(t, "local_network_config_window_ref")))
+
+    def configure_scoring(self):
+        logger.debug("Opening Scoring Configuration window.")
+        if self.scoring_config_window_ref and self.scoring_config_window_ref.winfo_exists():
+            self.scoring_config_window_ref.lift()
+            return
+        top = tk.Toplevel(self.master)
+        self.scoring_config_window_ref = top
+        scoring_instance = ScoringConfigWindow(top)
+        top.protocol("WM_DELETE_WINDOW", lambda t=top, si=scoring_instance: (si.master.destroy(), self._clear_window_reference(t, "scoring_config_window_ref")))
+
     def get_flag_unsafe(self): return self.flag_unsafe_var.get()
     def get_flag_malicious(self): return self.flag_malicious_var.get()
     def get_flag_dns(self): return self.flag_dns_var.get()
@@ -378,6 +425,7 @@ class PacketStatsGUI:
                 
                 # Max per second is managed by DataManager, just retrieve
                 max_packets_sec = data.get("max_per_sec", 0) 
+                score = data.get("score", 0)
 
                 is_over_threshold = packets_per_minute > threshold
                 is_unsafe_triggered = False
@@ -393,10 +441,12 @@ class PacketStatsGUI:
                 is_scan_detected = flag_scan_enabled and (data.get("detected_scan_ports", False) or data.get("detected_scan_hosts", False))
                 is_rate_anomaly_detected = self.flag_rate_anomaly_var.get() and data.get("rate_anomaly_detected", False)
                 is_ja3_detected = self.flag_ja3_var.get() and (data.get("malicious_ja3") or data.get("malicious_ja3s"))
+                is_dns_analysis_detected = self.flag_dns_analysis_var.get() and (data.get("dga_detected") or data.get("dns_tunneling_detected"))
+                is_local_threat_detected = self.flag_local_threat_var.get() and (data.get("arp_spoof_detected") or data.get("ping_sweep_detected") or data.get("icmp_tunneling_detected"))
                 
                 should_flag_row = (is_over_threshold or is_unsafe_triggered or
-                                   is_malicious_triggered or is_dns_triggered or is_scan_detected or is_rate_anomaly_detected or is_ja3_detected)
-                data_for_table.append((ip, total_packets, packets_per_minute,
+                                   is_malicious_triggered or is_dns_triggered or is_scan_detected or is_rate_anomaly_detected or is_ja3_detected or is_dns_analysis_detected or is_local_threat_detected)
+                data_for_table.append((ip, score, total_packets, packets_per_minute,
                                        packets_per_second, max_packets_sec, should_flag_row))
 
             if self.current_sort_column:
@@ -412,9 +462,9 @@ class PacketStatsGUI:
             self.tree.delete(*self.tree.get_children())
             new_item_id_to_select = None
             for row_data in data_for_table:
-                ip_val, total_val, pmin_val, psec_val, maxp_val, flag_val = row_data
+                ip_val, score_val, total_val, pmin_val, psec_val, maxp_val, flag_val = row_data
                 tags_to_apply = (TAG_ALERT,) if flag_val else ()
-                current_item_id = self.tree.insert("", tk.END, values=(ip_val, total_val, pmin_val, psec_val, maxp_val), tags=tags_to_apply)
+                current_item_id = self.tree.insert("", tk.END, values=(ip_val, score_val, total_val, pmin_val, psec_val, maxp_val), tags=tags_to_apply)
                 if selected_ip_address and ip_val == selected_ip_address:
                     new_item_id_to_select = current_item_id
             
@@ -432,7 +482,7 @@ class PacketStatsGUI:
                 self._update_scheduled = None
 
     def sort_data(self, data, column, ascending):
-        column_map = {"ip": 0, "total": 1, "per_minute": 2, "per_second": 3, "max_per_sec": 4}
+        column_map = {"ip": 0, "score": 1, "total": 2, "per_minute": 3, "per_second": 4, "max_per_sec": 5}
         try:
             col_index = column_map[column]
             reverse_sort = not ascending

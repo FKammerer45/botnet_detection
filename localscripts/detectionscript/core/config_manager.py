@@ -55,6 +55,31 @@ class AppConfig:
             "https://sslbl.abuse.ch/ja3-fingerprints/ja3.csv": "SSLBL JA3",
         }
         self.ja3s_blocklist_urls = {}
+        # DNS Analysis
+        self.enable_dns_analysis = True
+        self.dga_entropy_threshold = 3.5
+        self.dga_length_threshold = 20
+        self.nxdomain_rate_threshold = 0.5
+        self.nxdomain_min_count = 10
+        # Local Network Detection
+        self.enable_arp_spoof_detection = True
+        self.enable_icmp_anomaly_detection = True
+        self.icmp_ping_sweep_threshold = 10
+        self.icmp_large_payload_threshold = 512
+        # Scoring
+        self.score_arp_spoof = 50
+        self.score_icmp_ping_sweep = 5
+        self.score_icmp_tunneling = 20
+        self.score_c2_beaconing = 40
+        self.score_ja3_hit = 20
+        self.score_dga = 10
+        self.score_dns_tunneling = 25
+        self.score_ip_blocklist = 15
+        self.score_dns_blocklist = 10
+        self.score_port_scan = 5
+        self.score_host_scan = 10
+        self.score_rate_anomaly = 15
+        self.score_unsafe_protocol = 2
         # Unsafe Rules
         self.unsafe_ports = {23, 445, 3389, 1080, 3128, 6667}
         self.unsafe_protocols = {"telnet", "ftp", "irc", "pop3", "imap"}
@@ -144,6 +169,34 @@ class AppConfig:
             self.ja3_blocklist_urls = self._get_dict_from_config_section('Blocklists_JA3')
             self.ja3s_blocklist_urls = self._get_dict_from_config_section('Blocklists_JA3S')
 
+            # DNS Analysis
+            self.enable_dns_analysis = self.parser.getboolean('DnsAnalysis', 'enable_dns_analysis', fallback=self.enable_dns_analysis)
+            self.dga_entropy_threshold = self.parser.getfloat('DnsAnalysis', 'dga_entropy_threshold', fallback=self.dga_entropy_threshold)
+            self.dga_length_threshold = self.parser.getint('DnsAnalysis', 'dga_length_threshold', fallback=self.dga_length_threshold)
+            self.nxdomain_rate_threshold = self.parser.getfloat('DnsAnalysis', 'nxdomain_rate_threshold', fallback=self.nxdomain_rate_threshold)
+            self.nxdomain_min_count = self.parser.getint('DnsAnalysis', 'nxdomain_min_count', fallback=self.nxdomain_min_count)
+
+            # Local Network Detection
+            self.enable_arp_spoof_detection = self.parser.getboolean('LocalNetworkDetection', 'enable_arp_spoof_detection', fallback=self.enable_arp_spoof_detection)
+            self.enable_icmp_anomaly_detection = self.parser.getboolean('LocalNetworkDetection', 'enable_icmp_anomaly_detection', fallback=self.enable_icmp_anomaly_detection)
+            self.icmp_ping_sweep_threshold = self.parser.getint('LocalNetworkDetection', 'icmp_ping_sweep_threshold', fallback=self.icmp_ping_sweep_threshold)
+            self.icmp_large_payload_threshold = self.parser.getint('LocalNetworkDetection', 'icmp_large_payload_threshold', fallback=self.icmp_large_payload_threshold)
+
+            # Scoring
+            self.score_arp_spoof = self.parser.getint('Scoring', 'arp_spoof', fallback=self.score_arp_spoof)
+            self.score_icmp_ping_sweep = self.parser.getint('Scoring', 'icmp_ping_sweep', fallback=self.score_icmp_ping_sweep)
+            self.score_icmp_tunneling = self.parser.getint('Scoring', 'icmp_tunneling', fallback=self.score_icmp_tunneling)
+            self.score_c2_beaconing = self.parser.getint('Scoring', 'c2_beaconing', fallback=self.score_c2_beaconing)
+            self.score_ja3_hit = self.parser.getint('Scoring', 'ja3_hit', fallback=self.score_ja3_hit)
+            self.score_dga = self.parser.getint('Scoring', 'dga', fallback=self.score_dga)
+            self.score_dns_tunneling = self.parser.getint('Scoring', 'dns_tunneling', fallback=self.score_dns_tunneling)
+            self.score_ip_blocklist = self.parser.getint('Scoring', 'ip_blocklist', fallback=self.score_ip_blocklist)
+            self.score_dns_blocklist = self.parser.getint('Scoring', 'dns_blocklist', fallback=self.score_dns_blocklist)
+            self.score_port_scan = self.parser.getint('Scoring', 'port_scan', fallback=self.score_port_scan)
+            self.score_host_scan = self.parser.getint('Scoring', 'host_scan', fallback=self.score_host_scan)
+            self.score_rate_anomaly = self.parser.getint('Scoring', 'rate_anomaly', fallback=self.score_rate_anomaly)
+            self.score_unsafe_protocol = self.parser.getint('Scoring', 'unsafe_protocol', fallback=self.score_unsafe_protocol)
+
             # Unsafe Rules
             self.unsafe_ports = self._get_set_from_config('UnsafeRules', 'ports', self.unsafe_ports, item_type=int)
             self.unsafe_protocols = self._get_set_from_config('UnsafeRules', 'protocols', self.unsafe_protocols, item_type=str)
@@ -164,7 +217,7 @@ class AppConfig:
         logger.info(f"Attempting to save configuration to {self.filepath}")
         try:
             # Ensure sections exist before setting
-            sections = ['General', 'Thresholds', 'ScanDetection', 'RateAnomaly', 'BeaconingDetection', 'JA3Detection', 'UnsafeRules', 'Blocklists_IP', 'Blocklists_DNS', 'Blocklists_JA3', 'Blocklists_JA3S', 'Display']
+            sections = ['General', 'Thresholds', 'ScanDetection', 'RateAnomaly', 'BeaconingDetection', 'JA3Detection', 'DnsAnalysis', 'LocalNetworkDetection', 'Scoring', 'UnsafeRules', 'Blocklists_IP', 'Blocklists_DNS', 'Blocklists_JA3', 'Blocklists_JA3S', 'Display']
             for section in sections:
                 if not self.parser.has_section(section): self.parser.add_section(section)
 
@@ -203,6 +256,34 @@ class AppConfig:
             for url, desc in self.ja3_blocklist_urls.items(): self.parser.set('Blocklists_JA3', url, desc)
             self.parser.remove_section('Blocklists_JA3S'); self.parser.add_section('Blocklists_JA3S')
             for url, desc in self.ja3s_blocklist_urls.items(): self.parser.set('Blocklists_JA3S', url, desc)
+
+            # DNS Analysis
+            self.parser.set('DnsAnalysis', 'enable_dns_analysis', str(self.enable_dns_analysis))
+            self.parser.set('DnsAnalysis', 'dga_entropy_threshold', str(self.dga_entropy_threshold))
+            self.parser.set('DnsAnalysis', 'dga_length_threshold', str(self.dga_length_threshold))
+            self.parser.set('DnsAnalysis', 'nxdomain_rate_threshold', str(self.nxdomain_rate_threshold))
+            self.parser.set('DnsAnalysis', 'nxdomain_min_count', str(self.nxdomain_min_count))
+
+            # Local Network Detection
+            self.parser.set('LocalNetworkDetection', 'enable_arp_spoof_detection', str(self.enable_arp_spoof_detection))
+            self.parser.set('LocalNetworkDetection', 'enable_icmp_anomaly_detection', str(self.enable_icmp_anomaly_detection))
+            self.parser.set('LocalNetworkDetection', 'icmp_ping_sweep_threshold', str(self.icmp_ping_sweep_threshold))
+            self.parser.set('LocalNetworkDetection', 'icmp_large_payload_threshold', str(self.icmp_large_payload_threshold))
+
+            # Scoring
+            self.parser.set('Scoring', 'arp_spoof', str(self.score_arp_spoof))
+            self.parser.set('Scoring', 'icmp_ping_sweep', str(self.score_icmp_ping_sweep))
+            self.parser.set('Scoring', 'icmp_tunneling', str(self.score_icmp_tunneling))
+            self.parser.set('Scoring', 'c2_beaconing', str(self.score_c2_beaconing))
+            self.parser.set('Scoring', 'ja3_hit', str(self.score_ja3_hit))
+            self.parser.set('Scoring', 'dga', str(self.score_dga))
+            self.parser.set('Scoring', 'dns_tunneling', str(self.score_dns_tunneling))
+            self.parser.set('Scoring', 'ip_blocklist', str(self.score_ip_blocklist))
+            self.parser.set('Scoring', 'dns_blocklist', str(self.score_dns_blocklist))
+            self.parser.set('Scoring', 'port_scan', str(self.score_port_scan))
+            self.parser.set('Scoring', 'host_scan', str(self.score_host_scan))
+            self.parser.set('Scoring', 'rate_anomaly', str(self.score_rate_anomaly))
+            self.parser.set('Scoring', 'unsafe_protocol', str(self.score_unsafe_protocol))
     
             # Unsafe Rules
             self.parser.set('UnsafeRules', 'ports', ', '.join(map(str, sorted(list(self.unsafe_ports)))))

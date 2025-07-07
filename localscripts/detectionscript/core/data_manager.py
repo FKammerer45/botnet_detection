@@ -3,9 +3,9 @@ import threading
 import time
 import logging
 from collections import deque, defaultdict
-import ipaddress # For sorting IP addresses if needed
-
-from scapy.all import DNS # For type hinting or specific field access
+import ipaddress
+import math
+from scapy.all import DNS, DNSQR, ARP, ICMP
 import ipaddress
 
 from .config_manager import config
@@ -45,8 +45,20 @@ class NetworkDataManager:
         self.beaconing_tolerance_seconds = config.beaconing_tolerance_seconds
         self.beaconing_min_occurrences = config.beaconing_min_occurrences
         self.enable_ja3_detection = config.enable_ja3_detection
+        # DNS Analysis attributes
+        self.enable_dns_analysis = config.enable_dns_analysis
+        self.dga_entropy_threshold = config.dga_entropy_threshold
+        self.dga_length_threshold = config.dga_length_threshold
+        self.nxdomain_rate_threshold = config.nxdomain_rate_threshold
+        self.nxdomain_min_count = config.nxdomain_min_count
+        # Local Network Detection attributes
+        self.enable_arp_spoof_detection = config.enable_arp_spoof_detection
+        self.enable_icmp_anomaly_detection = config.enable_icmp_anomaly_detection
+        self.icmp_ping_sweep_threshold = config.icmp_ping_sweep_threshold
+        self.icmp_large_payload_threshold = config.icmp_large_payload_threshold
         self.tracked_protocols_temporal = config.tracked_protocols_temporal
         self.MAX_MINUTES_TEMPORAL = MAX_MINUTES_TEMPORAL
+        self.arp_table = {}
 
         _DEFAULT_DEQUE_MAXLEN = 1000
         _MAXLEN_MULTIPLIER = 1.5
@@ -83,7 +95,16 @@ class NetworkDataManager:
                      "beaconing_detected": False,
                      "malicious_ja3": None,
                      "malicious_ja3s": None,
-                     "is_malicious_source": False
+                     "is_malicious_source": False,
+                     "dns_queries": defaultdict(lambda: {"count": 0, "nxdomain_count": 0}),
+                     "dga_detected": False,
+                     "dns_tunneling_detected": False,
+                     "arp_spoof_detected": False,
+                     "ping_sweep_detected": False,
+                     "icmp_tunneling_detected": False,
+                     "icmp_echo_requests": set(),
+                     "score": 0,
+                     "score_components": {}
                  }
             
             ip_entry = self.ip_data[src_ip]
@@ -133,6 +154,11 @@ class NetworkDataManager:
                             try:
                                 qname_bytes = dns_layer.qd[i].qname
                                 qname = qname_bytes.decode('utf-8', errors='ignore').rstrip('.').lower()
+                                if self.enable_dns_analysis:
+                                    ip_entry["dns_queries"][qname]["count"] += 1
+                                    if raw_pkt.haslayer(DNS) and raw_pkt[DNS].rcode == 3: # NXDOMAIN
+                                        ip_entry["dns_queries"][qname]["nxdomain_count"] += 1
+
                                 malicious_domain_info = is_domain_malicious(qname)
                                 if malicious_domain_info:
                                     for list_url, description in malicious_domain_info.items():
@@ -167,6 +193,19 @@ class NetworkDataManager:
                 cdata["protocol_count"][tracked_key] += 1
             elif "other" in self.tracked_protocols_temporal: 
                 cdata["protocol_count"][("other", None)] += 1
+        
+        if self.enable_arp_spoof_detection and raw_pkt.haslayer(ARP):
+            arp_layer = raw_pkt[ARP]
+            if arp_layer.op == 2: # is-at
+                self._check_for_arp_spoofing(arp_layer.psrc, arp_layer.hwsrc)
+
+        if self.enable_icmp_anomaly_detection and raw_pkt.haslayer(ICMP):
+            icmp_layer = raw_pkt[ICMP]
+            if icmp_layer.type == 8: # echo-request
+                ip_entry["icmp_echo_requests"].add(dst_ip)
+            if len(icmp_layer.payload) > self.icmp_large_payload_threshold:
+                ip_entry["icmp_tunneling_detected"] = True
+                logger.warning(f"ICMP Tunneling (Large Payload) DETECTED from {src_ip} to {dst_ip}: {len(icmp_layer.payload)} bytes")
 
     def _is_internal_ip(self, ip_str):
         try:
@@ -287,6 +326,61 @@ class NetworkDataManager:
                     ip_entry["rate_anomaly_detected"] = True
                     logger.warning(f"Rate anomaly DETECTED for {ip} on protocol {proto_name}: {cdata['total']} packets > threshold {threshold:.2f}")
 
+    def _check_for_dga_and_tunneling(self, ip, ip_entry):
+        if not self.enable_dns_analysis:
+            return
+
+        ip_entry["dga_detected"] = False
+        ip_entry["dns_tunneling_detected"] = False
+        total_queries = 0
+        total_nxdomain = 0
+
+        for qname, stats in ip_entry["dns_queries"].items():
+            # DGA Detection
+            entropy = self._calculate_entropy(qname.split('.')[0])
+            if len(qname) > self.dga_length_threshold and entropy > self.dga_entropy_threshold:
+                ip_entry["dga_detected"] = True
+                reason = f"DGA Detected (length: {len(qname)}, entropy: {entropy:.2f})"
+                ip_entry["suspicious_dns"].append({"timestamp": time.time(), "qname": qname, "reason": reason})
+                logger.warning(f"DGA DETECTED for {ip}: {qname} (length: {len(qname)}, entropy: {entropy:.2f})")
+
+            total_queries += stats["count"]
+            total_nxdomain += stats["nxdomain_count"]
+
+        # DNS Tunneling Detection
+        if total_queries > self.nxdomain_min_count:
+            nxdomain_rate = total_nxdomain / total_queries
+            if nxdomain_rate > self.nxdomain_rate_threshold:
+                ip_entry["dns_tunneling_detected"] = True
+                logger.warning(f"DNS Tunneling (High NXDOMAIN rate) DETECTED for {ip}: {nxdomain_rate:.2f}")
+
+    def _check_for_arp_spoofing(self, ip, mac):
+        if ip in self.arp_table and self.arp_table[ip] != mac:
+            logger.warning(f"ARP Spoofing DETECTED for IP {ip}: MAC changed from {self.arp_table[ip]} to {mac}")
+            # To prevent flagging every packet, we can set a flag in the ip_data
+            if ip in self.ip_data:
+                self.ip_data[ip]["arp_spoof_detected"] = True
+        self.arp_table[ip] = mac
+
+    def _check_for_icmp_anomalies(self, ip, ip_entry):
+        if not self.enable_icmp_anomaly_detection:
+            return
+
+        # Ping Sweep Detection
+        if len(ip_entry["icmp_echo_requests"]) > self.icmp_ping_sweep_threshold:
+            ip_entry["ping_sweep_detected"] = True
+            logger.warning(f"Ping Sweep DETECTED from {ip}: {len(ip_entry['icmp_echo_requests'])} hosts targeted.")
+
+    def _calculate_entropy(self, s):
+        if not s:
+            return 0
+        entropy = 0
+        for x in range(256):
+            p_x = float(s.count(chr(x))) / len(s)
+            if p_x > 0:
+                entropy += - p_x * math.log(p_x, 2)
+        return entropy
+
     def aggregate_minute_data(self):
         now = time.time()
         current_minute_start = int(now // 60) * 60
@@ -317,6 +411,9 @@ class NetworkDataManager:
                 
                 self._check_for_rate_anomalies(ip, ip_entry, now)
                 self._check_for_beaconing(ip, ip_entry, now)
+                self._check_for_dga_and_tunneling(ip, ip_entry)
+                self._check_for_icmp_anomalies(ip, ip_entry)
+                self._calculate_threat_score(ip, ip_entry)
 
                 source_ip_malicious_info = identify_malicious_ip(ip)
                 if source_ip_malicious_info:
@@ -362,6 +459,12 @@ class NetworkDataManager:
                     "detected_scan_hosts": data_entry.get("detected_scan_hosts", False),
                     "rate_anomaly_detected": data_entry.get("rate_anomaly_detected", False),
                     "beaconing_detected": data_entry.get("beaconing_detected", False),
+                    "dga_detected": data_entry.get("dga_detected", False),
+                    "dns_tunneling_detected": data_entry.get("dns_tunneling_detected", False),
+                    "arp_spoof_detected": data_entry.get("arp_spoof_detected", False),
+                    "ping_sweep_detected": data_entry.get("ping_sweep_detected", False),
+                    "icmp_tunneling_detected": data_entry.get("icmp_tunneling_detected", False),
+                    "score": data_entry.get("score", 0),
                 }
                 while entry_copy["timestamps"] and entry_copy["timestamps"][0] < prune_timestamp:
                     entry_copy["timestamps"].popleft()
@@ -402,7 +505,15 @@ class NetworkDataManager:
                                              {k: v.copy() for k,v in original_entry.get("protocol_stats", {}).items()}),
                     "beaconing_detected": original_entry.get("beaconing_detected", False),
                     "detected_scan_hosts": original_entry.get("detected_scan_hosts", False),
-                    "is_malicious_source": original_entry.get("is_malicious_source", False)
+                    "is_malicious_source": original_entry.get("is_malicious_source", False),
+                    "dga_detected": original_entry.get("dga_detected", False),
+                    "dns_tunneling_detected": original_entry.get("dns_tunneling_detected", False),
+                    "dns_queries": {k: v.copy() for k, v in original_entry.get("dns_queries", {}).items()},
+                    "arp_spoof_detected": original_entry.get("arp_spoof_detected", False),
+                    "ping_sweep_detected": original_entry.get("ping_sweep_detected", False),
+                    "icmp_tunneling_detected": original_entry.get("icmp_tunneling_detected", False),
+                    "score": original_entry.get("score", 0),
+                    "score_components": {k: v for k, v in original_entry.get("score_components", {}).items()}
                 }
                 return entry_copy
             return None
@@ -421,3 +532,56 @@ class NetworkDataManager:
     def get_active_ips_list(self):
         with self.lock:
             return sorted(list(self.ip_data.keys()))
+
+    def _calculate_threat_score(self, ip, ip_entry):
+        score = 0
+        components = {}
+
+        if ip_entry.get("arp_spoof_detected"):
+            score += config.score_arp_spoof
+            components["ARP Spoofing"] = config.score_arp_spoof
+        if ip_entry.get("ping_sweep_detected"):
+            score += config.score_icmp_ping_sweep
+            components["ICMP Ping Sweep"] = config.score_icmp_ping_sweep
+        if ip_entry.get("icmp_tunneling_detected"):
+            score += config.score_icmp_tunneling
+            components["ICMP Tunneling"] = config.score_icmp_tunneling
+        if ip_entry.get("beaconing_detected"):
+            score += config.score_c2_beaconing
+            components["C2 Beaconing"] = config.score_c2_beaconing
+        if ip_entry.get("malicious_ja3") or ip_entry.get("malicious_ja3s"):
+            score += config.score_ja3_hit
+            components["Malicious JA3/JA3S"] = config.score_ja3_hit
+        if ip_entry.get("dga_detected"):
+            score += config.score_dga
+            components["DGA Detected"] = config.score_dga
+        if ip_entry.get("dns_tunneling_detected"):
+            score += config.score_dns_tunneling
+            components["DNS Tunneling"] = config.score_dns_tunneling
+        if ip_entry.get("contacted_malicious_ip"):
+            score += config.score_ip_blocklist
+            components["IP Blocklist Hit"] = config.score_ip_blocklist
+        if ip_entry.get("suspicious_dns"):
+            score += config.score_dns_blocklist
+            components["DNS Blocklist Hit"] = config.score_dns_blocklist
+        if ip_entry.get("detected_scan_ports"):
+            score += config.score_port_scan
+            components["Port Scan"] = config.score_port_scan
+        if ip_entry.get("detected_scan_hosts"):
+            score += config.score_host_scan
+            components["Host Scan"] = config.score_host_scan
+        if ip_entry.get("rate_anomaly_detected"):
+            score += config.score_rate_anomaly
+            components["Rate Anomaly"] = config.score_rate_anomaly
+        
+        # Unsafe protocols
+        unsafe_protocol_score = 0
+        for proto, port in ip_entry.get("protocols", {}):
+            if port in config.unsafe_ports or proto in config.unsafe_protocols:
+                unsafe_protocol_score += config.score_unsafe_protocol
+        if unsafe_protocol_score > 0:
+            score += unsafe_protocol_score
+            components["Unsafe Protocol"] = unsafe_protocol_score
+
+        ip_entry["score"] = min(score, 100)
+        ip_entry["score_components"] = components

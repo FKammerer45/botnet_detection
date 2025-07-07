@@ -24,6 +24,7 @@ from ui.gui_beaconing_config import BeaconingConfigWindow
 from ui.gui_dns_config import DnsConfigWindow
 from ui.gui_local_network_config import LocalNetworkConfigWindow
 from ui.gui_scoring_config import ScoringConfigWindow
+from ui.gui_documentation import DocumentationWindow
 from ui.gui_tooltip import Tooltip
 from ui.components.configuration_frame import ConfigurationFrame
 
@@ -36,7 +37,7 @@ AGGREGATION_INTERVAL_MS = 60000 # This will trigger data_manager.aggregate_minut
 PRUNE_SECONDS = 61 
 TAG_ALERT = "red" 
 COLOR_ALERT_BG = "#FF9999"
-WINDOW_GEOMETRY = "1050x600"
+WINDOW_GEOMETRY = "1150x600"
 # --- End Constants ---
 
 class PacketStatsGUI:
@@ -59,6 +60,7 @@ class PacketStatsGUI:
         self.dns_config_window_ref = None
         self.local_network_config_window_ref = None
         self.scoring_config_window_ref = None
+        self.documentation_window_ref = None
 
         try:
             logger.info("Downloading/loading blocklists (if needed)...")
@@ -169,23 +171,36 @@ class PacketStatsGUI:
         tk.Label(parent_frame, text=desc_text, justify=tk.LEFT).pack(side=tk.TOP, anchor="w", pady=(0, 5))
 
     def add_table_frame(self, parent_frame):
+        paned_window = tk.PanedWindow(parent_frame, orient=tk.VERTICAL, sashrelief=tk.RAISED)
+        paned_window.pack(fill=tk.BOTH, expand=True)
+
+        internal_frame = ttk.LabelFrame(paned_window, text="Internal IPs")
+        paned_window.add(internal_frame)
+        self.internal_tree = self.create_treeview(internal_frame)
+
+        external_frame = ttk.LabelFrame(paned_window, text="External IPs")
+        paned_window.add(external_frame)
+        self.external_tree = self.create_treeview(external_frame)
+
+    def create_treeview(self, parent_frame):
         columns = ("ip", "score", "total", "per_minute", "per_second", "max_per_sec")
-        self.tree = ttk.Treeview(parent_frame, columns=columns, show="headings")
+        tree = ttk.Treeview(parent_frame, columns=columns, show="headings")
         headers = {"ip": "IP Address", "score": "Score", "total": "Total Pkts", "per_minute": "Pkts/Min",
                    "per_second": "Pkts/Sec", "max_per_sec": "Max P/S"}
         widths = {"ip": 150, "score": 50, "total": 100, "per_minute": 100, "per_second": 100, "max_per_sec": 100}
         anchors = {"ip": tk.W, "score": tk.CENTER, "total": tk.CENTER, "per_minute": tk.CENTER,
                    "per_second": tk.CENTER, "max_per_sec": tk.CENTER}
         for col in columns:
-            self.tree.heading(col, text=headers[col], anchor=tk.CENTER,
+            tree.heading(col, text=headers[col], anchor=tk.CENTER,
                               command=lambda c=col: self.sort_column(c))
-            self.tree.column(col, width=widths[col], anchor=anchors[col])
-        scrollbar = ttk.Scrollbar(parent_frame, orient="vertical", command=self.tree.yview)
-        self.tree.configure(yscrollcommand=scrollbar.set)
+            tree.column(col, width=widths[col], anchor=anchors[col])
+        scrollbar = ttk.Scrollbar(parent_frame, orient="vertical", command=tree.yview)
+        tree.configure(yscrollcommand=scrollbar.set)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        self.tree.tag_configure(TAG_ALERT, background=COLOR_ALERT_BG)
-        self.tree.bind("<Double-1>", self.on_double_click)
-        self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        tree.tag_configure(TAG_ALERT, background=COLOR_ALERT_BG)
+        tree.bind("<Double-1>", self.on_double_click)
+        tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        return tree
 
     def create_tooltip(self, widget, text):
         tooltip = Tooltip(widget, text)
@@ -300,16 +315,27 @@ class PacketStatsGUI:
         scoring_instance = ScoringConfigWindow(top)
         top.protocol("WM_DELETE_WINDOW", lambda t=top, si=scoring_instance: (si.master.destroy(), self._clear_window_reference(t, "scoring_config_window_ref")))
 
+    def open_documentation(self):
+        logger.debug("Opening Documentation window.")
+        if self.documentation_window_ref and self.documentation_window_ref.winfo_exists():
+            self.documentation_window_ref.lift()
+            return
+        top = tk.Toplevel(self.master)
+        self.documentation_window_ref = top
+        doc_instance = DocumentationWindow(top)
+        top.protocol("WM_DELETE_WINDOW", lambda t=top, di=doc_instance: (di.master.destroy(), self._clear_window_reference(t, "documentation_window_ref")))
+
     def get_flag_unsafe(self): return self.flag_unsafe_var.get()
     def get_flag_malicious(self): return self.flag_malicious_var.get()
     def get_flag_dns(self): return self.flag_dns_var.get()
     def get_flag_scan(self): return self.flag_scan_var.get()
 
     def on_double_click(self, event):
-        focused_item_id = self.tree.focus() 
+        tree = event.widget
+        focused_item_id = tree.focus() 
         if not focused_item_id: return
         try:
-            item_values = self.tree.item(focused_item_id)["values"]
+            item_values = tree.item(focused_item_id)["values"]
             source_ip = item_values[0] if item_values else None
             if not source_ip: return
             logger.info(f"Double-clicked IP: {source_ip}. Opening detail window.")
@@ -357,7 +383,8 @@ class PacketStatsGUI:
             
             # Get data from NetworkDataManager
             current_ip_data_snapshot = self.data_manager.get_data_for_main_table_snapshot(now, PRUNE_SECONDS)
-            data_for_table = []
+            internal_data = []
+            external_data = []
 
             for ip, data in current_ip_data_snapshot.items():
                 if whitelist.is_ip_whitelisted(ip):
@@ -365,16 +392,12 @@ class PacketStatsGUI:
                     continue
 
                 total_packets = data.get("total", 0)
-                # 'timestamps' in snapshot is already pruned and ready for len()
                 packets_per_minute = len(data.get("timestamps", [])) 
-                
-                # Calculate packets in the last second from the snapshot's timestamps
                 one_second_ago = now - 1.0
                 packets_per_second = sum(1 for t in data.get("timestamps", []) if t >= one_second_ago)
-                
-                # Max per second is managed by DataManager, just retrieve
                 max_packets_sec = data.get("max_per_sec", 0) 
                 score = data.get("score", 0)
+                ip_type = "Internal" if self.data_manager._is_internal_ip(ip) else "External"
 
                 is_over_threshold = packets_per_minute > threshold
                 is_unsafe_triggered = False
@@ -395,33 +418,17 @@ class PacketStatsGUI:
                 
                 should_flag_row = (is_over_threshold or is_unsafe_triggered or
                                    is_malicious_triggered or is_dns_triggered or is_scan_detected or is_rate_anomaly_detected or is_ja3_detected or is_dns_analysis_detected or is_local_threat_detected)
-                data_for_table.append((ip, score, total_packets, packets_per_minute,
-                                       packets_per_second, max_packets_sec, should_flag_row))
+                
+                row_data = (ip, score, total_packets, packets_per_minute,
+                                       packets_per_second, max_packets_sec, should_flag_row)
 
-            if self.current_sort_column:
-                data_for_table = self.sort_data(data_for_table, self.current_sort_column, self.current_sort_ascending)
+                if ip_type == "Internal":
+                    internal_data.append(row_data)
+                else:
+                    external_data.append(row_data)
 
-            selected_ip_address = None
-            focused_item_id = self.tree.focus()
-            if focused_item_id:
-                item_values = self.tree.item(focused_item_id, "values")
-                if item_values and len(item_values) > 0: selected_ip_address = item_values[0]
-            
-            scroll_position = self.tree.yview()
-            self.tree.delete(*self.tree.get_children())
-            new_item_id_to_select = None
-            for row_data in data_for_table:
-                ip_val, score_val, total_val, pmin_val, psec_val, maxp_val, flag_val = row_data
-                tags_to_apply = (TAG_ALERT,) if flag_val else ()
-                current_item_id = self.tree.insert("", tk.END, values=(ip_val, score_val, total_val, pmin_val, psec_val, maxp_val), tags=tags_to_apply)
-                if selected_ip_address and ip_val == selected_ip_address:
-                    new_item_id_to_select = current_item_id
-            
-            if new_item_id_to_select:
-                self.tree.focus(new_item_id_to_select)
-                self.tree.selection_set(new_item_id_to_select)
-            
-            self.tree.yview_moveto(scroll_position[0])
+            self.update_treeview(self.internal_tree, internal_data)
+            self.update_treeview(self.external_tree, external_data)
         except Exception as e:
             logger.error(f"Error during main GUI update: {e}", exc_info=True)
         finally:
@@ -429,6 +436,32 @@ class PacketStatsGUI:
                 self._update_scheduled = self.master.after(UPDATE_INTERVAL_MS, self.update_gui)
             else:
                 self._update_scheduled = None
+
+    def update_treeview(self, tree, data):
+        if self.current_sort_column:
+            data = self.sort_data(data, self.current_sort_column, self.current_sort_ascending)
+
+        selected_ip_address = None
+        focused_item_id = tree.focus()
+        if focused_item_id:
+            item_values = tree.item(focused_item_id, "values")
+            if item_values and len(item_values) > 0: selected_ip_address = item_values[0]
+        
+        scroll_position = tree.yview()
+        tree.delete(*tree.get_children())
+        new_item_id_to_select = None
+        for row_data in data:
+            ip_val, score_val, total_val, pmin_val, psec_val, maxp_val, flag_val = row_data
+            tags_to_apply = (TAG_ALERT,) if flag_val else ()
+            current_item_id = tree.insert("", tk.END, values=(ip_val, score_val, total_val, pmin_val, psec_val, maxp_val), tags=tags_to_apply)
+            if selected_ip_address and ip_val == selected_ip_address:
+                new_item_id_to_select = current_item_id
+        
+        if new_item_id_to_select:
+            tree.focus(new_item_id_to_select)
+            tree.selection_set(new_item_id_to_select)
+        
+        tree.yview_moveto(scroll_position[0])
 
     def sort_data(self, data, column, ascending):
         column_map = {"ip": 0, "score": 1, "total": 2, "per_minute": 3, "per_second": 4, "max_per_sec": 5}

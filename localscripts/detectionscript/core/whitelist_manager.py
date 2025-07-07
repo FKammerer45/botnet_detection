@@ -166,7 +166,7 @@ class Whitelist:
             ip_obj = ipaddress.ip_address(ip_str)
             for network in self.ip_networks:
                 if ip_obj in network:
-                    logger.debug(f"IP {ip_str} is whitelisted by network {network}.")
+
                     return True
             return False
         except ValueError:

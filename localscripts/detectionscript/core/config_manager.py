@@ -6,7 +6,7 @@ from ast import literal_eval # For safely evaluating lists/sets from strings
 
 logger = logging.getLogger(__name__)
 
-CONFIG_FILENAME = "config.ini"
+CONFIG_FILENAME = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "config.ini"))
 
 class AppConfig:
     """Holds the application configuration loaded from config.ini."""
@@ -38,6 +38,7 @@ class AppConfig:
         self.enable_stealth_scan_detection = True
         self.flag_internal_scans = True
         self.flag_external_scans = True
+        # Local Networks
         self.local_networks = {"192.168.0.0/16", "10.0.0.0/8", "172.16.0.0/12"}
         # Rate Anomaly
         self.enable_rate_anomaly_detection = True
@@ -150,7 +151,9 @@ class AppConfig:
             self.enable_stealth_scan_detection = self.parser.getboolean('ScanDetection', 'enable_stealth_scan_detection', fallback=self.enable_stealth_scan_detection)
             self.flag_internal_scans = self.parser.getboolean('ScanDetection', 'flag_internal_scans', fallback=self.flag_internal_scans)
             self.flag_external_scans = self.parser.getboolean('ScanDetection', 'flag_external_scans', fallback=self.flag_external_scans)
-            self.local_networks = self._get_set_from_config('ScanDetection', 'local_networks', self.local_networks)
+
+            # Local Networks
+            self.local_networks = self._get_set_from_config('LocalNetworks', 'networks', self.local_networks)
 
             # Rate Anomaly
             self.enable_rate_anomaly_detection = self.parser.getboolean('RateAnomaly', 'enable_rate_anomaly_detection', fallback=self.enable_rate_anomaly_detection)
@@ -217,7 +220,7 @@ class AppConfig:
         logger.info(f"Attempting to save configuration to {self.filepath}")
         try:
             # Ensure sections exist before setting
-            sections = ['General', 'Thresholds', 'ScanDetection', 'RateAnomaly', 'BeaconingDetection', 'JA3Detection', 'DnsAnalysis', 'LocalNetworkDetection', 'Scoring', 'UnsafeRules', 'Blocklists_IP', 'Blocklists_DNS', 'Blocklists_JA3', 'Blocklists_JA3S', 'Display']
+            sections = ['General', 'Thresholds', 'ScanDetection', 'RateAnomaly', 'BeaconingDetection', 'JA3Detection', 'DnsAnalysis', 'LocalNetworkDetection', 'LocalNetworks', 'Scoring', 'UnsafeRules', 'Blocklists_IP', 'Blocklists_DNS', 'Blocklists_JA3', 'Blocklists_JA3S', 'Display']
             for section in sections:
                 if not self.parser.has_section(section): self.parser.add_section(section)
 
@@ -236,7 +239,9 @@ class AppConfig:
             self.parser.set('ScanDetection', 'enable_stealth_scan_detection', str(self.enable_stealth_scan_detection))
             self.parser.set('ScanDetection', 'flag_internal_scans', str(self.flag_internal_scans))
             self.parser.set('ScanDetection', 'flag_external_scans', str(self.flag_external_scans))
-            self.parser.set('ScanDetection', 'local_networks', ', '.join(sorted(list(self.local_networks))))
+
+            # Local Networks
+            self.parser.set('LocalNetworks', 'networks', ', '.join(sorted(list(self.local_networks))))
 
             # Rate Anomaly
             self.parser.set('RateAnomaly', 'enable_rate_anomaly_detection', str(self.enable_rate_anomaly_detection))

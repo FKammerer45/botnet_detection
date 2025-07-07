@@ -44,32 +44,36 @@ botnet_detection/
 |       |   |-- blocklist_integration.py # Handles downloading and querying IP/DNS blocklists
 |       |-- ui/                  # Tkinter-based Graphical User Interface components
 |           |-- gui_main.py      # Main application window
-|           |-- gui_temporal.py  # Temporal analysis window
 |           |-- gui_detail.py    # IP detail view window
-|           |-- gui_dns.py       # DNS query monitor window (if implemented)
-|           |-- gui_scan_config.py # Scan detection settings window
-|           |-- gui_blocklist_manager.py # Blocklist management window
-|           |-- gui_whitelist_manager.py # Whitelist management window
-|           |-- gui_unsafe.py    # Unsafe port/protocol configuration window
+|           |-- (other gui files)
+|-- docs/
+|   |-- (documentation files)
 |-- requirements.txt             # Python package dependencies
 |-- README.md                    # This file
 |-- .gitignore
-|-- (Other project files like ESP32 related code, platformio.ini etc. if present)
 ```
 
 ## Features
 
 *   **Real-time Packet Monitoring**: Captures and analyzes network packets on selected interfaces.
-*   **Configurable Thresholds**: Set thresholds for packets/minute to flag potentially anomalous traffic.
+*   **Threat Scoring:** Each IP address is assigned a threat score from 0 to 100, with higher scores indicating a greater potential threat.
 *   **Threat Intelligence Integration**:
     *   Utilizes IP blocklists to identify connections to known malicious IP addresses.
     *   Utilizes DNS blocklists to identify queries for known malicious domains.
+    *   Utilizes JA3/JA3S blocklists to identify connections from known malicious clients/servers.
 *   **Whitelist Management**: Maintain a list of trusted IPs, networks (CIDR), and domains that should not be flagged, manageable via the UI.
 *   **Scan Detection**: Identifies potential port scans and host scans originating from local devices.
 *   **Unsafe Protocol/Port Flagging**: Highlights traffic using commonly exploited or unencrypted protocols/ports (e.g., Telnet, FTP).
 *   **Temporal Traffic Analysis**: Provides a graphical view of traffic volume over time for selected IPs, with protocol breakdown.
 *   **Detailed IP View**: Double-click an IP in the main list to see detailed connection information, malicious hits, and DNS queries associated with it.
+*   **DNS Analysis**:
+    *   **DGA Detection:** Detects randomly generated domain names often used by malware.
+    *   **DNS Tunneling Detection:** Identifies patterns of DNS queries that suggest data exfiltration.
+*   **Local Network Threat Detection**:
+    *   **ARP Spoofing Detection:** Monitors for changes in IP-MAC address mappings.
+    *   **ICMP Anomaly Detection:** Detects ping sweeps and large ICMP payloads.
 *   **User-Friendly GUI**: Tkinter-based interface for easy interaction and configuration.
+*   **In-App Documentation**: A built-in documentation viewer to explain features and detection mechanisms.
 *   **Logging**: Records application events and errors to `network_monitor.log`.
 
 ## Setting Up and Running the Detection Tool
@@ -80,7 +84,7 @@ botnet_detection/
     cd botnet_detection
     ```
 
-1.5. **Create and Activate Virtual Environment (Recommended)**:
+2.  **Create and Activate Virtual Environment (Recommended)**:
     It's highly recommended to use a virtual environment to manage project dependencies.
 
     *   **Create the virtual environment** (e.g., named `venv`):
@@ -105,21 +109,15 @@ botnet_detection/
             ```
     You should see the virtual environment's name (e.g., `(venv)`) in your terminal prompt once activated. All subsequent `pip install` commands will install packages into this environment.
 
-2.  **Install Dependencies**:
+3.  **Install Dependencies**:
     Ensure your virtual environment is activated. Navigate to the directory containing `requirements.txt` (likely the project root, where you cloned the repository) and run:
     ```bash
     pip install -r requirements.txt
     ```
-    (If `requirements.txt` is in the root, run from there. If it's specific to `detectionscript`, `cd` there first or adjust path, but typically it's in the root).
-
-3.  **Navigate to the Script Directory**:
-    ```bash
-    cd localscripts/detectionscript
-    ```
 
 4.  **Run the Application**:
     ```bash
-    python main.py
+    python localscripts/detectionscript/main.py
     ```
     *   **Administrator/Root Privileges**: On most systems (especially Windows and Linux), packet capture requires elevated privileges. Run the script as an administrator (Windows) or with `sudo` (Linux/macOS):
         *   Windows: Right-click your terminal (CMD, PowerShell) and "Run as administrator", then navigate and run the script.
@@ -127,40 +125,7 @@ botnet_detection/
 
 ## How to Use the Tool
 
-### Main Interface
-*   **Packet Statistics Table**: Displays a list of source IPs observed on the network, along with:
-    *   `Total Pkts`: Total packets seen from this IP.
-    *   `Pkts/Min`: Packets seen from this IP in the last minute.
-    *   `Pkts/Sec`: Current packets per second from this IP.
-    *   `Max P/S`: Highest packets per second rate observed for this IP.
-*   **Threshold Configuration**: You can set a "Pkts/Min Threshold" directly on the main UI. IPs exceeding this will be flagged.
-*   **Flags**: Checkboxes allow you to enable/disable flagging conditions:
-    *   `Flag Unsafe`: Highlights IPs using ports/protocols defined as unsafe.
-    *   `Flag Malicious IP`: Highlights IPs found on configured IP blocklists or communicating with blocklisted IPs.
-    *   `Flag Bad DNS`: Highlights IPs making DNS queries for domains found on DNS blocklists.
-    *   `Flag Scan`: Highlights IPs detected performing port or host scans.
-*   **Row Highlighting**: Rows in the table are highlighted in red if they meet any of the enabled flagging criteria or exceed the packet threshold.
-*   **Detailed View**: Double-click any IP address in the table to open a "Detail Window" showing its connections, protocols used, malicious hits, and DNS queries.
-
-### Configuration Dialogs
-Accessible via buttons on the main UI:
-*   **Conf Unsafe**: Configure which ports and protocols are considered "unsafe". Changes are saved to `config.ini`.
-*   **Conf Scan**: Adjust parameters for scan detection (time window, distinct port/host thresholds, check interval). Changes are saved to `config.ini`.
-*   **Blocklists**: Manage IP and DNS blocklist URLs. Activate/deactivate existing lists or add new ones. Changes update `config.ini` and trigger a re-download/reload of blocklists.
-*   **Whitelist**: Add or remove IPs, CIDR networks, or domains that should be ignored by detection logic. Changes are saved to `whitelist.txt`.
-*   **Temporal**: Opens the "Temporal Analysis" window. Select an IP to see a graph of its traffic volume (packets per minute) over time, with an option for protocol breakdown.
-*   **DNS Mon**: Opens the "DNS Query Monitor" window, showing recent DNS queries observed (if this feature is fully implemented and populated).
-
-### Interpreting Alerts
-*   **High Packet Counts (Pkts/Min)**: Could indicate large data transfers, streaming, or potentially anomalous activity like DoS participation or data exfiltration.
-*   **Unsafe Flags**: Alerts to the use of protocols/ports that may be insecure or associated with malware (e.g., Telnet for C2, FTP for data theft).
-*   **Malicious IP Flags**: Indicates communication with IPs known to be malicious (e.g., C2 servers, malware distribution points). Investigate the specific blocklist hit in the Detail View.
-*   **Bad DNS Flags**: Shows attempts to resolve domains known for malware, phishing, etc.
-*   **Scan Flags**: Suggests a host on your network might be compromised and scanning other internal or external hosts, or is being scanned.
-
-### Configuration Files
-*   **`config.ini`**: Stores most of the application's settings, including thresholds, scan detection parameters, blocklist URLs, and unsafe port/protocol definitions. Many of these are configurable via the UI.
-*   **`whitelist.txt`**: Contains a list of IPs, CIDR networks, and domains that are considered safe and will be ignored by the flagging logic. This file is managed through the "Whitelist" UI.
+For detailed instructions on how to use the tool, please refer to the in-app documentation by clicking the "Help" button on the main window.
 
 ---
 *The following sections relate to the ESP32 part of the project, if applicable.*

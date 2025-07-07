@@ -212,9 +212,12 @@ class NetworkDataManager:
             ip_obj = ipaddress.ip_address(ip_str)
             for net in self.local_networks:
                 if ip_obj in net:
+
                     return True
         except ValueError:
+            logger.debug(f"Could not parse IP: {ip_str}")
             return False
+
         return False
 
     def _check_for_scans(self, ip, ip_entry, now):

@@ -105,3 +105,203 @@ ImportError: cannot import name 'JA3' from 'core.ja3_crypto' (C:\Users\kamme\One
 2025-07-07 16:39:10,449 - core.data_manager - INFO - DataManager calculated timestamp deque maxlen: 90000
 2025-07-07 16:39:10,449 - __main__ - INFO - NetworkDataManager initialized.
 2025-07-07 16:39:10,449 - core.capture - INFO - Attempting to list and identify network interfaces...
+2025-10-20 15:07:04,690 - config.globals - DEBUG - Globals module loaded (most config now in core.config_manager).
+2025-10-20 15:07:06,047 - core.whitelist_manager - DEBUG - Creating singleton Whitelist instance.
+2025-10-20 15:07:06,047 - core.whitelist_manager - INFO - Loading whitelist from whitelist.txt
+2025-10-20 15:07:06,047 - core.whitelist_manager - INFO - Whitelist loading complete. Loaded 0 IP/Network entries and 0 Domain entries.
+2025-10-20 15:07:06,917 - matplotlib - DEBUG - matplotlib data path: C:\Users\kamme\OneDrive\Desktop\uni\Master\PraktikeschProjek\botnet_detection\botnet_detection\.venv\Lib\site-packages\matplotlib\mpl-data
+2025-10-20 15:07:06,935 - matplotlib - DEBUG - CONFIGDIR=C:\Users\kamme\.matplotlib
+2025-10-20 15:07:06,936 - matplotlib - DEBUG - interactive is False
+2025-10-20 15:07:06,936 - matplotlib - DEBUG - platform is win32
+2025-10-20 15:07:07,005 - matplotlib - DEBUG - CACHEDIR=C:\Users\kamme\.matplotlib
+2025-10-20 15:07:07,013 - matplotlib.font_manager - DEBUG - Using fontManager instance from C:\Users\kamme\.matplotlib\fontlist-v390.json
+2025-10-20 15:07:07,376 - __main__ - WARNING - Application not running as administrator/root. Packet capture may fail.
+2025-10-20 15:07:07,376 - __main__ - INFO - Application starting...
+2025-10-20 15:07:07,377 - __main__ - INFO - Whitelist instance created/retrieved.
+2025-10-20 15:07:07,377 - __main__ - INFO - Initializing NetworkDataManager...
+2025-10-20 15:07:07,377 - core.data_manager - INFO - Initializing NetworkDataManager.
+2025-10-20 15:07:07,377 - core.data_manager - INFO - DataManager calculated timestamp deque maxlen: 90000
+2025-10-20 15:07:07,377 - __main__ - INFO - NetworkDataManager initialized.
+2025-10-20 15:07:07,377 - core.capture - INFO - Attempting to list and identify network interfaces...
+2025-10-20 15:07:13,610 - __main__ - INFO - Starting packet capture thread...
+2025-10-20 15:07:13,610 - core.capture - INFO - Packet capture thread started. Sniffing on: \Device\NPF_{4907781C-B481-4A25-8DCD-059BBACA9FC2}
+2025-10-20 15:07:13,610 - __main__ - INFO - Starting periodic blocklist update thread...
+2025-10-20 15:07:13,610 - core.capture - INFO - Using packet filter: "ip or ip6 or (udp port 53) or (tcp port 53)"
+2025-10-20 15:07:13,610 - core.capture - INFO - Sniffing with 1.0s timeout loop for graceful shutdown.
+2025-10-20 15:07:13,610 - core.blocklist_integration - INFO - Blocklist auto-update thread started. Update interval: 24 hours.
+2025-10-20 15:07:13,610 - __main__ - INFO - Initializing GUI...
+2025-10-20 15:07:13,927 - ui.gui_main - INFO - Initializing PacketStatsGUI...
+2025-10-20 15:07:13,927 - ui.gui_main - INFO - Downloading/loading blocklists (if needed)...
+2025-10-20 15:07:13,927 - core.blocklist_integration - INFO - Checking/Downloading 6 blocklists...
+2025-10-20 15:07:13,927 - core.blocklist_integration - DEBUG - Download [IP]: https://feodotracker.abuse.ch/downloads/ipblocklist_aggressive.txt -> blocklists\ip_ipblocklist_aggressive.txt
+2025-10-20 15:07:13,929 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): feodotracker.abuse.ch:443
+2025-10-20 15:07:14,097 - urllib3.connectionpool - DEBUG - https://feodotracker.abuse.ch:443 "GET /downloads/ipblocklist_aggressive.txt HTTP/1.1" 200 33782
+2025-10-20 15:07:14,117 - core.blocklist_integration - DEBUG - Downloaded https://feodotracker.abuse.ch/downloads/ipblocklist_aggressive.txt
+2025-10-20 15:07:14,117 - core.blocklist_integration - DEBUG - Download [IP]: https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/dshield.netset -> blocklists\ip_dshield.netset
+2025-10-20 15:07:14,118 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): raw.githubusercontent.com:443
+2025-10-20 15:07:14,319 - urllib3.connectionpool - DEBUG - https://raw.githubusercontent.com:443 "GET /firehol/blocklist-ipsets/master/dshield.netset HTTP/1.1" 200 600
+2025-10-20 15:07:14,322 - core.blocklist_integration - DEBUG - Downloaded https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/dshield.netset
+2025-10-20 15:07:14,323 - core.blocklist_integration - DEBUG - Download [IP]: https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/spamhaus_drop.netset -> blocklists\ip_spamhaus_drop.netset
+2025-10-20 15:07:14,324 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): raw.githubusercontent.com:443
+2025-10-20 15:07:14,594 - urllib3.connectionpool - DEBUG - https://raw.githubusercontent.com:443 "GET /firehol/blocklist-ipsets/master/spamhaus_drop.netset HTTP/1.1" 200 6489
+2025-10-20 15:07:14,596 - core.blocklist_integration - DEBUG - Downloaded https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/spamhaus_drop.netset
+2025-10-20 15:07:14,596 - core.blocklist_integration - DEBUG - Download [IP]: https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/spamhaus_edrop.netset -> blocklists\ip_spamhaus_edrop.netset
+2025-10-20 15:07:14,596 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): raw.githubusercontent.com:443
+2025-10-20 15:07:14,826 - urllib3.connectionpool - DEBUG - https://raw.githubusercontent.com:443 "GET /firehol/blocklist-ipsets/master/spamhaus_edrop.netset HTTP/1.1" 200 2126
+2025-10-20 15:07:14,828 - core.blocklist_integration - DEBUG - Downloaded https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/spamhaus_edrop.netset
+2025-10-20 15:07:14,828 - core.blocklist_integration - DEBUG - Download [DNS]: https://raw.githubusercontent.com/stevenblack/hosts/master/hosts -> blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:07:14,829 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): raw.githubusercontent.com:443
+2025-10-20 15:07:15,346 - urllib3.connectionpool - DEBUG - https://raw.githubusercontent.com:443 "GET /stevenblack/hosts/master/hosts HTTP/1.1" 200 592765
+2025-10-20 15:07:15,564 - core.blocklist_integration - DEBUG - Downloaded https://raw.githubusercontent.com/stevenblack/hosts/master/hosts
+2025-10-20 15:07:15,565 - core.blocklist_integration - INFO - Download check finished.
+2025-10-20 15:07:15,565 - core.blocklist_integration - INFO - Loading configured blocklists...
+2025-10-20 15:07:15,565 - core.blocklist_integration - INFO - Loading 4 IP blocklists...
+2025-10-20 15:07:15,566 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_ipblocklist_aggressive.txt
+2025-10-20 15:07:15,630 - core.blocklist_integration - INFO - Loaded 7600 IP entries from ip_ipblocklist_aggressive.txt
+2025-10-20 15:07:15,631 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_dshield.netset
+2025-10-20 15:07:15,638 - core.blocklist_integration - INFO - Loaded 20 IP entries from ip_dshield.netset
+2025-10-20 15:07:15,638 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_spamhaus_drop.netset
+2025-10-20 15:07:15,649 - core.blocklist_integration - INFO - Loaded 1401 IP entries from ip_spamhaus_drop.netset
+2025-10-20 15:07:15,649 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_spamhaus_edrop.netset
+2025-10-20 15:07:15,657 - core.blocklist_integration - INFO - Loaded 336 IP entries from ip_spamhaus_edrop.netset
+2025-10-20 15:07:15,657 - core.blocklist_integration - INFO - Loading 1 DNS blocklists...
+2025-10-20 15:07:15,657 - core.blocklist_integration - DEBUG - Parsing [DNS]: dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:07:15,752 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 15 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:07:15,753 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'local' line 17 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:07:15,753 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'broadcasthost' line 18 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:07:15,753 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 19 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:07:15,754 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-localhost' line 20 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:07:15,754 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-loopback' line 21 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:07:15,755 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 22 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:07:15,755 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-localnet' line 23 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:07:15,755 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-mcastprefix' line 24 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:07:15,756 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allnodes' line 25 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:07:15,756 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allrouters' line 26 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:07:15,757 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allhosts' line 27 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:07:15,795 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'www.zgarniij_vouchher.skroc.pl' line 25218 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:07:15,795 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'zgarniij_vouchher.skroc.pl' line 25220 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:07:15,874 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'philadelphia_cbslocal.us.intellitxt.com' line 71194 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:07:15,903 - core.blocklist_integration - INFO - Loaded 80100 DNS entries from dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:07:15,903 - core.blocklist_integration - INFO - Loading 1 JA3 blocklists...
+2025-10-20 15:07:15,903 - core.blocklist_integration - WARNING - JA3 file not found: blocklists\ip_ja3.csv.
+2025-10-20 15:07:15,904 - core.blocklist_integration - INFO - Loading 0 JA3S blocklists...
+2025-10-20 15:07:15,904 - core.blocklist_integration - INFO - Blocklist loading complete. Files: 5, IPs: 9357, DNS: 80100, JA3: 0, JA3S: 0
+2025-10-20 15:07:15,904 - ui.gui_main - INFO - Blocklists processed.
+2025-10-20 15:07:15,920 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 15:07:15,920 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 15:07:15
+2025-10-20 15:07:15,920 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 15:07:15,920 - ui.gui_main - INFO - PacketStatsGUI initialized.
+2025-10-20 15:07:15,920 - __main__ - INFO - Starting Tkinter mainloop...
+2025-10-20 15:07:20,748 - ui.gui_main - DEBUG - Opening Documentation window.
+2025-10-20 15:07:27,043 - ui.gui_main - DEBUG - Clearing reference for window: .!toplevel, attr: documentation_window_ref, list: None, item: None
+2025-10-20 15:07:27,043 - ui.gui_main - DEBUG - Cleared attribute reference: documentation_window_ref
+2025-10-20 15:07:28,996 - ui.gui_main - DEBUG - Opening Documentation window.
+2025-10-20 15:08:15,933 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 15:08:15,933 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 15:08:15
+2025-10-20 15:08:15,934 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 15:09:15,934 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 15:09:15,934 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 15:09:15
+2025-10-20 15:09:15,935 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 15:09:33,230 - ui.gui_main - DEBUG - Clearing reference for window: .!toplevel2, attr: documentation_window_ref, list: None, item: None
+2025-10-20 15:09:33,231 - ui.gui_main - DEBUG - Cleared attribute reference: documentation_window_ref
+2025-10-20 15:09:34,168 - ui.gui_main - INFO - Main application on_close triggered.
+2025-10-20 15:09:34,168 - ui.gui_main - DEBUG - Main GUI update loop cancelled.
+2025-10-20 15:09:34,168 - ui.gui_main - INFO - Destroying main application window.
+2025-10-20 15:09:34,208 - ui.gui_main - INFO - Main application window destroyed.
+2025-10-20 15:09:34,209 - __main__ - INFO - Tkinter mainloop finished.
+2025-10-20 15:09:34,209 - __main__ - INFO - Initiating shutdown sequence...
+2025-10-20 15:09:34,209 - core.capture - INFO - Signaling packet capture thread to stop.
+2025-10-20 15:09:34,209 - core.blocklist_integration - INFO - Signaling blocklist auto-update thread to stop.
+2025-10-20 15:09:34,210 - __main__ - INFO - Waiting for capture thread to join...
+2025-10-20 15:09:34,210 - core.blocklist_integration - INFO - Blocklist auto-update thread received stop signal and is exiting.
+2025-10-20 15:09:34,900 - core.capture - INFO - Capture thread received stop signal and is exiting gracefully.
+2025-10-20 15:09:34,900 - __main__ - INFO - Capture thread joined successfully.
+2025-10-20 15:09:34,900 - __main__ - INFO - Shutting down logging system.
+2025-10-20 15:10:46,261 - config.globals - DEBUG - Globals module loaded (most config now in core.config_manager).
+2025-10-20 15:10:46,856 - core.whitelist_manager - DEBUG - Creating singleton Whitelist instance.
+2025-10-20 15:10:46,857 - core.whitelist_manager - INFO - Loading whitelist from whitelist.txt
+2025-10-20 15:10:46,857 - core.whitelist_manager - INFO - Whitelist loading complete. Loaded 0 IP/Network entries and 0 Domain entries.
+2025-10-20 15:10:47,074 - matplotlib - DEBUG - matplotlib data path: C:\Users\kamme\OneDrive\Desktop\uni\Master\PraktikeschProjek\botnet_detection\botnet_detection\.venv\Lib\site-packages\matplotlib\mpl-data
+2025-10-20 15:10:47,081 - matplotlib - DEBUG - CONFIGDIR=C:\Users\kamme\.matplotlib
+2025-10-20 15:10:47,082 - matplotlib - DEBUG - interactive is False
+2025-10-20 15:10:47,082 - matplotlib - DEBUG - platform is win32
+2025-10-20 15:10:47,114 - matplotlib - DEBUG - CACHEDIR=C:\Users\kamme\.matplotlib
+2025-10-20 15:10:47,115 - matplotlib.font_manager - DEBUG - Using fontManager instance from C:\Users\kamme\.matplotlib\fontlist-v390.json
+2025-10-20 15:10:47,267 - __main__ - WARNING - Application not running as administrator/root. Packet capture may fail.
+2025-10-20 15:10:47,267 - __main__ - INFO - Application starting...
+2025-10-20 15:10:47,267 - __main__ - INFO - Whitelist instance created/retrieved.
+2025-10-20 15:10:47,267 - __main__ - INFO - Initializing NetworkDataManager...
+2025-10-20 15:10:47,267 - core.data_manager - INFO - Initializing NetworkDataManager.
+2025-10-20 15:10:47,267 - core.data_manager - INFO - DataManager calculated timestamp deque maxlen: 90000
+2025-10-20 15:10:47,268 - __main__ - INFO - NetworkDataManager initialized.
+2025-10-20 15:10:47,268 - core.capture - INFO - Attempting to list and identify network interfaces...
+2025-10-20 15:10:49,400 - __main__ - INFO - Starting packet capture thread...
+2025-10-20 15:10:49,401 - core.capture - INFO - Packet capture thread started. Sniffing on: \Device\NPF_{07D3FDD8-3D05-452B-831D-96019F9D3D8A}
+2025-10-20 15:10:49,401 - __main__ - INFO - Starting periodic blocklist update thread...
+2025-10-20 15:10:49,401 - core.capture - INFO - Using packet filter: "ip or ip6 or (udp port 53) or (tcp port 53)"
+2025-10-20 15:10:49,402 - core.capture - INFO - Sniffing with 1.0s timeout loop for graceful shutdown.
+2025-10-20 15:10:49,402 - core.blocklist_integration - INFO - Blocklist auto-update thread started. Update interval: 24 hours.
+2025-10-20 15:10:49,402 - __main__ - INFO - Initializing GUI...
+2025-10-20 15:10:49,440 - ui.gui_main - INFO - Initializing PacketStatsGUI...
+2025-10-20 15:10:49,440 - ui.gui_main - INFO - Downloading/loading blocklists (if needed)...
+2025-10-20 15:10:49,441 - core.blocklist_integration - INFO - Checking/Downloading 6 blocklists...
+2025-10-20 15:10:49,441 - core.blocklist_integration - DEBUG - Skip download, exists: ip_ipblocklist_aggressive.txt
+2025-10-20 15:10:49,441 - core.blocklist_integration - DEBUG - Skip download, exists: ip_dshield.netset
+2025-10-20 15:10:49,441 - core.blocklist_integration - DEBUG - Skip download, exists: ip_spamhaus_drop.netset
+2025-10-20 15:10:49,442 - core.blocklist_integration - DEBUG - Skip download, exists: ip_spamhaus_edrop.netset
+2025-10-20 15:10:49,442 - core.blocklist_integration - DEBUG - Skip download, exists: dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:10:49,442 - core.blocklist_integration - INFO - Download check finished.
+2025-10-20 15:10:49,442 - core.blocklist_integration - INFO - Loading configured blocklists...
+2025-10-20 15:10:49,442 - core.blocklist_integration - INFO - Loading 4 IP blocklists...
+2025-10-20 15:10:49,442 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_ipblocklist_aggressive.txt
+2025-10-20 15:10:49,486 - core.blocklist_integration - INFO - Loaded 7600 IP entries from ip_ipblocklist_aggressive.txt
+2025-10-20 15:10:49,486 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_dshield.netset
+2025-10-20 15:10:49,486 - core.blocklist_integration - INFO - Loaded 20 IP entries from ip_dshield.netset
+2025-10-20 15:10:49,486 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_spamhaus_drop.netset
+2025-10-20 15:10:49,490 - core.blocklist_integration - INFO - Loaded 1401 IP entries from ip_spamhaus_drop.netset
+2025-10-20 15:10:49,490 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_spamhaus_edrop.netset
+2025-10-20 15:10:49,491 - core.blocklist_integration - INFO - Loaded 336 IP entries from ip_spamhaus_edrop.netset
+2025-10-20 15:10:49,491 - core.blocklist_integration - INFO - Loading 1 DNS blocklists...
+2025-10-20 15:10:49,491 - core.blocklist_integration - DEBUG - Parsing [DNS]: dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:10:49,491 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 15 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:10:49,491 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'local' line 17 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:10:49,492 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'broadcasthost' line 18 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:10:49,492 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 19 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:10:49,492 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-localhost' line 20 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:10:49,492 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-loopback' line 21 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:10:49,492 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 22 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:10:49,492 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-localnet' line 23 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:10:49,492 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-mcastprefix' line 24 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:10:49,492 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allnodes' line 25 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:10:49,492 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allrouters' line 26 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:10:49,492 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allhosts' line 27 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:10:49,530 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'www.zgarniij_vouchher.skroc.pl' line 25218 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:10:49,530 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'zgarniij_vouchher.skroc.pl' line 25220 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:10:49,612 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'philadelphia_cbslocal.us.intellitxt.com' line 71194 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:10:49,642 - core.blocklist_integration - INFO - Loaded 80100 DNS entries from dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 15:10:49,642 - core.blocklist_integration - INFO - Loading 1 JA3 blocklists...
+2025-10-20 15:10:49,642 - core.blocklist_integration - WARNING - JA3 file not found: blocklists\ip_ja3.csv.
+2025-10-20 15:10:49,642 - core.blocklist_integration - INFO - Loading 0 JA3S blocklists...
+2025-10-20 15:10:49,642 - core.blocklist_integration - INFO - Blocklist loading complete. Files: 5, IPs: 9357, DNS: 80100, JA3: 0, JA3S: 0
+2025-10-20 15:10:49,642 - ui.gui_main - INFO - Blocklists processed.
+2025-10-20 15:10:49,647 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 15:10:49,648 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 15:10:49
+2025-10-20 15:10:49,649 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 15:10:49,650 - ui.gui_main - INFO - PacketStatsGUI initialized.
+2025-10-20 15:10:49,650 - __main__ - INFO - Starting Tkinter mainloop...
+2025-10-20 15:10:52,369 - ui.gui_main - DEBUG - Opening Documentation window.
+2025-10-20 15:10:57,547 - ui.gui_main - DEBUG - Clearing reference for window: .!documentationwindow, attr: documentation_window_ref, list: None, item: None
+2025-10-20 15:10:57,547 - ui.gui_main - DEBUG - Cleared attribute reference: documentation_window_ref
+2025-10-20 15:10:58,161 - ui.gui_main - INFO - Main application on_close triggered.
+2025-10-20 15:10:58,162 - ui.gui_main - DEBUG - Main GUI update loop cancelled.
+2025-10-20 15:10:58,162 - ui.gui_main - INFO - Destroying main application window.
+2025-10-20 15:10:58,186 - ui.gui_main - INFO - Main application window destroyed.
+2025-10-20 15:10:58,186 - __main__ - INFO - Tkinter mainloop finished.
+2025-10-20 15:10:58,186 - __main__ - INFO - Initiating shutdown sequence...
+2025-10-20 15:10:58,186 - core.capture - INFO - Signaling packet capture thread to stop.
+2025-10-20 15:10:58,186 - core.blocklist_integration - INFO - Signaling blocklist auto-update thread to stop.
+2025-10-20 15:10:58,186 - __main__ - INFO - Waiting for capture thread to join...
+2025-10-20 15:10:58,186 - core.blocklist_integration - INFO - Blocklist auto-update thread received stop signal and is exiting.
+2025-10-20 15:10:58,821 - core.capture - INFO - Capture thread received stop signal and is exiting gracefully.
+2025-10-20 15:10:58,822 - __main__ - INFO - Capture thread joined successfully.
+2025-10-20 15:10:58,822 - __main__ - INFO - Shutting down logging system.

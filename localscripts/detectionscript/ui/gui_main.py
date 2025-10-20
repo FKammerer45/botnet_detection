@@ -320,10 +320,9 @@ class PacketStatsGUI:
         if self.documentation_window_ref and self.documentation_window_ref.winfo_exists():
             self.documentation_window_ref.lift()
             return
-        top = tk.Toplevel(self.master)
-        self.documentation_window_ref = top
-        doc_instance = DocumentationWindow(top)
-        top.protocol("WM_DELETE_WINDOW", lambda t=top, di=doc_instance: (di.master.destroy(), self._clear_window_reference(t, "documentation_window_ref")))
+        doc_instance = DocumentationWindow(self.master)
+        self.documentation_window_ref = doc_instance
+        doc_instance.protocol("WM_DELETE_WINDOW", lambda t=doc_instance: self._clear_window_reference(t, "documentation_window_ref"))
 
     def get_flag_unsafe(self): return self.flag_unsafe_var.get()
     def get_flag_malicious(self): return self.flag_malicious_var.get()

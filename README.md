@@ -75,6 +75,7 @@ botnet_detection/
 *   **User-Friendly GUI**: Tkinter-based interface for easy interaction and configuration.
 *   **In-App Documentation**: A built-in documentation viewer to explain features and detection mechanisms.
 *   **Logging**: Records application events and errors to `network_monitor.log`.
+*   **Testing Suite**: A built-in tool to simulate various network attacks and anomalies to verify that the detection mechanisms are working correctly.
 
 ## Setting Up and Running the Detection Tool
 

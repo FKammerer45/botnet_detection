@@ -5782,3 +5782,1258 @@ SyntaxError: leading zeros in decimal integer literals are not permitted; use an
 2025-10-20 17:47:10,047 - core.capture - INFO - Capture thread received stop signal and is exiting gracefully.
 2025-10-20 17:47:10,048 - __main__ - INFO - Capture thread joined successfully.
 2025-10-20 17:47:10,048 - __main__ - INFO - Shutting down logging system.
+2025-10-20 17:48:16,665 - config.globals - DEBUG - Globals module loaded (most config now in core.config_manager).
+2025-10-20 17:48:17,338 - core.whitelist_manager - DEBUG - Creating singleton Whitelist instance.
+2025-10-20 17:48:17,339 - core.whitelist_manager - INFO - Loading whitelist from whitelist.txt
+2025-10-20 17:48:17,339 - core.whitelist_manager - INFO - Whitelist loading complete. Loaded 0 IP/Network entries and 0 Domain entries.
+2025-10-20 17:48:17,474 - matplotlib - DEBUG - matplotlib data path: C:\Users\kamme\OneDrive\Desktop\uni\Master\PraktikeschProjek\botnet_detection\botnet_detection\.venv\Lib\site-packages\matplotlib\mpl-data
+2025-10-20 17:48:17,482 - matplotlib - DEBUG - CONFIGDIR=C:\Users\kamme\.matplotlib
+2025-10-20 17:48:17,483 - matplotlib - DEBUG - interactive is False
+2025-10-20 17:48:17,483 - matplotlib - DEBUG - platform is win32
+2025-10-20 17:48:17,514 - matplotlib - DEBUG - CACHEDIR=C:\Users\kamme\.matplotlib
+2025-10-20 17:48:17,515 - matplotlib.font_manager - DEBUG - Using fontManager instance from C:\Users\kamme\.matplotlib\fontlist-v390.json
+2025-10-20 17:48:17,707 - __main__ - INFO - Application starting...
+2025-10-20 17:48:17,707 - __main__ - INFO - Whitelist instance created/retrieved.
+2025-10-20 17:48:17,708 - __main__ - INFO - Initializing NetworkDataManager...
+2025-10-20 17:48:17,708 - core.data_manager - INFO - Initializing NetworkDataManager.
+2025-10-20 17:48:17,708 - core.data_manager - INFO - DataManager calculated timestamp deque maxlen: 90000
+2025-10-20 17:48:17,708 - __main__ - INFO - NetworkDataManager initialized.
+2025-10-20 17:48:17,708 - core.capture - INFO - Attempting to list and identify network interfaces...
+2025-10-20 17:48:43,618 - __main__ - INFO - Starting packet capture thread...
+2025-10-20 17:48:43,620 - core.capture - INFO - Packet capture thread started. Sniffing on: \Device\NPF_{07D3FDD8-3D05-452B-831D-96019F9D3D8A}, \Device\NPF_{4907781C-B481-4A25-8DCD-059BBACA9FC2}, \Device\NPF_{611A2DE0-2404-49E2-BBEA-372082D50A48}, \Device\NPF_{4907781C-B481-4A25-8DCD-059BBACA9FC2}
+2025-10-20 17:48:43,620 - __main__ - INFO - Starting periodic blocklist update thread...
+2025-10-20 17:48:43,620 - core.capture - INFO - Using packet filter: "ip or ip6"
+2025-10-20 17:48:43,621 - core.capture - INFO - Sniffing with 1.0s timeout loop for graceful shutdown.
+2025-10-20 17:48:43,621 - core.blocklist_integration - INFO - Blocklist auto-update thread started. Update interval: 24 hours.
+2025-10-20 17:48:43,621 - __main__ - INFO - Initializing GUI...
+2025-10-20 17:48:43,668 - ui.gui_main - INFO - Initializing PacketStatsGUI...
+2025-10-20 17:48:43,668 - ui.gui_main - INFO - Downloading/loading blocklists (if needed)...
+2025-10-20 17:48:43,668 - core.blocklist_integration - INFO - Checking/Downloading 6 blocklists...
+2025-10-20 17:48:43,668 - core.blocklist_integration - DEBUG - Skip download, exists: ip_ipblocklist_aggressive.txt
+2025-10-20 17:48:43,669 - core.blocklist_integration - DEBUG - Skip download, exists: ip_dshield.netset
+2025-10-20 17:48:43,669 - core.blocklist_integration - DEBUG - Skip download, exists: ip_spamhaus_drop.netset
+2025-10-20 17:48:43,669 - core.blocklist_integration - DEBUG - Skip download, exists: ip_spamhaus_edrop.netset
+2025-10-20 17:48:43,669 - core.blocklist_integration - DEBUG - Skip download, exists: dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:48:43,669 - core.blocklist_integration - INFO - Download check finished.
+2025-10-20 17:48:43,669 - core.blocklist_integration - INFO - Loading configured blocklists...
+2025-10-20 17:48:43,669 - core.blocklist_integration - INFO - Loading 4 IP blocklists...
+2025-10-20 17:48:43,669 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_ipblocklist_aggressive.txt
+2025-10-20 17:48:43,714 - core.blocklist_integration - INFO - Loaded 7600 IP entries from ip_ipblocklist_aggressive.txt
+2025-10-20 17:48:43,715 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_dshield.netset
+2025-10-20 17:48:43,715 - core.blocklist_integration - INFO - Loaded 20 IP entries from ip_dshield.netset
+2025-10-20 17:48:43,715 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_spamhaus_drop.netset
+2025-10-20 17:48:43,719 - core.blocklist_integration - INFO - Loaded 1401 IP entries from ip_spamhaus_drop.netset
+2025-10-20 17:48:43,719 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_spamhaus_edrop.netset
+2025-10-20 17:48:43,720 - core.blocklist_integration - INFO - Loaded 336 IP entries from ip_spamhaus_edrop.netset
+2025-10-20 17:48:43,720 - core.blocklist_integration - INFO - Loading 1 DNS blocklists...
+2025-10-20 17:48:43,720 - core.blocklist_integration - DEBUG - Parsing [DNS]: dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:48:43,720 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 15 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:48:43,721 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'local' line 17 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:48:43,721 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'broadcasthost' line 18 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:48:43,721 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 19 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:48:43,721 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-localhost' line 20 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:48:43,721 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-loopback' line 21 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:48:43,721 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 22 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:48:43,721 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-localnet' line 23 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:48:43,721 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-mcastprefix' line 24 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:48:43,721 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allnodes' line 25 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:48:43,721 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allrouters' line 26 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:48:43,721 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allhosts' line 27 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:48:43,759 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'www.zgarniij_vouchher.skroc.pl' line 25218 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:48:43,759 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'zgarniij_vouchher.skroc.pl' line 25220 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:48:43,841 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'philadelphia_cbslocal.us.intellitxt.com' line 71194 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:48:43,871 - core.blocklist_integration - INFO - Loaded 80100 DNS entries from dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:48:43,871 - core.blocklist_integration - INFO - Loading 1 JA3 blocklists...
+2025-10-20 17:48:43,871 - core.blocklist_integration - WARNING - JA3 file not found: blocklists\ip_ja3.csv.
+2025-10-20 17:48:43,872 - core.blocklist_integration - INFO - Loading 0 JA3S blocklists...
+2025-10-20 17:48:43,872 - core.blocklist_integration - INFO - Blocklist loading complete. Files: 5, IPs: 9357, DNS: 80100, JA3: 0, JA3S: 0
+2025-10-20 17:48:43,872 - ui.gui_main - INFO - Blocklists processed.
+2025-10-20 17:48:43,877 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 17:48:43,877 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 17:48:43
+2025-10-20 17:48:43,877 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 17:48:43,877 - ui.gui_main - INFO - PacketStatsGUI initialized.
+2025-10-20 17:48:43,877 - __main__ - INFO - Starting Tkinter mainloop...
+2025-10-20 17:48:47,500 - ui.gui_main - DEBUG - Opening Testing Suite window.
+2025-10-20 17:48:55,312 - ui.gui_main - INFO - Double-clicked IP: 192.168.0.34. Opening detail window.
+2025-10-20 17:48:55,313 - ui.gui_detail - INFO - Opening detail window for IP: 192.168.0.34
+2025-10-20 17:49:43,882 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 17:49:43,883 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 17:49:43
+2025-10-20 17:49:43,884 - core.data_manager - INFO - DataManager: Aggregated data for 7 IP-minute entries.
+2025-10-20 17:49:43,888 - core.data_manager - WARNING - Port Scan DETECTED from 192.168.0.34
+2025-10-20 17:49:43,888 - core.data_manager - WARNING - Ping Sweep DETECTED from 192.168.0.34: 27 hosts targeted.
+2025-10-20 17:49:43,986 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 17:50:28,785 - core.data_manager - ERROR - Error processing DNS query: 'set' object is not subscriptable
+2025-10-20 17:50:28,786 - core.data_manager - ERROR - Error processing DNS query: 'set' object is not subscriptable
+2025-10-20 17:50:43,993 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 17:50:43,993 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 17:50:43
+2025-10-20 17:50:43,994 - core.data_manager - INFO - DataManager: Aggregated data for 7 IP-minute entries.
+2025-10-20 17:50:43,996 - core.data_manager - WARNING - Ping Sweep DETECTED from 192.168.0.34: 29 hosts targeted.
+2025-10-20 17:50:44,106 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 17:51:44,113 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 17:51:44,114 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 17:51:44
+2025-10-20 17:51:44,114 - core.data_manager - INFO - DataManager: Aggregated data for 9 IP-minute entries.
+2025-10-20 17:51:44,117 - core.data_manager - WARNING - Rate anomaly DETECTED for 192.168.0.34 on protocol tcp: 1422 packets > threshold 1380.68
+2025-10-20 17:51:44,118 - core.data_manager - WARNING - Ping Sweep DETECTED from 192.168.0.34: 29 hosts targeted.
+2025-10-20 17:51:44,237 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 17:52:44,244 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 17:52:44,246 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 17:52:44
+2025-10-20 17:52:44,247 - core.data_manager - INFO - DataManager: Aggregated data for 7 IP-minute entries.
+2025-10-20 17:52:44,258 - core.data_manager - WARNING - Rate anomaly DETECTED for 192.168.0.34 on protocol tcp: 2344 packets > threshold 1675.52
+2025-10-20 17:52:44,260 - core.data_manager - WARNING - Ping Sweep DETECTED from 192.168.0.34: 29 hosts targeted.
+2025-10-20 17:52:44,519 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 17:53:44,521 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 17:53:44,522 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 17:53:44
+2025-10-20 17:53:44,522 - core.data_manager - INFO - DataManager: Aggregated data for 9 IP-minute entries.
+2025-10-20 17:53:44,524 - core.data_manager - WARNING - Rate anomaly DETECTED for 192.168.0.34 on protocol tcp: 3149 packets > threshold 2037.39
+2025-10-20 17:53:44,525 - core.data_manager - WARNING - Ping Sweep DETECTED from 192.168.0.34: 30 hosts targeted.
+2025-10-20 17:53:44,594 - core.data_manager - WARNING - Port Scan DETECTED from 2a02:8100:c0:2c1::4:1101
+2025-10-20 17:53:44,663 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 17:53:58,982 - ui.gui_detail - INFO - Closing detail window for IP: 192.168.0.34
+2025-10-20 17:53:58,996 - ui.gui_main - DEBUG - Clearing reference for window: .!toplevel2, attr: None, list: detail_window_refs, item: (<tkinter.Toplevel object .!toplevel2>, '192.168.0.34')
+2025-10-20 17:53:58,996 - ui.gui_main - DEBUG - Removed (<tkinter.Toplevel object .!toplevel2>, '192.168.0.34') from list reference: detail_window_refs
+2025-10-20 17:54:05,130 - ui.gui_main - INFO - Double-clicked IP: 192.168.0.34. Opening detail window.
+2025-10-20 17:54:05,131 - ui.gui_detail - INFO - Opening detail window for IP: 192.168.0.34
+2025-10-20 17:54:44,664 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 17:54:44,665 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 17:54:44
+2025-10-20 17:54:44,665 - core.data_manager - INFO - DataManager: Aggregated data for 13 IP-minute entries.
+2025-10-20 17:54:44,667 - core.data_manager - WARNING - Rate anomaly DETECTED for 192.168.0.34 on protocol tcp: 3250 packets > threshold 2248.04
+2025-10-20 17:54:44,668 - core.data_manager - WARNING - Ping Sweep DETECTED from 192.168.0.34: 30 hosts targeted.
+2025-10-20 17:54:44,813 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 17:55:44,826 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 17:55:44,826 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 17:55:44
+2025-10-20 17:55:44,827 - core.data_manager - INFO - DataManager: Aggregated data for 5 IP-minute entries.
+2025-10-20 17:55:44,829 - core.data_manager - WARNING - Host Scan DETECTED from 192.168.0.34
+2025-10-20 17:55:44,830 - core.data_manager - WARNING - Rate anomaly DETECTED for 192.168.0.34 on protocol tcp: 4080 packets > threshold 2546.91
+2025-10-20 17:55:44,831 - core.data_manager - WARNING - Ping Sweep DETECTED from 192.168.0.34: 30 hosts targeted.
+2025-10-20 17:55:44,882 - core.data_manager - WARNING - DGA DETECTED for 2a02:810d:b110:7400:85ce:72bb:36e:d992: 188505-ipv4mte.gr.global.aa-rt.sharepoint.com (length: 45, entropy: 3.52)
+2025-10-20 17:55:44,985 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 17:56:40,227 - core.data_manager - WARNING - ICMP Tunneling (Large Payload) DETECTED from 192.168.0.34 to 8.8.8.8: 600 bytes
+2025-10-20 17:56:40,253 - core.data_manager - WARNING - ICMP Tunneling (Large Payload) DETECTED from 8.8.8.8 to 192.168.0.34: 600 bytes
+2025-10-20 17:56:44,989 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 17:56:44,990 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 17:56:44
+2025-10-20 17:56:44,991 - core.data_manager - INFO - DataManager: Aggregated data for 10 IP-minute entries.
+2025-10-20 17:56:44,998 - core.data_manager - WARNING - Rate anomaly DETECTED for 192.168.0.34 on protocol tcp: 4138 packets > threshold 2749.72
+2025-10-20 17:56:45,000 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: gqucujsjzubraabmzhkcnqeaa.com (length: 29, entropy: 3.73)
+2025-10-20 17:56:45,001 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: pivpksywttvkljybkadvqzqam.com (length: 29, entropy: 3.86)
+2025-10-20 17:56:45,001 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: dzqncnyoiefdblselvurzsscw.com (length: 29, entropy: 3.97)
+2025-10-20 17:56:45,001 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: felzygixpddqaiocpgbjwyxuo.com (length: 29, entropy: 4.08)
+2025-10-20 17:56:45,002 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: cplofdavtljqooepsbywacuju.com (length: 29, entropy: 3.97)
+2025-10-20 17:56:45,002 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: lqpbmqwvtoxyysbyiqgljnivv.com (length: 29, entropy: 3.83)
+2025-10-20 17:56:45,002 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: knzhjusetfrgtlhehmtbhkwxn.com (length: 29, entropy: 3.89)
+2025-10-20 17:56:45,002 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: fwxzysiecvyfwtzhurbxzgytj.com (length: 29, entropy: 3.94)
+2025-10-20 17:56:45,003 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: sfxqodjyxeizihezlafpdlyfw.com (length: 29, entropy: 3.89)
+2025-10-20 17:56:45,003 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: vmsrxbeatvxfjermrhbevohzn.com (length: 29, entropy: 3.75)
+2025-10-20 17:56:45,003 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: gskmkpiyjpfvdvlomgxpoeuzh.com (length: 29, entropy: 4.05)
+2025-10-20 17:56:45,003 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: ylynupbuqgwdydctwypvpsppg.com (length: 29, entropy: 3.54)
+2025-10-20 17:56:45,004 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: kksqtobngoezivpcegvhbfqqq.com (length: 29, entropy: 3.84)
+2025-10-20 17:56:45,004 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: tuisenuhizmrgttiifctldxji.com (length: 29, entropy: 3.78)
+2025-10-20 17:56:45,004 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: rrwspklrddanpvlmpdmcctpje.com (length: 29, entropy: 3.70)
+2025-10-20 17:56:45,004 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: sxpqwpbrytgavfxnbibmuqaeh.com (length: 29, entropy: 4.13)
+2025-10-20 17:56:45,004 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: aavxrzztyxqnvjyyqvveeeshz.com (length: 29, entropy: 3.51)
+2025-10-20 17:56:45,004 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: etcjhcyrfuwquxxdcfhwsobiq.com (length: 29, entropy: 3.97)
+2025-10-20 17:56:45,004 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: oqhbzpaougrojjvjjchpjzbyc.com (length: 29, entropy: 3.59)
+2025-10-20 17:56:45,004 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: zbcohdktfoguoztymytrygcce.com (length: 29, entropy: 3.72)
+2025-10-20 17:56:45,004 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainlxewsqizso.com (length: 31, entropy: 3.61)
+2025-10-20 17:56:45,005 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainryvolzrszc.com (length: 31, entropy: 3.84)
+2025-10-20 17:56:45,005 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainuuutgojovu.com (length: 31, entropy: 3.54)
+2025-10-20 17:56:45,005 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainggtpgtvxgc.com (length: 31, entropy: 3.57)
+2025-10-20 17:56:45,005 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomaintmbyzjpsfb.com (length: 31, entropy: 3.84)
+2025-10-20 17:56:45,005 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainrgcxpijwtl.com (length: 31, entropy: 3.88)
+2025-10-20 17:56:45,005 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainnhoekabbyk.com (length: 31, entropy: 3.60)
+2025-10-20 17:56:45,005 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainmqqpcmhtau.com (length: 31, entropy: 3.74)
+2025-10-20 17:56:45,005 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainfeqfikkwyw.com (length: 31, entropy: 3.74)
+2025-10-20 17:56:45,005 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainhmsjtxbejz.com (length: 31, entropy: 3.66)
+2025-10-20 17:56:45,005 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainwvdacieskr.com (length: 31, entropy: 3.74)
+2025-10-20 17:56:45,006 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainmhturpfwnl.com (length: 31, entropy: 3.85)
+2025-10-20 17:56:45,006 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainpsqxovhtrx.com (length: 31, entropy: 3.71)
+2025-10-20 17:56:45,006 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainobqpskslhh.com (length: 31, entropy: 3.81)
+2025-10-20 17:56:45,006 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomaintrlswquvge.com (length: 31, entropy: 3.88)
+2025-10-20 17:56:45,006 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainklsmksfdvn.com (length: 31, entropy: 3.63)
+2025-10-20 17:56:45,006 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainipvljgxctc.com (length: 31, entropy: 3.81)
+2025-10-20 17:56:45,006 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainlcjbuytiqj.com (length: 31, entropy: 3.88)
+2025-10-20 17:56:45,006 - core.data_manager - WARNING - Ping Sweep DETECTED from 192.168.0.34: 30 hosts targeted.
+2025-10-20 17:56:45,056 - core.data_manager - WARNING - DGA DETECTED for 2a02:810d:b110:7400:85ce:72bb:36e:d992: 188505-ipv4mte.gr.global.aa-rt.sharepoint.com (length: 45, entropy: 3.52)
+2025-10-20 17:56:45,160 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 17:57:38,355 - ui.gui_detail - INFO - Closing detail window for IP: 192.168.0.34
+2025-10-20 17:57:38,370 - ui.gui_main - DEBUG - Clearing reference for window: .!toplevel3, attr: None, list: detail_window_refs, item: (<tkinter.Toplevel object .!toplevel3>, '192.168.0.34')
+2025-10-20 17:57:38,370 - ui.gui_main - DEBUG - Removed (<tkinter.Toplevel object .!toplevel3>, '192.168.0.34') from list reference: detail_window_refs
+2025-10-20 17:57:45,165 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 17:57:45,166 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 17:57:45
+2025-10-20 17:57:45,166 - core.data_manager - INFO - DataManager: Aggregated data for 4 IP-minute entries.
+2025-10-20 17:57:45,173 - core.data_manager - WARNING - Rate anomaly DETECTED for 192.168.0.34 on protocol tcp: 4892 packets > threshold 3010.36
+2025-10-20 17:57:45,177 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: gqucujsjzubraabmzhkcnqeaa.com (length: 29, entropy: 3.73)
+2025-10-20 17:57:45,178 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: pivpksywttvkljybkadvqzqam.com (length: 29, entropy: 3.86)
+2025-10-20 17:57:45,179 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: dzqncnyoiefdblselvurzsscw.com (length: 29, entropy: 3.97)
+2025-10-20 17:57:45,179 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: felzygixpddqaiocpgbjwyxuo.com (length: 29, entropy: 4.08)
+2025-10-20 17:57:45,180 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: cplofdavtljqooepsbywacuju.com (length: 29, entropy: 3.97)
+2025-10-20 17:57:45,180 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: lqpbmqwvtoxyysbyiqgljnivv.com (length: 29, entropy: 3.83)
+2025-10-20 17:57:45,181 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: knzhjusetfrgtlhehmtbhkwxn.com (length: 29, entropy: 3.89)
+2025-10-20 17:57:45,182 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: fwxzysiecvyfwtzhurbxzgytj.com (length: 29, entropy: 3.94)
+2025-10-20 17:57:45,182 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: sfxqodjyxeizihezlafpdlyfw.com (length: 29, entropy: 3.89)
+2025-10-20 17:57:45,182 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: vmsrxbeatvxfjermrhbevohzn.com (length: 29, entropy: 3.75)
+2025-10-20 17:57:45,183 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: gskmkpiyjpfvdvlomgxpoeuzh.com (length: 29, entropy: 4.05)
+2025-10-20 17:57:45,183 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: ylynupbuqgwdydctwypvpsppg.com (length: 29, entropy: 3.54)
+2025-10-20 17:57:45,184 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: kksqtobngoezivpcegvhbfqqq.com (length: 29, entropy: 3.84)
+2025-10-20 17:57:45,185 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: tuisenuhizmrgttiifctldxji.com (length: 29, entropy: 3.78)
+2025-10-20 17:57:45,185 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: rrwspklrddanpvlmpdmcctpje.com (length: 29, entropy: 3.70)
+2025-10-20 17:57:45,186 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: sxpqwpbrytgavfxnbibmuqaeh.com (length: 29, entropy: 4.13)
+2025-10-20 17:57:45,186 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: aavxrzztyxqnvjyyqvveeeshz.com (length: 29, entropy: 3.51)
+2025-10-20 17:57:45,187 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: etcjhcyrfuwquxxdcfhwsobiq.com (length: 29, entropy: 3.97)
+2025-10-20 17:57:45,187 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: oqhbzpaougrojjvjjchpjzbyc.com (length: 29, entropy: 3.59)
+2025-10-20 17:57:45,188 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: zbcohdktfoguoztymytrygcce.com (length: 29, entropy: 3.72)
+2025-10-20 17:57:45,188 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainlxewsqizso.com (length: 31, entropy: 3.61)
+2025-10-20 17:57:45,189 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainryvolzrszc.com (length: 31, entropy: 3.84)
+2025-10-20 17:57:45,189 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainuuutgojovu.com (length: 31, entropy: 3.54)
+2025-10-20 17:57:45,190 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainggtpgtvxgc.com (length: 31, entropy: 3.57)
+2025-10-20 17:57:45,190 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomaintmbyzjpsfb.com (length: 31, entropy: 3.84)
+2025-10-20 17:57:45,191 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainrgcxpijwtl.com (length: 31, entropy: 3.88)
+2025-10-20 17:57:45,191 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainnhoekabbyk.com (length: 31, entropy: 3.60)
+2025-10-20 17:57:45,191 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainmqqpcmhtau.com (length: 31, entropy: 3.74)
+2025-10-20 17:57:45,192 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainfeqfikkwyw.com (length: 31, entropy: 3.74)
+2025-10-20 17:57:45,192 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainhmsjtxbejz.com (length: 31, entropy: 3.66)
+2025-10-20 17:57:45,193 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainwvdacieskr.com (length: 31, entropy: 3.74)
+2025-10-20 17:57:45,193 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainmhturpfwnl.com (length: 31, entropy: 3.85)
+2025-10-20 17:57:45,194 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainpsqxovhtrx.com (length: 31, entropy: 3.71)
+2025-10-20 17:57:45,195 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainobqpskslhh.com (length: 31, entropy: 3.81)
+2025-10-20 17:57:45,195 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomaintrlswquvge.com (length: 31, entropy: 3.88)
+2025-10-20 17:57:45,195 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainklsmksfdvn.com (length: 31, entropy: 3.63)
+2025-10-20 17:57:45,195 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainipvljgxctc.com (length: 31, entropy: 3.81)
+2025-10-20 17:57:45,196 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainlcjbuytiqj.com (length: 31, entropy: 3.88)
+2025-10-20 17:57:45,196 - core.data_manager - WARNING - Ping Sweep DETECTED from 192.168.0.34: 30 hosts targeted.
+2025-10-20 17:57:45,252 - core.data_manager - WARNING - DGA DETECTED for 2a02:810d:b110:7400:85ce:72bb:36e:d992: 188505-ipv4mte.gr.global.aa-rt.sharepoint.com (length: 45, entropy: 3.52)
+2025-10-20 17:57:45,366 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 17:58:45,381 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 17:58:45,382 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 17:58:45
+2025-10-20 17:58:45,383 - core.data_manager - INFO - DataManager: Aggregated data for 5 IP-minute entries.
+2025-10-20 17:58:45,387 - core.data_manager - WARNING - Rate anomaly DETECTED for 192.168.0.34 on protocol tcp: 7120 packets > threshold 3558.43
+2025-10-20 17:58:45,389 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: gqucujsjzubraabmzhkcnqeaa.com (length: 29, entropy: 3.73)
+2025-10-20 17:58:45,389 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: pivpksywttvkljybkadvqzqam.com (length: 29, entropy: 3.86)
+2025-10-20 17:58:45,389 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: dzqncnyoiefdblselvurzsscw.com (length: 29, entropy: 3.97)
+2025-10-20 17:58:45,390 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: felzygixpddqaiocpgbjwyxuo.com (length: 29, entropy: 4.08)
+2025-10-20 17:58:45,390 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: cplofdavtljqooepsbywacuju.com (length: 29, entropy: 3.97)
+2025-10-20 17:58:45,390 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: lqpbmqwvtoxyysbyiqgljnivv.com (length: 29, entropy: 3.83)
+2025-10-20 17:58:45,390 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: knzhjusetfrgtlhehmtbhkwxn.com (length: 29, entropy: 3.89)
+2025-10-20 17:58:45,390 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: fwxzysiecvyfwtzhurbxzgytj.com (length: 29, entropy: 3.94)
+2025-10-20 17:58:45,390 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: sfxqodjyxeizihezlafpdlyfw.com (length: 29, entropy: 3.89)
+2025-10-20 17:58:45,390 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: vmsrxbeatvxfjermrhbevohzn.com (length: 29, entropy: 3.75)
+2025-10-20 17:58:45,390 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: gskmkpiyjpfvdvlomgxpoeuzh.com (length: 29, entropy: 4.05)
+2025-10-20 17:58:45,390 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: ylynupbuqgwdydctwypvpsppg.com (length: 29, entropy: 3.54)
+2025-10-20 17:58:45,391 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: kksqtobngoezivpcegvhbfqqq.com (length: 29, entropy: 3.84)
+2025-10-20 17:58:45,391 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: tuisenuhizmrgttiifctldxji.com (length: 29, entropy: 3.78)
+2025-10-20 17:58:45,391 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: rrwspklrddanpvlmpdmcctpje.com (length: 29, entropy: 3.70)
+2025-10-20 17:58:45,391 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: sxpqwpbrytgavfxnbibmuqaeh.com (length: 29, entropy: 4.13)
+2025-10-20 17:58:45,391 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: aavxrzztyxqnvjyyqvveeeshz.com (length: 29, entropy: 3.51)
+2025-10-20 17:58:45,391 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: etcjhcyrfuwquxxdcfhwsobiq.com (length: 29, entropy: 3.97)
+2025-10-20 17:58:45,391 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: oqhbzpaougrojjvjjchpjzbyc.com (length: 29, entropy: 3.59)
+2025-10-20 17:58:45,391 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: zbcohdktfoguoztymytrygcce.com (length: 29, entropy: 3.72)
+2025-10-20 17:58:45,391 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainlxewsqizso.com (length: 31, entropy: 3.61)
+2025-10-20 17:58:45,391 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainryvolzrszc.com (length: 31, entropy: 3.84)
+2025-10-20 17:58:45,391 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainuuutgojovu.com (length: 31, entropy: 3.54)
+2025-10-20 17:58:45,391 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainggtpgtvxgc.com (length: 31, entropy: 3.57)
+2025-10-20 17:58:45,392 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomaintmbyzjpsfb.com (length: 31, entropy: 3.84)
+2025-10-20 17:58:45,392 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainrgcxpijwtl.com (length: 31, entropy: 3.88)
+2025-10-20 17:58:45,392 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainnhoekabbyk.com (length: 31, entropy: 3.60)
+2025-10-20 17:58:45,392 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainmqqpcmhtau.com (length: 31, entropy: 3.74)
+2025-10-20 17:58:45,392 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainfeqfikkwyw.com (length: 31, entropy: 3.74)
+2025-10-20 17:58:45,392 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainhmsjtxbejz.com (length: 31, entropy: 3.66)
+2025-10-20 17:58:45,392 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainwvdacieskr.com (length: 31, entropy: 3.74)
+2025-10-20 17:58:45,392 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainmhturpfwnl.com (length: 31, entropy: 3.85)
+2025-10-20 17:58:45,392 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainpsqxovhtrx.com (length: 31, entropy: 3.71)
+2025-10-20 17:58:45,392 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainobqpskslhh.com (length: 31, entropy: 3.81)
+2025-10-20 17:58:45,392 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomaintrlswquvge.com (length: 31, entropy: 3.88)
+2025-10-20 17:58:45,392 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainklsmksfdvn.com (length: 31, entropy: 3.63)
+2025-10-20 17:58:45,393 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainipvljgxctc.com (length: 31, entropy: 3.81)
+2025-10-20 17:58:45,393 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainlcjbuytiqj.com (length: 31, entropy: 3.88)
+2025-10-20 17:58:45,393 - core.data_manager - WARNING - Ping Sweep DETECTED from 192.168.0.34: 30 hosts targeted.
+2025-10-20 17:58:45,450 - core.data_manager - WARNING - DGA DETECTED for 2a02:810d:b110:7400:85ce:72bb:36e:d992: 188505-ipv4mte.gr.global.aa-rt.sharepoint.com (length: 45, entropy: 3.52)
+2025-10-20 17:58:45,469 - core.data_manager - WARNING - Beaconing DETECTED from fe80::e7f:b2ff:fe66:ab02 to 2a02:810d:b110:7400::e811 at interval ~58.37s
+2025-10-20 17:58:45,499 - core.data_manager - WARNING - Beaconing DETECTED from 2a02:810d:b110:7400::e811 to fe80::e7f:b2ff:fe66:ab02 at interval ~58.37s
+2025-10-20 17:58:45,573 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 17:59:12,274 - __main__ - INFO - Initiating shutdown sequence...
+2025-10-20 17:59:12,275 - core.capture - INFO - Signaling packet capture thread to stop.
+2025-10-20 17:59:12,275 - core.blocklist_integration - INFO - Signaling blocklist auto-update thread to stop.
+2025-10-20 17:59:12,275 - __main__ - INFO - Waiting for capture thread to join...
+2025-10-20 17:59:12,275 - core.blocklist_integration - INFO - Blocklist auto-update thread received stop signal and is exiting.
+2025-10-20 17:59:13,051 - core.capture - INFO - Capture thread received stop signal and is exiting gracefully.
+2025-10-20 17:59:13,052 - __main__ - INFO - Capture thread joined successfully.
+2025-10-20 17:59:13,052 - __main__ - INFO - Shutting down logging system.
+2025-10-20 17:59:17,723 - config.globals - DEBUG - Globals module loaded (most config now in core.config_manager).
+2025-10-20 17:59:18,394 - core.whitelist_manager - DEBUG - Creating singleton Whitelist instance.
+2025-10-20 17:59:18,395 - core.whitelist_manager - INFO - Loading whitelist from whitelist.txt
+2025-10-20 17:59:18,395 - core.whitelist_manager - INFO - Whitelist loading complete. Loaded 0 IP/Network entries and 0 Domain entries.
+2025-10-20 17:59:18,544 - matplotlib - DEBUG - matplotlib data path: C:\Users\kamme\OneDrive\Desktop\uni\Master\PraktikeschProjek\botnet_detection\botnet_detection\.venv\Lib\site-packages\matplotlib\mpl-data
+2025-10-20 17:59:18,552 - matplotlib - DEBUG - CONFIGDIR=C:\Users\kamme\.matplotlib
+2025-10-20 17:59:18,553 - matplotlib - DEBUG - interactive is False
+2025-10-20 17:59:18,553 - matplotlib - DEBUG - platform is win32
+2025-10-20 17:59:18,584 - matplotlib - DEBUG - CACHEDIR=C:\Users\kamme\.matplotlib
+2025-10-20 17:59:18,585 - matplotlib.font_manager - DEBUG - Using fontManager instance from C:\Users\kamme\.matplotlib\fontlist-v390.json
+2025-10-20 17:59:18,756 - __main__ - INFO - Application starting...
+2025-10-20 17:59:18,757 - __main__ - INFO - Whitelist instance created/retrieved.
+2025-10-20 17:59:18,757 - __main__ - INFO - Initializing NetworkDataManager...
+2025-10-20 17:59:18,757 - core.data_manager - INFO - Initializing NetworkDataManager.
+2025-10-20 17:59:18,757 - core.data_manager - INFO - DataManager calculated timestamp deque maxlen: 90000
+2025-10-20 17:59:18,757 - __main__ - INFO - NetworkDataManager initialized.
+2025-10-20 17:59:18,757 - core.capture - INFO - Attempting to list and identify network interfaces...
+2025-10-20 17:59:24,312 - __main__ - INFO - Starting packet capture thread...
+2025-10-20 17:59:24,313 - core.capture - INFO - Packet capture thread started. Sniffing on: \Device\NPF_{07D3FDD8-3D05-452B-831D-96019F9D3D8A}, \Device\NPF_{4907781C-B481-4A25-8DCD-059BBACA9FC2}, \Device\NPF_{611A2DE0-2404-49E2-BBEA-372082D50A48}, \Device\NPF_{4907781C-B481-4A25-8DCD-059BBACA9FC2}
+2025-10-20 17:59:24,313 - __main__ - INFO - Starting periodic blocklist update thread...
+2025-10-20 17:59:24,313 - core.capture - INFO - Using packet filter: "ip or ip6"
+2025-10-20 17:59:24,313 - core.capture - INFO - Sniffing with 1.0s timeout loop for graceful shutdown.
+2025-10-20 17:59:24,313 - core.blocklist_integration - INFO - Blocklist auto-update thread started. Update interval: 24 hours.
+2025-10-20 17:59:24,313 - __main__ - INFO - Initializing GUI...
+2025-10-20 17:59:24,353 - ui.gui_main - INFO - Initializing PacketStatsGUI...
+2025-10-20 17:59:24,354 - ui.gui_main - INFO - Downloading/loading blocklists (if needed)...
+2025-10-20 17:59:24,354 - core.blocklist_integration - INFO - Checking/Downloading 6 blocklists...
+2025-10-20 17:59:24,354 - core.blocklist_integration - DEBUG - Skip download, exists: ip_ipblocklist_aggressive.txt
+2025-10-20 17:59:24,354 - core.blocklist_integration - DEBUG - Skip download, exists: ip_dshield.netset
+2025-10-20 17:59:24,354 - core.blocklist_integration - DEBUG - Skip download, exists: ip_spamhaus_drop.netset
+2025-10-20 17:59:24,354 - core.blocklist_integration - DEBUG - Skip download, exists: ip_spamhaus_edrop.netset
+2025-10-20 17:59:24,355 - core.blocklist_integration - DEBUG - Skip download, exists: dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:59:24,355 - core.blocklist_integration - INFO - Download check finished.
+2025-10-20 17:59:24,355 - core.blocklist_integration - INFO - Loading configured blocklists...
+2025-10-20 17:59:24,355 - core.blocklist_integration - INFO - Loading 4 IP blocklists...
+2025-10-20 17:59:24,355 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_ipblocklist_aggressive.txt
+2025-10-20 17:59:24,401 - core.blocklist_integration - INFO - Loaded 7600 IP entries from ip_ipblocklist_aggressive.txt
+2025-10-20 17:59:24,401 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_dshield.netset
+2025-10-20 17:59:24,402 - core.blocklist_integration - INFO - Loaded 20 IP entries from ip_dshield.netset
+2025-10-20 17:59:24,402 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_spamhaus_drop.netset
+2025-10-20 17:59:24,405 - core.blocklist_integration - INFO - Loaded 1401 IP entries from ip_spamhaus_drop.netset
+2025-10-20 17:59:24,406 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_spamhaus_edrop.netset
+2025-10-20 17:59:24,407 - core.blocklist_integration - INFO - Loaded 336 IP entries from ip_spamhaus_edrop.netset
+2025-10-20 17:59:24,407 - core.blocklist_integration - INFO - Loading 1 DNS blocklists...
+2025-10-20 17:59:24,407 - core.blocklist_integration - DEBUG - Parsing [DNS]: dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:59:24,407 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 15 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:59:24,408 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'local' line 17 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:59:24,408 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'broadcasthost' line 18 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:59:24,408 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 19 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:59:24,408 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-localhost' line 20 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:59:24,408 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-loopback' line 21 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:59:24,408 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 22 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:59:24,408 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-localnet' line 23 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:59:24,408 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-mcastprefix' line 24 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:59:24,408 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allnodes' line 25 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:59:24,408 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allrouters' line 26 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:59:24,408 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allhosts' line 27 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:59:24,447 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'www.zgarniij_vouchher.skroc.pl' line 25218 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:59:24,447 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'zgarniij_vouchher.skroc.pl' line 25220 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:59:24,528 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'philadelphia_cbslocal.us.intellitxt.com' line 71194 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:59:24,557 - core.blocklist_integration - INFO - Loaded 80100 DNS entries from dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 17:59:24,557 - core.blocklist_integration - INFO - Loading 1 JA3 blocklists...
+2025-10-20 17:59:24,557 - core.blocklist_integration - WARNING - JA3 file not found: blocklists\ip_ja3.csv.
+2025-10-20 17:59:24,557 - core.blocklist_integration - INFO - Loading 0 JA3S blocklists...
+2025-10-20 17:59:24,557 - core.blocklist_integration - INFO - Blocklist loading complete. Files: 5, IPs: 9357, DNS: 80100, JA3: 0, JA3S: 0
+2025-10-20 17:59:24,558 - ui.gui_main - INFO - Blocklists processed.
+2025-10-20 17:59:24,563 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 17:59:24,563 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 17:59:24
+2025-10-20 17:59:24,563 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 17:59:24,564 - ui.gui_main - INFO - PacketStatsGUI initialized.
+2025-10-20 17:59:24,564 - __main__ - INFO - Starting Tkinter mainloop...
+2025-10-20 17:59:29,457 - ui.gui_main - DEBUG - Opening Testing Suite window.
+2025-10-20 17:59:33,068 - core.data_manager - WARNING - ICMP Tunneling (Large Payload) DETECTED from 192.168.0.34 to 8.8.8.8: 600 bytes
+2025-10-20 17:59:33,093 - core.data_manager - WARNING - ICMP Tunneling (Large Payload) DETECTED from 8.8.8.8 to 192.168.0.34: 600 bytes
+2025-10-20 17:59:34,946 - ui.gui_main - INFO - Double-clicked IP: 192.168.0.34. Opening detail window.
+2025-10-20 17:59:34,947 - ui.gui_detail - INFO - Opening detail window for IP: 192.168.0.34
+2025-10-20 18:00:24,568 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 18:00:24,572 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 18:00:24
+2025-10-20 18:00:24,572 - core.data_manager - INFO - DataManager: Aggregated data for 9 IP-minute entries.
+2025-10-20 18:00:24,580 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainbrlbmhvxho.com (length: 31, entropy: 3.76)
+2025-10-20 18:00:24,581 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainsbnhnhphum.com (length: 31, entropy: 3.56)
+2025-10-20 18:00:24,581 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainxhskvscpnl.com (length: 31, entropy: 3.78)
+2025-10-20 18:00:24,581 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomaingjgtzgoyvc.com (length: 31, entropy: 3.78)
+2025-10-20 18:00:24,581 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainlcrajmyvwa.com (length: 31, entropy: 3.91)
+2025-10-20 18:00:24,581 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainrfbodgdebj.com (length: 31, entropy: 3.71)
+2025-10-20 18:00:24,581 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomaineyvverasqk.com (length: 31, entropy: 3.72)
+2025-10-20 18:00:24,581 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainmvtwzwiocy.com (length: 31, entropy: 3.71)
+2025-10-20 18:00:24,581 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainykmdgoyzuu.com (length: 31, entropy: 3.76)
+2025-10-20 18:00:24,581 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomaingtkgppkeky.com (length: 31, entropy: 3.63)
+2025-10-20 18:00:24,582 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainimikoumibg.com (length: 31, entropy: 3.53)
+2025-10-20 18:00:24,582 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainrnlxpqxdhn.com (length: 31, entropy: 3.63)
+2025-10-20 18:00:24,582 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainjymbhfuruv.com (length: 31, entropy: 4.01)
+2025-10-20 18:00:24,582 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainuvdvbpbkzf.com (length: 31, entropy: 3.94)
+2025-10-20 18:00:24,582 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainfulnvyuggw.com (length: 31, entropy: 3.88)
+2025-10-20 18:00:24,582 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainklhrfqslxr.com (length: 31, entropy: 3.87)
+2025-10-20 18:00:24,582 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainbbghkbkxjq.com (length: 31, entropy: 3.84)
+2025-10-20 18:00:24,582 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainyulodzhcji.com (length: 31, entropy: 3.88)
+2025-10-20 18:00:24,582 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainhgxpsyxllk.com (length: 31, entropy: 3.84)
+2025-10-20 18:00:24,628 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 18:01:24,639 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 18:01:24,639 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 18:01:24
+2025-10-20 18:01:24,639 - core.data_manager - INFO - DataManager: Aggregated data for 12 IP-minute entries.
+2025-10-20 18:01:24,648 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainbrlbmhvxho.com (length: 31, entropy: 3.76)
+2025-10-20 18:01:24,648 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainsbnhnhphum.com (length: 31, entropy: 3.56)
+2025-10-20 18:01:24,648 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainxhskvscpnl.com (length: 31, entropy: 3.78)
+2025-10-20 18:01:24,648 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomaingjgtzgoyvc.com (length: 31, entropy: 3.78)
+2025-10-20 18:01:24,648 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainlcrajmyvwa.com (length: 31, entropy: 3.91)
+2025-10-20 18:01:24,649 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainrfbodgdebj.com (length: 31, entropy: 3.71)
+2025-10-20 18:01:24,649 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomaineyvverasqk.com (length: 31, entropy: 3.72)
+2025-10-20 18:01:24,649 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainmvtwzwiocy.com (length: 31, entropy: 3.71)
+2025-10-20 18:01:24,649 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainykmdgoyzuu.com (length: 31, entropy: 3.76)
+2025-10-20 18:01:24,649 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomaingtkgppkeky.com (length: 31, entropy: 3.63)
+2025-10-20 18:01:24,649 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainimikoumibg.com (length: 31, entropy: 3.53)
+2025-10-20 18:01:24,649 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainrnlxpqxdhn.com (length: 31, entropy: 3.63)
+2025-10-20 18:01:24,650 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainjymbhfuruv.com (length: 31, entropy: 4.01)
+2025-10-20 18:01:24,650 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainuvdvbpbkzf.com (length: 31, entropy: 3.94)
+2025-10-20 18:01:24,650 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainfulnvyuggw.com (length: 31, entropy: 3.88)
+2025-10-20 18:01:24,650 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainklhrfqslxr.com (length: 31, entropy: 3.87)
+2025-10-20 18:01:24,650 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainbbghkbkxjq.com (length: 31, entropy: 3.84)
+2025-10-20 18:01:24,650 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainyulodzhcji.com (length: 31, entropy: 3.88)
+2025-10-20 18:01:24,650 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainhgxpsyxllk.com (length: 31, entropy: 3.84)
+2025-10-20 18:01:24,650 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: hsuperultuckdpkpdtkgstmip.com (length: 29, entropy: 3.59)
+2025-10-20 18:01:24,650 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: fcctplfwggediewcfvicputes.com (length: 29, entropy: 3.54)
+2025-10-20 18:01:24,650 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: kcbvcbaiuabixjwqfbofolakb.com (length: 29, entropy: 3.59)
+2025-10-20 18:01:24,650 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: dzagnuovdnupouqfqxnbhvlbh.com (length: 29, entropy: 3.78)
+2025-10-20 18:01:24,651 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: snmpbvhhkfhfjtaufvzxalhvp.com (length: 29, entropy: 3.78)
+2025-10-20 18:01:24,651 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: bmfamoegiskdqepouzgwvvffb.com (length: 29, entropy: 3.97)
+2025-10-20 18:01:24,651 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: ahugilkctkhubkkvycoefusua.com (length: 29, entropy: 3.76)
+2025-10-20 18:01:24,651 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nriehbgxnjgrshezgubhhnbcz.com (length: 29, entropy: 3.51)
+2025-10-20 18:01:24,651 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: hmplntcauhcpusbdygspucpib.com (length: 29, entropy: 3.70)
+2025-10-20 18:01:24,651 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: dsxhiklszpypblhnxpjlunujz.com (length: 29, entropy: 3.70)
+2025-10-20 18:01:24,651 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: hklcqbcjjtursbazumqdvjnld.com (length: 29, entropy: 3.97)
+2025-10-20 18:01:24,651 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: eldjgmcfwvdptdstfvywtcabv.com (length: 29, entropy: 3.83)
+2025-10-20 18:01:24,651 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: umxuoduqvqukgdvcbpmoeyzmz.com (length: 29, entropy: 3.73)
+2025-10-20 18:01:24,652 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: svjkeoxhruvyiswbkewmonque.com (length: 29, entropy: 3.97)
+2025-10-20 18:01:24,652 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nehkbbvyapklacwdojpmxqsoy.com (length: 29, entropy: 4.16)
+2025-10-20 18:01:24,652 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: astxtbrhjncgokwwjblldipkx.com (length: 29, entropy: 4.08)
+2025-10-20 18:01:24,652 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: kahejnfgpjpfagdoecttvdick.com (length: 29, entropy: 3.84)
+2025-10-20 18:01:24,652 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: ntpkhkvbyaulyadqyvtukulpn.com (length: 29, entropy: 3.59)
+2025-10-20 18:01:24,652 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: bdhhebscyfymbnvjqcjzlysjy.com (length: 29, entropy: 3.70)
+2025-10-20 18:01:24,710 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 18:02:00,514 - __main__ - INFO - Initiating shutdown sequence...
+2025-10-20 18:02:00,515 - core.capture - INFO - Signaling packet capture thread to stop.
+2025-10-20 18:02:00,516 - core.blocklist_integration - INFO - Signaling blocklist auto-update thread to stop.
+2025-10-20 18:02:00,516 - __main__ - INFO - Waiting for capture thread to join...
+2025-10-20 18:02:00,517 - core.blocklist_integration - INFO - Blocklist auto-update thread received stop signal and is exiting.
+2025-10-20 18:02:01,523 - core.capture - INFO - Capture thread received stop signal and is exiting gracefully.
+2025-10-20 18:02:01,524 - __main__ - INFO - Capture thread joined successfully.
+2025-10-20 18:02:01,524 - __main__ - INFO - Shutting down logging system.
+2025-10-20 18:02:02,788 - config.globals - DEBUG - Globals module loaded (most config now in core.config_manager).
+2025-10-20 18:02:03,460 - core.whitelist_manager - DEBUG - Creating singleton Whitelist instance.
+2025-10-20 18:02:03,460 - core.whitelist_manager - INFO - Loading whitelist from whitelist.txt
+2025-10-20 18:02:03,460 - core.whitelist_manager - INFO - Whitelist loading complete. Loaded 0 IP/Network entries and 0 Domain entries.
+2025-10-20 18:02:03,593 - matplotlib - DEBUG - matplotlib data path: C:\Users\kamme\OneDrive\Desktop\uni\Master\PraktikeschProjek\botnet_detection\botnet_detection\.venv\Lib\site-packages\matplotlib\mpl-data
+2025-10-20 18:02:03,600 - matplotlib - DEBUG - CONFIGDIR=C:\Users\kamme\.matplotlib
+2025-10-20 18:02:03,601 - matplotlib - DEBUG - interactive is False
+2025-10-20 18:02:03,602 - matplotlib - DEBUG - platform is win32
+2025-10-20 18:02:03,638 - matplotlib - DEBUG - CACHEDIR=C:\Users\kamme\.matplotlib
+2025-10-20 18:02:03,639 - matplotlib.font_manager - DEBUG - Using fontManager instance from C:\Users\kamme\.matplotlib\fontlist-v390.json
+2025-10-20 18:02:03,801 - __main__ - INFO - Application starting...
+2025-10-20 18:02:03,801 - __main__ - INFO - Whitelist instance created/retrieved.
+2025-10-20 18:02:03,801 - __main__ - INFO - Initializing NetworkDataManager...
+2025-10-20 18:02:03,801 - core.data_manager - INFO - Initializing NetworkDataManager.
+2025-10-20 18:02:03,801 - core.data_manager - INFO - DataManager calculated timestamp deque maxlen: 90000
+2025-10-20 18:02:03,801 - __main__ - INFO - NetworkDataManager initialized.
+2025-10-20 18:02:03,801 - core.capture - INFO - Attempting to list and identify network interfaces...
+2025-10-20 18:02:21,425 - __main__ - INFO - Starting packet capture thread...
+2025-10-20 18:02:21,426 - core.capture - INFO - Packet capture thread started. Sniffing on: \Device\NPF_{07D3FDD8-3D05-452B-831D-96019F9D3D8A}, \Device\NPF_{4907781C-B481-4A25-8DCD-059BBACA9FC2}, \Device\NPF_{611A2DE0-2404-49E2-BBEA-372082D50A48}, \Device\NPF_{4907781C-B481-4A25-8DCD-059BBACA9FC2}
+2025-10-20 18:02:21,426 - __main__ - INFO - Starting periodic blocklist update thread...
+2025-10-20 18:02:21,426 - core.capture - INFO - Using packet filter: "ip or ip6"
+2025-10-20 18:02:21,427 - core.blocklist_integration - INFO - Blocklist auto-update thread started. Update interval: 24 hours.
+2025-10-20 18:02:21,427 - __main__ - INFO - Initializing GUI...
+2025-10-20 18:02:21,427 - core.capture - INFO - Sniffing with 1.0s timeout loop for graceful shutdown.
+2025-10-20 18:02:21,462 - ui.gui_main - INFO - Initializing PacketStatsGUI...
+2025-10-20 18:02:21,462 - ui.gui_main - INFO - Downloading/loading blocklists (if needed)...
+2025-10-20 18:02:21,463 - core.blocklist_integration - INFO - Checking/Downloading 6 blocklists...
+2025-10-20 18:02:21,463 - core.blocklist_integration - DEBUG - Skip download, exists: ip_ipblocklist_aggressive.txt
+2025-10-20 18:02:21,463 - core.blocklist_integration - DEBUG - Skip download, exists: ip_dshield.netset
+2025-10-20 18:02:21,463 - core.blocklist_integration - DEBUG - Skip download, exists: ip_spamhaus_drop.netset
+2025-10-20 18:02:21,464 - core.blocklist_integration - DEBUG - Skip download, exists: ip_spamhaus_edrop.netset
+2025-10-20 18:02:21,464 - core.blocklist_integration - DEBUG - Skip download, exists: dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:02:21,464 - core.blocklist_integration - INFO - Download check finished.
+2025-10-20 18:02:21,464 - core.blocklist_integration - INFO - Loading configured blocklists...
+2025-10-20 18:02:21,464 - core.blocklist_integration - INFO - Loading 4 IP blocklists...
+2025-10-20 18:02:21,464 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_ipblocklist_aggressive.txt
+2025-10-20 18:02:21,512 - core.blocklist_integration - INFO - Loaded 7600 IP entries from ip_ipblocklist_aggressive.txt
+2025-10-20 18:02:21,512 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_dshield.netset
+2025-10-20 18:02:21,512 - core.blocklist_integration - INFO - Loaded 20 IP entries from ip_dshield.netset
+2025-10-20 18:02:21,512 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_spamhaus_drop.netset
+2025-10-20 18:02:21,516 - core.blocklist_integration - INFO - Loaded 1401 IP entries from ip_spamhaus_drop.netset
+2025-10-20 18:02:21,516 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_spamhaus_edrop.netset
+2025-10-20 18:02:21,517 - core.blocklist_integration - INFO - Loaded 336 IP entries from ip_spamhaus_edrop.netset
+2025-10-20 18:02:21,517 - core.blocklist_integration - INFO - Loading 1 DNS blocklists...
+2025-10-20 18:02:21,517 - core.blocklist_integration - DEBUG - Parsing [DNS]: dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:02:21,517 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 15 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:02:21,517 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'local' line 17 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:02:21,517 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'broadcasthost' line 18 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:02:21,517 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 19 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:02:21,518 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-localhost' line 20 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:02:21,518 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-loopback' line 21 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:02:21,518 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 22 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:02:21,518 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-localnet' line 23 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:02:21,518 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-mcastprefix' line 24 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:02:21,518 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allnodes' line 25 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:02:21,518 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allrouters' line 26 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:02:21,518 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allhosts' line 27 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:02:21,554 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'www.zgarniij_vouchher.skroc.pl' line 25218 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:02:21,554 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'zgarniij_vouchher.skroc.pl' line 25220 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:02:21,632 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'philadelphia_cbslocal.us.intellitxt.com' line 71194 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:02:21,661 - core.blocklist_integration - INFO - Loaded 80100 DNS entries from dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:02:21,661 - core.blocklist_integration - INFO - Loading 1 JA3 blocklists...
+2025-10-20 18:02:21,661 - core.blocklist_integration - WARNING - JA3 file not found: blocklists\ip_ja3.csv.
+2025-10-20 18:02:21,661 - core.blocklist_integration - INFO - Loading 0 JA3S blocklists...
+2025-10-20 18:02:21,661 - core.blocklist_integration - INFO - Blocklist loading complete. Files: 5, IPs: 9357, DNS: 80100, JA3: 0, JA3S: 0
+2025-10-20 18:02:21,662 - ui.gui_main - INFO - Blocklists processed.
+2025-10-20 18:02:21,667 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 18:02:21,667 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 18:02:21
+2025-10-20 18:02:21,667 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 18:02:21,667 - ui.gui_main - INFO - PacketStatsGUI initialized.
+2025-10-20 18:02:21,667 - __main__ - INFO - Starting Tkinter mainloop...
+2025-10-20 18:02:28,673 - ui.gui_main - DEBUG - Opening Testing Suite window.
+2025-10-20 18:02:33,212 - ui.gui_main - INFO - Double-clicked IP: 192.168.0.34. Opening detail window.
+2025-10-20 18:02:33,213 - ui.gui_detail - INFO - Opening detail window for IP: 192.168.0.34
+2025-10-20 18:03:21,678 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 18:03:21,678 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 18:03:21
+2025-10-20 18:03:21,679 - core.data_manager - INFO - DataManager: Aggregated data for 10 IP-minute entries.
+2025-10-20 18:03:21,679 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainyjfzxyspch.com (length: 31, entropy: 3.94)
+2025-10-20 18:03:21,680 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomaindmzkdpqpnd.com (length: 31, entropy: 3.58)
+2025-10-20 18:03:21,680 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainzslnobpbou.com (length: 31, entropy: 3.66)
+2025-10-20 18:03:21,680 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainpqqaskzrvg.com (length: 31, entropy: 3.94)
+2025-10-20 18:03:21,680 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainufimyiyuld.com (length: 31, entropy: 3.64)
+2025-10-20 18:03:21,680 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainlyqehqlaek.com (length: 31, entropy: 3.72)
+2025-10-20 18:03:21,680 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomaincwpxfxpuhj.com (length: 31, entropy: 3.91)
+2025-10-20 18:03:21,680 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainaoqnvybrma.com (length: 31, entropy: 3.68)
+2025-10-20 18:03:21,681 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainelkorxljwf.com (length: 31, entropy: 3.81)
+2025-10-20 18:03:21,681 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainokfiappovf.com (length: 31, entropy: 3.62)
+2025-10-20 18:03:21,681 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainyyxvpifpoj.com (length: 31, entropy: 3.74)
+2025-10-20 18:03:21,681 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainoamsjwphpb.com (length: 31, entropy: 3.76)
+2025-10-20 18:03:21,681 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainybpmeqaidg.com (length: 31, entropy: 3.74)
+2025-10-20 18:03:21,681 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainqkdnkstujr.com (length: 31, entropy: 3.70)
+2025-10-20 18:03:21,681 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainrgfahfiryh.com (length: 31, entropy: 3.76)
+2025-10-20 18:03:21,681 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainxyovpvahya.com (length: 31, entropy: 3.66)
+2025-10-20 18:03:21,681 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainsvkhtneafs.com (length: 31, entropy: 3.57)
+2025-10-20 18:03:21,728 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 18:04:21,734 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 18:04:21,735 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 18:04:21
+2025-10-20 18:04:21,735 - core.data_manager - INFO - DataManager: Aggregated data for 10 IP-minute entries.
+2025-10-20 18:04:21,737 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainyjfzxyspch.com (length: 31, entropy: 3.94)
+2025-10-20 18:04:21,737 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomaindmzkdpqpnd.com (length: 31, entropy: 3.58)
+2025-10-20 18:04:21,737 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainzslnobpbou.com (length: 31, entropy: 3.66)
+2025-10-20 18:04:21,738 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainpqqaskzrvg.com (length: 31, entropy: 3.94)
+2025-10-20 18:04:21,738 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainufimyiyuld.com (length: 31, entropy: 3.64)
+2025-10-20 18:04:21,738 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainlyqehqlaek.com (length: 31, entropy: 3.72)
+2025-10-20 18:04:21,738 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomaincwpxfxpuhj.com (length: 31, entropy: 3.91)
+2025-10-20 18:04:21,739 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainaoqnvybrma.com (length: 31, entropy: 3.68)
+2025-10-20 18:04:21,739 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainelkorxljwf.com (length: 31, entropy: 3.81)
+2025-10-20 18:04:21,739 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainokfiappovf.com (length: 31, entropy: 3.62)
+2025-10-20 18:04:21,739 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainyyxvpifpoj.com (length: 31, entropy: 3.74)
+2025-10-20 18:04:21,740 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainoamsjwphpb.com (length: 31, entropy: 3.76)
+2025-10-20 18:04:21,740 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainybpmeqaidg.com (length: 31, entropy: 3.74)
+2025-10-20 18:04:21,740 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainqkdnkstujr.com (length: 31, entropy: 3.70)
+2025-10-20 18:04:21,740 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainrgfahfiryh.com (length: 31, entropy: 3.76)
+2025-10-20 18:04:21,740 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainxyovpvahya.com (length: 31, entropy: 3.66)
+2025-10-20 18:04:21,741 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainsvkhtneafs.com (length: 31, entropy: 3.57)
+2025-10-20 18:04:21,741 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: qmpkyyhgbnohudgbvjakeegio.com (length: 29, entropy: 3.97)
+2025-10-20 18:04:21,741 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: pdfiybzclikmodfpqynapjskv.com (length: 29, entropy: 4.05)
+2025-10-20 18:04:21,741 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: ofmwckmhkxflcrcbkvwjsfmce.com (length: 29, entropy: 3.67)
+2025-10-20 18:04:21,741 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nbdhpibjxpioctlqpvanzazea.com (length: 29, entropy: 3.94)
+2025-10-20 18:04:21,741 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: lhsevvndavyahlyzwbynptlmn.com (length: 29, entropy: 3.72)
+2025-10-20 18:04:21,742 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: magttxrkehoavydrywzjnmorg.com (length: 29, entropy: 3.97)
+2025-10-20 18:04:21,742 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: gbcdmbxjpdyknkgzbufwsctxg.com (length: 29, entropy: 3.94)
+2025-10-20 18:04:21,742 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: taxwkfqnkmkticpbbkhaeneky.com (length: 29, entropy: 3.78)
+2025-10-20 18:04:21,742 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: vpsbmbfnjcychbkddmqotmyfc.com (length: 29, entropy: 3.83)
+2025-10-20 18:04:21,742 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: udxugahdxxdljeyqdtrfqzipw.com (length: 29, entropy: 3.97)
+2025-10-20 18:04:21,742 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: wvrxidxhqusqlhpazlpmtpyva.com (length: 29, entropy: 3.97)
+2025-10-20 18:04:21,742 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: sxqhvmpiwzxpvgozzwbvriysq.com (length: 29, entropy: 3.78)
+2025-10-20 18:04:21,743 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: doylqhxerepbudgglmudluzbm.com (length: 29, entropy: 3.75)
+2025-10-20 18:04:21,743 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: jcydrnvpnqwnvhalooiujujbq.com (length: 29, entropy: 3.94)
+2025-10-20 18:04:21,743 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: oxkdbwhtfrtpghrfltjhpwier.com (length: 29, entropy: 3.83)
+2025-10-20 18:04:21,743 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: ohgsymktolczsvbhyacnuxxov.com (length: 29, entropy: 3.97)
+2025-10-20 18:04:21,743 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: czmeoizherkamakoydyitmsqu.com (length: 29, entropy: 3.89)
+2025-10-20 18:04:21,743 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: haxbxbztnktqetlvbarvjhgcl.com (length: 29, entropy: 3.86)
+2025-10-20 18:04:21,771 - core.data_manager - WARNING - Host Scan DETECTED from 2a02:810d:b110:7400:85ce:72bb:36e:d992
+2025-10-20 18:04:21,772 - core.data_manager - WARNING - DGA DETECTED for 2a02:810d:b110:7400:85ce:72bb:36e:d992: optimizationguide-pa.googleapis.com (length: 35, entropy: 3.52)
+2025-10-20 18:04:21,825 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 18:05:21,832 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 18:05:21,842 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 18:05:21
+2025-10-20 18:05:21,843 - core.data_manager - INFO - DataManager: Aggregated data for 21 IP-minute entries.
+2025-10-20 18:05:21,843 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainyjfzxyspch.com (length: 31, entropy: 3.94)
+2025-10-20 18:05:21,843 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomaindmzkdpqpnd.com (length: 31, entropy: 3.58)
+2025-10-20 18:05:21,844 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainzslnobpbou.com (length: 31, entropy: 3.66)
+2025-10-20 18:05:21,844 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainpqqaskzrvg.com (length: 31, entropy: 3.94)
+2025-10-20 18:05:21,844 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainufimyiyuld.com (length: 31, entropy: 3.64)
+2025-10-20 18:05:21,844 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainlyqehqlaek.com (length: 31, entropy: 3.72)
+2025-10-20 18:05:21,844 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomaincwpxfxpuhj.com (length: 31, entropy: 3.91)
+2025-10-20 18:05:21,845 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainaoqnvybrma.com (length: 31, entropy: 3.68)
+2025-10-20 18:05:21,845 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainelkorxljwf.com (length: 31, entropy: 3.81)
+2025-10-20 18:05:21,845 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainokfiappovf.com (length: 31, entropy: 3.62)
+2025-10-20 18:05:21,845 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainyyxvpifpoj.com (length: 31, entropy: 3.74)
+2025-10-20 18:05:21,845 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainoamsjwphpb.com (length: 31, entropy: 3.76)
+2025-10-20 18:05:21,845 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainybpmeqaidg.com (length: 31, entropy: 3.74)
+2025-10-20 18:05:21,845 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainqkdnkstujr.com (length: 31, entropy: 3.70)
+2025-10-20 18:05:21,845 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainrgfahfiryh.com (length: 31, entropy: 3.76)
+2025-10-20 18:05:21,845 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainxyovpvahya.com (length: 31, entropy: 3.66)
+2025-10-20 18:05:21,846 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainsvkhtneafs.com (length: 31, entropy: 3.57)
+2025-10-20 18:05:21,846 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: qmpkyyhgbnohudgbvjakeegio.com (length: 29, entropy: 3.97)
+2025-10-20 18:05:21,846 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: pdfiybzclikmodfpqynapjskv.com (length: 29, entropy: 4.05)
+2025-10-20 18:05:21,846 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: ofmwckmhkxflcrcbkvwjsfmce.com (length: 29, entropy: 3.67)
+2025-10-20 18:05:21,846 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nbdhpibjxpioctlqpvanzazea.com (length: 29, entropy: 3.94)
+2025-10-20 18:05:21,846 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: lhsevvndavyahlyzwbynptlmn.com (length: 29, entropy: 3.72)
+2025-10-20 18:05:21,846 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: magttxrkehoavydrywzjnmorg.com (length: 29, entropy: 3.97)
+2025-10-20 18:05:21,846 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: gbcdmbxjpdyknkgzbufwsctxg.com (length: 29, entropy: 3.94)
+2025-10-20 18:05:21,846 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: taxwkfqnkmkticpbbkhaeneky.com (length: 29, entropy: 3.78)
+2025-10-20 18:05:21,846 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: vpsbmbfnjcychbkddmqotmyfc.com (length: 29, entropy: 3.83)
+2025-10-20 18:05:21,846 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: udxugahdxxdljeyqdtrfqzipw.com (length: 29, entropy: 3.97)
+2025-10-20 18:05:21,846 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: wvrxidxhqusqlhpazlpmtpyva.com (length: 29, entropy: 3.97)
+2025-10-20 18:05:21,847 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: sxqhvmpiwzxpvgozzwbvriysq.com (length: 29, entropy: 3.78)
+2025-10-20 18:05:21,847 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: doylqhxerepbudgglmudluzbm.com (length: 29, entropy: 3.75)
+2025-10-20 18:05:21,847 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: jcydrnvpnqwnvhalooiujujbq.com (length: 29, entropy: 3.94)
+2025-10-20 18:05:21,847 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: oxkdbwhtfrtpghrfltjhpwier.com (length: 29, entropy: 3.83)
+2025-10-20 18:05:21,847 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: ohgsymktolczsvbhyacnuxxov.com (length: 29, entropy: 3.97)
+2025-10-20 18:05:21,847 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: czmeoizherkamakoydyitmsqu.com (length: 29, entropy: 3.89)
+2025-10-20 18:05:21,847 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: haxbxbztnktqetlvbarvjhgcl.com (length: 29, entropy: 3.86)
+2025-10-20 18:05:21,873 - core.data_manager - WARNING - Beaconing DETECTED from fe80::e7f:b2ff:fe66:ab02 to 2a02:810d:b110:7400:5a6:2f86:343d:56de at interval ~60.26s
+2025-10-20 18:05:21,880 - core.data_manager - WARNING - DGA DETECTED for 2a02:810d:b110:7400:85ce:72bb:36e:d992: optimizationguide-pa.googleapis.com (length: 35, entropy: 3.52)
+2025-10-20 18:05:21,880 - core.data_manager - WARNING - DGA DETECTED for 2a02:810d:b110:7400:85ce:72bb:36e:d992: 188505-ipv4fdsmte.gr.global.aa-rt.sharepoint.com (length: 48, entropy: 3.85)
+2025-10-20 18:05:21,901 - core.data_manager - WARNING - Port Scan DETECTED from 2a02:8100:c0:2c1::4:1101
+2025-10-20 18:05:21,907 - core.data_manager - WARNING - Beaconing DETECTED from 2a02:810d:b110:7400:5a6:2f86:343d:56de to fe80::e7f:b2ff:fe66:ab02 at interval ~60.26s
+2025-10-20 18:05:21,956 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 18:06:20,067 - ui.gui_main - DEBUG - Clearing reference for window: .!testingsuitewindow, attr: testing_suite_window_ref, list: None, item: None
+2025-10-20 18:06:20,067 - ui.gui_main - DEBUG - Cleared attribute reference: testing_suite_window_ref
+2025-10-20 18:06:20,691 - ui.gui_detail - INFO - Closing detail window for IP: 192.168.0.34
+2025-10-20 18:06:20,710 - ui.gui_main - DEBUG - Clearing reference for window: .!toplevel, attr: None, list: detail_window_refs, item: (<tkinter.Toplevel object .!toplevel>, '192.168.0.34')
+2025-10-20 18:06:20,710 - ui.gui_main - DEBUG - Removed (<tkinter.Toplevel object .!toplevel>, '192.168.0.34') from list reference: detail_window_refs
+2025-10-20 18:06:21,960 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 18:06:21,960 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 18:06:21
+2025-10-20 18:06:21,960 - core.data_manager - INFO - DataManager: Aggregated data for 17 IP-minute entries.
+2025-10-20 18:06:21,961 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainyjfzxyspch.com (length: 31, entropy: 3.94)
+2025-10-20 18:06:21,961 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomaindmzkdpqpnd.com (length: 31, entropy: 3.58)
+2025-10-20 18:06:21,961 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainzslnobpbou.com (length: 31, entropy: 3.66)
+2025-10-20 18:06:21,961 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainpqqaskzrvg.com (length: 31, entropy: 3.94)
+2025-10-20 18:06:21,961 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainufimyiyuld.com (length: 31, entropy: 3.64)
+2025-10-20 18:06:21,961 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainlyqehqlaek.com (length: 31, entropy: 3.72)
+2025-10-20 18:06:21,961 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomaincwpxfxpuhj.com (length: 31, entropy: 3.91)
+2025-10-20 18:06:21,961 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainaoqnvybrma.com (length: 31, entropy: 3.68)
+2025-10-20 18:06:21,961 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainelkorxljwf.com (length: 31, entropy: 3.81)
+2025-10-20 18:06:21,961 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainokfiappovf.com (length: 31, entropy: 3.62)
+2025-10-20 18:06:21,961 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainyyxvpifpoj.com (length: 31, entropy: 3.74)
+2025-10-20 18:06:21,962 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainoamsjwphpb.com (length: 31, entropy: 3.76)
+2025-10-20 18:06:21,962 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainybpmeqaidg.com (length: 31, entropy: 3.74)
+2025-10-20 18:06:21,962 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainqkdnkstujr.com (length: 31, entropy: 3.70)
+2025-10-20 18:06:21,962 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainrgfahfiryh.com (length: 31, entropy: 3.76)
+2025-10-20 18:06:21,962 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainxyovpvahya.com (length: 31, entropy: 3.66)
+2025-10-20 18:06:21,962 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainsvkhtneafs.com (length: 31, entropy: 3.57)
+2025-10-20 18:06:21,962 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: qmpkyyhgbnohudgbvjakeegio.com (length: 29, entropy: 3.97)
+2025-10-20 18:06:21,962 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: pdfiybzclikmodfpqynapjskv.com (length: 29, entropy: 4.05)
+2025-10-20 18:06:21,962 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: ofmwckmhkxflcrcbkvwjsfmce.com (length: 29, entropy: 3.67)
+2025-10-20 18:06:21,963 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nbdhpibjxpioctlqpvanzazea.com (length: 29, entropy: 3.94)
+2025-10-20 18:06:21,963 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: lhsevvndavyahlyzwbynptlmn.com (length: 29, entropy: 3.72)
+2025-10-20 18:06:21,963 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: magttxrkehoavydrywzjnmorg.com (length: 29, entropy: 3.97)
+2025-10-20 18:06:21,963 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: gbcdmbxjpdyknkgzbufwsctxg.com (length: 29, entropy: 3.94)
+2025-10-20 18:06:21,963 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: taxwkfqnkmkticpbbkhaeneky.com (length: 29, entropy: 3.78)
+2025-10-20 18:06:21,963 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: vpsbmbfnjcychbkddmqotmyfc.com (length: 29, entropy: 3.83)
+2025-10-20 18:06:21,963 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: udxugahdxxdljeyqdtrfqzipw.com (length: 29, entropy: 3.97)
+2025-10-20 18:06:21,963 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: wvrxidxhqusqlhpazlpmtpyva.com (length: 29, entropy: 3.97)
+2025-10-20 18:06:21,963 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: sxqhvmpiwzxpvgozzwbvriysq.com (length: 29, entropy: 3.78)
+2025-10-20 18:06:21,964 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: doylqhxerepbudgglmudluzbm.com (length: 29, entropy: 3.75)
+2025-10-20 18:06:21,964 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: jcydrnvpnqwnvhalooiujujbq.com (length: 29, entropy: 3.94)
+2025-10-20 18:06:21,964 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: oxkdbwhtfrtpghrfltjhpwier.com (length: 29, entropy: 3.83)
+2025-10-20 18:06:21,964 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: ohgsymktolczsvbhyacnuxxov.com (length: 29, entropy: 3.97)
+2025-10-20 18:06:21,964 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: czmeoizherkamakoydyitmsqu.com (length: 29, entropy: 3.89)
+2025-10-20 18:06:21,964 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: haxbxbztnktqetlvbarvjhgcl.com (length: 29, entropy: 3.86)
+2025-10-20 18:06:21,990 - core.data_manager - WARNING - Beaconing DETECTED from fe80::e7f:b2ff:fe66:ab02 to 2a02:810d:b110:7400:5a6:2f86:343d:56de at interval ~60.13s
+2025-10-20 18:06:21,997 - core.data_manager - WARNING - DGA DETECTED for 2a02:810d:b110:7400:85ce:72bb:36e:d992: optimizationguide-pa.googleapis.com (length: 35, entropy: 3.52)
+2025-10-20 18:06:21,998 - core.data_manager - WARNING - DGA DETECTED for 2a02:810d:b110:7400:85ce:72bb:36e:d992: 188505-ipv4fdsmte.gr.global.aa-rt.sharepoint.com (length: 48, entropy: 3.85)
+2025-10-20 18:06:22,022 - core.data_manager - WARNING - Beaconing DETECTED from 2a02:810d:b110:7400:5a6:2f86:343d:56de to fe80::e7f:b2ff:fe66:ab02 at interval ~60.13s
+2025-10-20 18:06:22,077 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 18:06:24,354 - ui.gui_main - INFO - Double-clicked IP: 192.168.0.34. Opening detail window.
+2025-10-20 18:06:24,354 - ui.gui_detail - INFO - Opening detail window for IP: 192.168.0.34
+2025-10-20 18:06:25,661 - ui.gui_main - INFO - Double-clicked IP: fe80::e7f:b2ff:fe66:ab02. Opening detail window.
+2025-10-20 18:06:25,661 - ui.gui_detail - INFO - Opening detail window for IP: fe80::e7f:b2ff:fe66:ab02
+2025-10-20 18:06:28,635 - ui.gui_detail - INFO - Closing detail window for IP: fe80::e7f:b2ff:fe66:ab02
+2025-10-20 18:06:28,653 - ui.gui_main - DEBUG - Clearing reference for window: .!toplevel3, attr: None, list: detail_window_refs, item: (<tkinter.Toplevel object .!toplevel3>, 'fe80::e7f:b2ff:fe66:ab02')
+2025-10-20 18:06:28,653 - ui.gui_main - DEBUG - Removed (<tkinter.Toplevel object .!toplevel3>, 'fe80::e7f:b2ff:fe66:ab02') from list reference: detail_window_refs
+2025-10-20 18:06:29,019 - ui.gui_detail - INFO - Closing detail window for IP: 192.168.0.34
+2025-10-20 18:06:29,037 - ui.gui_main - DEBUG - Clearing reference for window: .!toplevel2, attr: None, list: detail_window_refs, item: (<tkinter.Toplevel object .!toplevel2>, '192.168.0.34')
+2025-10-20 18:06:29,038 - ui.gui_main - DEBUG - Removed (<tkinter.Toplevel object .!toplevel2>, '192.168.0.34') from list reference: detail_window_refs
+2025-10-20 18:07:22,083 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 18:07:22,084 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 18:07:22
+2025-10-20 18:07:22,084 - core.data_manager - INFO - DataManager: Aggregated data for 10 IP-minute entries.
+2025-10-20 18:07:22,084 - core.data_manager - WARNING - Host Scan DETECTED from 192.168.0.34
+2025-10-20 18:07:22,085 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainyjfzxyspch.com (length: 31, entropy: 3.94)
+2025-10-20 18:07:22,086 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomaindmzkdpqpnd.com (length: 31, entropy: 3.58)
+2025-10-20 18:07:22,086 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainzslnobpbou.com (length: 31, entropy: 3.66)
+2025-10-20 18:07:22,086 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainpqqaskzrvg.com (length: 31, entropy: 3.94)
+2025-10-20 18:07:22,087 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainufimyiyuld.com (length: 31, entropy: 3.64)
+2025-10-20 18:07:22,087 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainlyqehqlaek.com (length: 31, entropy: 3.72)
+2025-10-20 18:07:22,088 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomaincwpxfxpuhj.com (length: 31, entropy: 3.91)
+2025-10-20 18:07:22,088 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainaoqnvybrma.com (length: 31, entropy: 3.68)
+2025-10-20 18:07:22,088 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainelkorxljwf.com (length: 31, entropy: 3.81)
+2025-10-20 18:07:22,088 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainokfiappovf.com (length: 31, entropy: 3.62)
+2025-10-20 18:07:22,089 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainyyxvpifpoj.com (length: 31, entropy: 3.74)
+2025-10-20 18:07:22,089 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainoamsjwphpb.com (length: 31, entropy: 3.76)
+2025-10-20 18:07:22,089 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainybpmeqaidg.com (length: 31, entropy: 3.74)
+2025-10-20 18:07:22,089 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainqkdnkstujr.com (length: 31, entropy: 3.70)
+2025-10-20 18:07:22,089 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainrgfahfiryh.com (length: 31, entropy: 3.76)
+2025-10-20 18:07:22,090 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainxyovpvahya.com (length: 31, entropy: 3.66)
+2025-10-20 18:07:22,090 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nonexistentdomainsvkhtneafs.com (length: 31, entropy: 3.57)
+2025-10-20 18:07:22,090 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: qmpkyyhgbnohudgbvjakeegio.com (length: 29, entropy: 3.97)
+2025-10-20 18:07:22,090 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: pdfiybzclikmodfpqynapjskv.com (length: 29, entropy: 4.05)
+2025-10-20 18:07:22,090 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: ofmwckmhkxflcrcbkvwjsfmce.com (length: 29, entropy: 3.67)
+2025-10-20 18:07:22,091 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: nbdhpibjxpioctlqpvanzazea.com (length: 29, entropy: 3.94)
+2025-10-20 18:07:22,091 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: lhsevvndavyahlyzwbynptlmn.com (length: 29, entropy: 3.72)
+2025-10-20 18:07:22,091 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: magttxrkehoavydrywzjnmorg.com (length: 29, entropy: 3.97)
+2025-10-20 18:07:22,091 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: gbcdmbxjpdyknkgzbufwsctxg.com (length: 29, entropy: 3.94)
+2025-10-20 18:07:22,091 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: taxwkfqnkmkticpbbkhaeneky.com (length: 29, entropy: 3.78)
+2025-10-20 18:07:22,091 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: vpsbmbfnjcychbkddmqotmyfc.com (length: 29, entropy: 3.83)
+2025-10-20 18:07:22,091 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: udxugahdxxdljeyqdtrfqzipw.com (length: 29, entropy: 3.97)
+2025-10-20 18:07:22,091 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: wvrxidxhqusqlhpazlpmtpyva.com (length: 29, entropy: 3.97)
+2025-10-20 18:07:22,091 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: sxqhvmpiwzxpvgozzwbvriysq.com (length: 29, entropy: 3.78)
+2025-10-20 18:07:22,091 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: doylqhxerepbudgglmudluzbm.com (length: 29, entropy: 3.75)
+2025-10-20 18:07:22,091 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: jcydrnvpnqwnvhalooiujujbq.com (length: 29, entropy: 3.94)
+2025-10-20 18:07:22,092 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: oxkdbwhtfrtpghrfltjhpwier.com (length: 29, entropy: 3.83)
+2025-10-20 18:07:22,092 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: ohgsymktolczsvbhyacnuxxov.com (length: 29, entropy: 3.97)
+2025-10-20 18:07:22,092 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: czmeoizherkamakoydyitmsqu.com (length: 29, entropy: 3.89)
+2025-10-20 18:07:22,092 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: haxbxbztnktqetlvbarvjhgcl.com (length: 29, entropy: 3.86)
+2025-10-20 18:07:22,152 - core.data_manager - WARNING - Beaconing DETECTED from fe80::e7f:b2ff:fe66:ab02 to 2a02:810d:b110:7400:5a6:2f86:343d:56de at interval ~60.03s
+2025-10-20 18:07:22,165 - core.data_manager - WARNING - DGA DETECTED for 2a02:810d:b110:7400:85ce:72bb:36e:d992: optimizationguide-pa.googleapis.com (length: 35, entropy: 3.52)
+2025-10-20 18:07:22,165 - core.data_manager - WARNING - DGA DETECTED for 2a02:810d:b110:7400:85ce:72bb:36e:d992: 188505-ipv4fdsmte.gr.global.aa-rt.sharepoint.com (length: 48, entropy: 3.85)
+2025-10-20 18:07:22,166 - core.data_manager - WARNING - DGA DETECTED for 2a02:810d:b110:7400:85ce:72bb:36e:d992: 188505-ipv4mte.gr.global.aa-rt.sharepoint.com (length: 45, entropy: 3.52)
+2025-10-20 18:07:22,210 - core.data_manager - WARNING - Beaconing DETECTED from 2a02:810d:b110:7400:5a6:2f86:343d:56de to fe80::e7f:b2ff:fe66:ab02 at interval ~60.03s
+2025-10-20 18:07:22,308 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 18:07:54,437 - __main__ - INFO - Initiating shutdown sequence...
+2025-10-20 18:07:54,438 - core.capture - INFO - Signaling packet capture thread to stop.
+2025-10-20 18:07:54,438 - core.blocklist_integration - INFO - Signaling blocklist auto-update thread to stop.
+2025-10-20 18:07:54,438 - __main__ - INFO - Waiting for capture thread to join...
+2025-10-20 18:07:54,438 - core.blocklist_integration - INFO - Blocklist auto-update thread received stop signal and is exiting.
+2025-10-20 18:07:55,185 - core.capture - INFO - Capture thread received stop signal and is exiting gracefully.
+2025-10-20 18:07:56,119 - config.globals - DEBUG - Globals module loaded (most config now in core.config_manager).
+2025-10-20 18:07:56,794 - core.whitelist_manager - DEBUG - Creating singleton Whitelist instance.
+2025-10-20 18:07:56,795 - core.whitelist_manager - INFO - Loading whitelist from whitelist.txt
+2025-10-20 18:07:56,795 - core.whitelist_manager - INFO - Whitelist loading complete. Loaded 0 IP/Network entries and 0 Domain entries.
+2025-10-20 18:07:56,947 - matplotlib - DEBUG - matplotlib data path: C:\Users\kamme\OneDrive\Desktop\uni\Master\PraktikeschProjek\botnet_detection\botnet_detection\.venv\Lib\site-packages\matplotlib\mpl-data
+2025-10-20 18:07:56,954 - matplotlib - DEBUG - CONFIGDIR=C:\Users\kamme\.matplotlib
+2025-10-20 18:07:56,955 - matplotlib - DEBUG - interactive is False
+2025-10-20 18:07:56,955 - matplotlib - DEBUG - platform is win32
+2025-10-20 18:07:56,991 - matplotlib - DEBUG - CACHEDIR=C:\Users\kamme\.matplotlib
+2025-10-20 18:07:56,992 - matplotlib.font_manager - DEBUG - Using fontManager instance from C:\Users\kamme\.matplotlib\fontlist-v390.json
+2025-10-20 18:07:57,198 - __main__ - INFO - Application starting...
+2025-10-20 18:07:57,199 - __main__ - INFO - Whitelist instance created/retrieved.
+2025-10-20 18:07:57,199 - __main__ - INFO - Initializing NetworkDataManager...
+2025-10-20 18:07:57,199 - core.data_manager - INFO - Initializing NetworkDataManager.
+2025-10-20 18:07:57,199 - core.data_manager - INFO - DataManager calculated timestamp deque maxlen: 90000
+2025-10-20 18:07:57,199 - __main__ - INFO - NetworkDataManager initialized.
+2025-10-20 18:07:57,199 - core.capture - INFO - Attempting to list and identify network interfaces...
+2025-10-20 18:07:59,884 - __main__ - INFO - Starting packet capture thread...
+2025-10-20 18:07:59,884 - core.capture - INFO - Packet capture thread started. Sniffing on: \Device\NPF_{07D3FDD8-3D05-452B-831D-96019F9D3D8A}, \Device\NPF_{4907781C-B481-4A25-8DCD-059BBACA9FC2}, \Device\NPF_{611A2DE0-2404-49E2-BBEA-372082D50A48}, \Device\NPF_{4907781C-B481-4A25-8DCD-059BBACA9FC2}
+2025-10-20 18:07:59,884 - __main__ - INFO - Starting periodic blocklist update thread...
+2025-10-20 18:07:59,884 - core.capture - INFO - Using packet filter: "ip or ip6"
+2025-10-20 18:07:59,885 - core.blocklist_integration - INFO - Blocklist auto-update thread started. Update interval: 24 hours.
+2025-10-20 18:07:59,885 - __main__ - INFO - Initializing GUI...
+2025-10-20 18:07:59,885 - core.capture - INFO - Sniffing with 1.0s timeout loop for graceful shutdown.
+2025-10-20 18:07:59,922 - ui.gui_main - INFO - Initializing PacketStatsGUI...
+2025-10-20 18:07:59,922 - ui.gui_main - INFO - Downloading/loading blocklists (if needed)...
+2025-10-20 18:07:59,922 - core.blocklist_integration - INFO - Checking/Downloading 6 blocklists...
+2025-10-20 18:07:59,922 - core.blocklist_integration - DEBUG - Skip download, exists: ip_ipblocklist_aggressive.txt
+2025-10-20 18:07:59,922 - core.blocklist_integration - DEBUG - Skip download, exists: ip_dshield.netset
+2025-10-20 18:07:59,923 - core.blocklist_integration - DEBUG - Skip download, exists: ip_spamhaus_drop.netset
+2025-10-20 18:07:59,923 - core.blocklist_integration - DEBUG - Skip download, exists: ip_spamhaus_edrop.netset
+2025-10-20 18:07:59,923 - core.blocklist_integration - DEBUG - Skip download, exists: dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:07:59,923 - core.blocklist_integration - INFO - Download check finished.
+2025-10-20 18:07:59,923 - core.blocklist_integration - INFO - Loading configured blocklists...
+2025-10-20 18:07:59,923 - core.blocklist_integration - INFO - Loading 4 IP blocklists...
+2025-10-20 18:07:59,923 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_ipblocklist_aggressive.txt
+2025-10-20 18:07:59,967 - core.blocklist_integration - INFO - Loaded 7600 IP entries from ip_ipblocklist_aggressive.txt
+2025-10-20 18:07:59,967 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_dshield.netset
+2025-10-20 18:07:59,967 - core.blocklist_integration - INFO - Loaded 20 IP entries from ip_dshield.netset
+2025-10-20 18:07:59,968 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_spamhaus_drop.netset
+2025-10-20 18:07:59,971 - core.blocklist_integration - INFO - Loaded 1401 IP entries from ip_spamhaus_drop.netset
+2025-10-20 18:07:59,971 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_spamhaus_edrop.netset
+2025-10-20 18:07:59,972 - core.blocklist_integration - INFO - Loaded 336 IP entries from ip_spamhaus_edrop.netset
+2025-10-20 18:07:59,972 - core.blocklist_integration - INFO - Loading 1 DNS blocklists...
+2025-10-20 18:07:59,972 - core.blocklist_integration - DEBUG - Parsing [DNS]: dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:07:59,973 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 15 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:07:59,973 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'local' line 17 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:07:59,973 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'broadcasthost' line 18 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:07:59,973 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 19 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:07:59,973 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-localhost' line 20 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:07:59,973 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-loopback' line 21 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:07:59,973 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 22 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:07:59,973 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-localnet' line 23 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:07:59,973 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-mcastprefix' line 24 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:07:59,973 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allnodes' line 25 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:07:59,973 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allrouters' line 26 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:07:59,974 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allhosts' line 27 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:08:00,011 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'www.zgarniij_vouchher.skroc.pl' line 25218 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:08:00,012 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'zgarniij_vouchher.skroc.pl' line 25220 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:08:00,092 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'philadelphia_cbslocal.us.intellitxt.com' line 71194 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:08:00,121 - core.blocklist_integration - INFO - Loaded 80100 DNS entries from dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:08:00,121 - core.blocklist_integration - INFO - Loading 1 JA3 blocklists...
+2025-10-20 18:08:00,122 - core.blocklist_integration - WARNING - JA3 file not found: blocklists\ip_ja3.csv.
+2025-10-20 18:08:00,122 - core.blocklist_integration - INFO - Loading 0 JA3S blocklists...
+2025-10-20 18:08:00,122 - core.blocklist_integration - INFO - Blocklist loading complete. Files: 5, IPs: 9357, DNS: 80100, JA3: 0, JA3S: 0
+2025-10-20 18:08:00,122 - ui.gui_main - INFO - Blocklists processed.
+2025-10-20 18:08:00,127 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 18:08:00,127 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 18:08:00
+2025-10-20 18:08:00,127 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 18:08:00,128 - ui.gui_main - INFO - PacketStatsGUI initialized.
+2025-10-20 18:08:00,128 - __main__ - INFO - Starting Tkinter mainloop...
+2025-10-20 18:08:02,258 - ui.gui_main - DEBUG - Opening Testing Suite window.
+2025-10-20 18:08:08,054 - ui.gui_main - INFO - Double-clicked IP: 192.168.0.34. Opening detail window.
+2025-10-20 18:08:08,055 - ui.gui_detail - INFO - Opening detail window for IP: 192.168.0.34
+2025-10-20 18:08:09,440 - ui.gui_detail - INFO - Closing detail window for IP: 192.168.0.34
+2025-10-20 18:08:09,451 - ui.gui_main - DEBUG - Clearing reference for window: .!toplevel, attr: None, list: detail_window_refs, item: (<tkinter.Toplevel object .!toplevel>, '192.168.0.34')
+2025-10-20 18:08:09,451 - ui.gui_main - DEBUG - Removed (<tkinter.Toplevel object .!toplevel>, '192.168.0.34') from list reference: detail_window_refs
+2025-10-20 18:08:10,894 - ui.gui_main - INFO - Double-clicked IP: 192.168.0.34. Opening detail window.
+2025-10-20 18:08:10,894 - ui.gui_detail - INFO - Opening detail window for IP: 192.168.0.34
+2025-10-20 18:09:00,130 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 18:09:00,131 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 18:09:00
+2025-10-20 18:09:00,132 - core.data_manager - INFO - DataManager: Aggregated data for 23 IP-minute entries.
+2025-10-20 18:09:00,137 - core.data_manager - WARNING - DGA DETECTED for 192.168.0.34: oimfiqdfchnfigalfgqsjjzwg.com (length: 29, entropy: 3.78)
+2025-10-20 18:09:00,181 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 18:09:13,384 - ui.gui_main - DEBUG - Clearing reference for window: .!testingsuitewindow, attr: testing_suite_window_ref, list: None, item: None
+2025-10-20 18:09:13,385 - ui.gui_main - DEBUG - Cleared attribute reference: testing_suite_window_ref
+2025-10-20 18:09:14,031 - ui.gui_detail - INFO - Closing detail window for IP: 192.168.0.34
+2025-10-20 18:09:14,042 - ui.gui_main - DEBUG - Clearing reference for window: .!toplevel2, attr: None, list: detail_window_refs, item: (<tkinter.Toplevel object .!toplevel2>, '192.168.0.34')
+2025-10-20 18:09:14,042 - ui.gui_main - DEBUG - Removed (<tkinter.Toplevel object .!toplevel2>, '192.168.0.34') from list reference: detail_window_refs
+2025-10-20 18:09:14,761 - ui.gui_main - INFO - Main application on_close triggered.
+2025-10-20 18:09:14,761 - ui.gui_main - DEBUG - Main GUI update loop cancelled.
+2025-10-20 18:09:14,762 - ui.gui_main - INFO - Destroying main application window.
+2025-10-20 18:09:14,786 - ui.gui_main - INFO - Main application window destroyed.
+2025-10-20 18:09:14,787 - __main__ - INFO - Tkinter mainloop finished.
+2025-10-20 18:09:14,787 - __main__ - INFO - Initiating shutdown sequence...
+2025-10-20 18:09:14,787 - core.capture - INFO - Signaling packet capture thread to stop.
+2025-10-20 18:09:14,787 - core.blocklist_integration - INFO - Signaling blocklist auto-update thread to stop.
+2025-10-20 18:09:14,787 - __main__ - INFO - Waiting for capture thread to join...
+2025-10-20 18:09:14,787 - core.blocklist_integration - INFO - Blocklist auto-update thread received stop signal and is exiting.
+2025-10-20 18:09:15,453 - core.capture - INFO - Capture thread received stop signal and is exiting gracefully.
+2025-10-20 18:09:15,454 - __main__ - INFO - Capture thread joined successfully.
+2025-10-20 18:09:15,454 - __main__ - INFO - Shutting down logging system.
+2025-10-20 18:09:37,005 - config.globals - DEBUG - Globals module loaded (most config now in core.config_manager).
+2025-10-20 18:09:37,638 - core.whitelist_manager - DEBUG - Creating singleton Whitelist instance.
+2025-10-20 18:09:37,638 - core.whitelist_manager - INFO - Loading whitelist from whitelist.txt
+2025-10-20 18:09:37,638 - core.whitelist_manager - INFO - Whitelist loading complete. Loaded 0 IP/Network entries and 0 Domain entries.
+2025-10-20 18:09:37,758 - matplotlib - DEBUG - matplotlib data path: C:\Users\kamme\OneDrive\Desktop\uni\Master\PraktikeschProjek\botnet_detection\botnet_detection\.venv\Lib\site-packages\matplotlib\mpl-data
+2025-10-20 18:09:37,765 - matplotlib - DEBUG - CONFIGDIR=C:\Users\kamme\.matplotlib
+2025-10-20 18:09:37,766 - matplotlib - DEBUG - interactive is False
+2025-10-20 18:09:37,766 - matplotlib - DEBUG - platform is win32
+2025-10-20 18:09:37,794 - matplotlib - DEBUG - CACHEDIR=C:\Users\kamme\.matplotlib
+2025-10-20 18:09:37,796 - matplotlib.font_manager - DEBUG - Using fontManager instance from C:\Users\kamme\.matplotlib\fontlist-v390.json
+2025-10-20 18:09:37,951 - __main__ - INFO - Application starting...
+2025-10-20 18:09:37,951 - __main__ - INFO - Whitelist instance created/retrieved.
+2025-10-20 18:09:37,951 - __main__ - INFO - Initializing NetworkDataManager...
+2025-10-20 18:09:37,951 - core.data_manager - INFO - Initializing NetworkDataManager.
+2025-10-20 18:09:37,951 - core.data_manager - INFO - DataManager calculated timestamp deque maxlen: 90000
+2025-10-20 18:09:37,951 - __main__ - INFO - NetworkDataManager initialized.
+2025-10-20 18:09:37,951 - core.capture - INFO - Attempting to list and identify network interfaces...
+2025-10-20 18:09:39,654 - __main__ - INFO - Starting packet capture thread...
+2025-10-20 18:09:39,654 - core.capture - INFO - Packet capture thread started. Sniffing on: \Device\NPF_{07D3FDD8-3D05-452B-831D-96019F9D3D8A}, \Device\NPF_{4907781C-B481-4A25-8DCD-059BBACA9FC2}, \Device\NPF_{611A2DE0-2404-49E2-BBEA-372082D50A48}, \Device\NPF_{4907781C-B481-4A25-8DCD-059BBACA9FC2}
+2025-10-20 18:09:39,654 - __main__ - INFO - Starting periodic blocklist update thread...
+2025-10-20 18:09:39,654 - core.capture - INFO - Using packet filter: "ip or ip6"
+2025-10-20 18:09:39,654 - core.capture - INFO - Sniffing with 1.0s timeout loop for graceful shutdown.
+2025-10-20 18:09:39,654 - core.blocklist_integration - INFO - Blocklist auto-update thread started. Update interval: 24 hours.
+2025-10-20 18:09:39,654 - __main__ - INFO - Initializing GUI...
+2025-10-20 18:09:39,691 - ui.gui_main - INFO - Initializing PacketStatsGUI...
+2025-10-20 18:09:39,691 - ui.gui_main - INFO - Downloading/loading blocklists (if needed)...
+2025-10-20 18:09:39,691 - core.blocklist_integration - INFO - Checking/Downloading 6 blocklists...
+2025-10-20 18:09:39,692 - core.blocklist_integration - DEBUG - Skip download, exists: ip_ipblocklist_aggressive.txt
+2025-10-20 18:09:39,692 - core.blocklist_integration - DEBUG - Skip download, exists: ip_dshield.netset
+2025-10-20 18:09:39,692 - core.blocklist_integration - DEBUG - Skip download, exists: ip_spamhaus_drop.netset
+2025-10-20 18:09:39,692 - core.blocklist_integration - DEBUG - Skip download, exists: ip_spamhaus_edrop.netset
+2025-10-20 18:09:39,692 - core.blocklist_integration - DEBUG - Skip download, exists: dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:09:39,692 - core.blocklist_integration - INFO - Download check finished.
+2025-10-20 18:09:39,692 - core.blocklist_integration - INFO - Loading configured blocklists...
+2025-10-20 18:09:39,692 - core.blocklist_integration - INFO - Loading 4 IP blocklists...
+2025-10-20 18:09:39,693 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_ipblocklist_aggressive.txt
+2025-10-20 18:09:39,737 - core.blocklist_integration - INFO - Loaded 7600 IP entries from ip_ipblocklist_aggressive.txt
+2025-10-20 18:09:39,737 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_dshield.netset
+2025-10-20 18:09:39,737 - core.blocklist_integration - INFO - Loaded 20 IP entries from ip_dshield.netset
+2025-10-20 18:09:39,737 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_spamhaus_drop.netset
+2025-10-20 18:09:39,741 - core.blocklist_integration - INFO - Loaded 1401 IP entries from ip_spamhaus_drop.netset
+2025-10-20 18:09:39,741 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_spamhaus_edrop.netset
+2025-10-20 18:09:39,742 - core.blocklist_integration - INFO - Loaded 336 IP entries from ip_spamhaus_edrop.netset
+2025-10-20 18:09:39,742 - core.blocklist_integration - INFO - Loading 1 DNS blocklists...
+2025-10-20 18:09:39,742 - core.blocklist_integration - DEBUG - Parsing [DNS]: dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:09:39,742 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 15 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:09:39,743 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'local' line 17 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:09:39,743 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'broadcasthost' line 18 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:09:39,743 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 19 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:09:39,743 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-localhost' line 20 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:09:39,743 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-loopback' line 21 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:09:39,743 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 22 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:09:39,743 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-localnet' line 23 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:09:39,743 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-mcastprefix' line 24 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:09:39,743 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allnodes' line 25 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:09:39,743 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allrouters' line 26 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:09:39,743 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allhosts' line 27 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:09:39,781 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'www.zgarniij_vouchher.skroc.pl' line 25218 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:09:39,781 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'zgarniij_vouchher.skroc.pl' line 25220 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:09:39,862 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'philadelphia_cbslocal.us.intellitxt.com' line 71194 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:09:39,892 - core.blocklist_integration - INFO - Loaded 80100 DNS entries from dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:09:39,892 - core.blocklist_integration - INFO - Loading 1 JA3 blocklists...
+2025-10-20 18:09:39,892 - core.blocklist_integration - WARNING - JA3 file not found: blocklists\ip_ja3.csv.
+2025-10-20 18:09:39,893 - core.blocklist_integration - INFO - Loading 0 JA3S blocklists...
+2025-10-20 18:09:39,893 - core.blocklist_integration - INFO - Blocklist loading complete. Files: 5, IPs: 9357, DNS: 80100, JA3: 0, JA3S: 0
+2025-10-20 18:09:39,893 - ui.gui_main - INFO - Blocklists processed.
+2025-10-20 18:09:39,898 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 18:09:39,898 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 18:09:39
+2025-10-20 18:09:39,901 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 18:09:39,901 - ui.gui_main - INFO - PacketStatsGUI initialized.
+2025-10-20 18:09:39,901 - __main__ - INFO - Starting Tkinter mainloop...
+2025-10-20 18:10:39,912 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 18:10:39,912 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 18:10:39
+2025-10-20 18:10:39,913 - core.data_manager - INFO - DataManager: Aggregated data for 1 IP-minute entries.
+2025-10-20 18:10:39,966 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 18:11:07,510 - ui.gui_main - INFO - Main application on_close triggered.
+2025-10-20 18:11:07,510 - ui.gui_main - DEBUG - Main GUI update loop cancelled.
+2025-10-20 18:11:07,511 - ui.gui_main - INFO - Destroying main application window.
+2025-10-20 18:11:07,530 - ui.gui_main - INFO - Main application window destroyed.
+2025-10-20 18:11:07,530 - __main__ - INFO - Tkinter mainloop finished.
+2025-10-20 18:11:07,530 - __main__ - INFO - Initiating shutdown sequence...
+2025-10-20 18:11:07,531 - core.capture - INFO - Signaling packet capture thread to stop.
+2025-10-20 18:11:07,531 - core.blocklist_integration - INFO - Signaling blocklist auto-update thread to stop.
+2025-10-20 18:11:07,531 - __main__ - INFO - Waiting for capture thread to join...
+2025-10-20 18:11:07,531 - core.blocklist_integration - INFO - Blocklist auto-update thread received stop signal and is exiting.
+2025-10-20 18:11:07,547 - core.capture - INFO - Capture thread received stop signal and is exiting gracefully.
+2025-10-20 18:11:07,547 - __main__ - INFO - Capture thread joined successfully.
+2025-10-20 18:11:07,547 - __main__ - INFO - Shutting down logging system.
+2025-10-20 18:11:09,581 - config.globals - DEBUG - Globals module loaded (most config now in core.config_manager).
+2025-10-20 18:11:10,260 - core.whitelist_manager - DEBUG - Creating singleton Whitelist instance.
+2025-10-20 18:11:10,260 - core.whitelist_manager - INFO - Loading whitelist from whitelist.txt
+2025-10-20 18:11:10,260 - core.whitelist_manager - INFO - Whitelist loading complete. Loaded 0 IP/Network entries and 0 Domain entries.
+2025-10-20 18:11:10,385 - matplotlib - DEBUG - matplotlib data path: C:\Users\kamme\OneDrive\Desktop\uni\Master\PraktikeschProjek\botnet_detection\botnet_detection\.venv\Lib\site-packages\matplotlib\mpl-data
+2025-10-20 18:11:10,392 - matplotlib - DEBUG - CONFIGDIR=C:\Users\kamme\.matplotlib
+2025-10-20 18:11:10,393 - matplotlib - DEBUG - interactive is False
+2025-10-20 18:11:10,393 - matplotlib - DEBUG - platform is win32
+2025-10-20 18:11:10,424 - matplotlib - DEBUG - CACHEDIR=C:\Users\kamme\.matplotlib
+2025-10-20 18:11:10,426 - matplotlib.font_manager - DEBUG - Using fontManager instance from C:\Users\kamme\.matplotlib\fontlist-v390.json
+2025-10-20 18:11:10,604 - __main__ - INFO - Application starting...
+2025-10-20 18:11:10,605 - __main__ - INFO - Whitelist instance created/retrieved.
+2025-10-20 18:11:10,605 - __main__ - INFO - Initializing NetworkDataManager...
+2025-10-20 18:11:10,605 - core.data_manager - INFO - Initializing NetworkDataManager.
+2025-10-20 18:11:10,605 - core.data_manager - INFO - DataManager calculated timestamp deque maxlen: 90000
+2025-10-20 18:11:10,605 - __main__ - INFO - NetworkDataManager initialized.
+2025-10-20 18:11:10,605 - core.capture - INFO - Attempting to list and identify network interfaces...
+2025-10-20 18:11:13,963 - __main__ - INFO - Starting packet capture thread...
+2025-10-20 18:11:13,963 - core.capture - INFO - Packet capture thread started. Sniffing on: \Device\NPF_{07D3FDD8-3D05-452B-831D-96019F9D3D8A}, \Device\NPF_{4907781C-B481-4A25-8DCD-059BBACA9FC2}, \Device\NPF_{611A2DE0-2404-49E2-BBEA-372082D50A48}, \Device\NPF_{4907781C-B481-4A25-8DCD-059BBACA9FC2}
+2025-10-20 18:11:13,963 - __main__ - INFO - Starting periodic blocklist update thread...
+2025-10-20 18:11:13,963 - core.capture - INFO - Using packet filter: "ip or ip6"
+2025-10-20 18:11:13,964 - core.capture - INFO - Sniffing with 1.0s timeout loop for graceful shutdown.
+2025-10-20 18:11:13,964 - core.blocklist_integration - INFO - Blocklist auto-update thread started. Update interval: 24 hours.
+2025-10-20 18:11:13,964 - __main__ - INFO - Initializing GUI...
+2025-10-20 18:11:14,002 - ui.gui_main - INFO - Initializing PacketStatsGUI...
+2025-10-20 18:11:14,002 - ui.gui_main - INFO - Downloading/loading blocklists (if needed)...
+2025-10-20 18:11:14,003 - core.blocklist_integration - INFO - Checking/Downloading 6 blocklists...
+2025-10-20 18:11:14,003 - core.blocklist_integration - DEBUG - Skip download, exists: ip_ipblocklist_aggressive.txt
+2025-10-20 18:11:14,004 - core.blocklist_integration - DEBUG - Skip download, exists: ip_dshield.netset
+2025-10-20 18:11:14,004 - core.blocklist_integration - DEBUG - Skip download, exists: ip_spamhaus_drop.netset
+2025-10-20 18:11:14,004 - core.blocklist_integration - DEBUG - Skip download, exists: ip_spamhaus_edrop.netset
+2025-10-20 18:11:14,004 - core.blocklist_integration - DEBUG - Skip download, exists: dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:11:14,004 - core.blocklist_integration - INFO - Download check finished.
+2025-10-20 18:11:14,004 - core.blocklist_integration - INFO - Loading configured blocklists...
+2025-10-20 18:11:14,004 - core.blocklist_integration - INFO - Loading 4 IP blocklists...
+2025-10-20 18:11:14,004 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_ipblocklist_aggressive.txt
+2025-10-20 18:11:14,049 - core.blocklist_integration - INFO - Loaded 7600 IP entries from ip_ipblocklist_aggressive.txt
+2025-10-20 18:11:14,050 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_dshield.netset
+2025-10-20 18:11:14,050 - core.blocklist_integration - INFO - Loaded 20 IP entries from ip_dshield.netset
+2025-10-20 18:11:14,050 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_spamhaus_drop.netset
+2025-10-20 18:11:14,054 - core.blocklist_integration - INFO - Loaded 1401 IP entries from ip_spamhaus_drop.netset
+2025-10-20 18:11:14,054 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_spamhaus_edrop.netset
+2025-10-20 18:11:14,055 - core.blocklist_integration - INFO - Loaded 336 IP entries from ip_spamhaus_edrop.netset
+2025-10-20 18:11:14,055 - core.blocklist_integration - INFO - Loading 1 DNS blocklists...
+2025-10-20 18:11:14,055 - core.blocklist_integration - DEBUG - Parsing [DNS]: dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:11:14,055 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 15 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:11:14,055 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'local' line 17 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:11:14,055 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'broadcasthost' line 18 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:11:14,055 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 19 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:11:14,055 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-localhost' line 20 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:11:14,055 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-loopback' line 21 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:11:14,056 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 22 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:11:14,056 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-localnet' line 23 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:11:14,056 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-mcastprefix' line 24 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:11:14,056 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allnodes' line 25 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:11:14,056 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allrouters' line 26 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:11:14,056 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allhosts' line 27 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:11:14,093 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'www.zgarniij_vouchher.skroc.pl' line 25218 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:11:14,093 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'zgarniij_vouchher.skroc.pl' line 25220 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:11:14,176 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'philadelphia_cbslocal.us.intellitxt.com' line 71194 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:11:14,205 - core.blocklist_integration - INFO - Loaded 80100 DNS entries from dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:11:14,205 - core.blocklist_integration - INFO - Loading 1 JA3 blocklists...
+2025-10-20 18:11:14,206 - core.blocklist_integration - WARNING - JA3 file not found: blocklists\ip_ja3.csv.
+2025-10-20 18:11:14,206 - core.blocklist_integration - INFO - Loading 0 JA3S blocklists...
+2025-10-20 18:11:14,206 - core.blocklist_integration - INFO - Blocklist loading complete. Files: 5, IPs: 9357, DNS: 80100, JA3: 0, JA3S: 0
+2025-10-20 18:11:14,206 - ui.gui_main - INFO - Blocklists processed.
+2025-10-20 18:11:14,211 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 18:11:14,211 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 18:11:14
+2025-10-20 18:11:14,211 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 18:11:14,212 - ui.gui_main - INFO - PacketStatsGUI initialized.
+2025-10-20 18:11:14,212 - __main__ - INFO - Starting Tkinter mainloop...
+2025-10-20 18:11:16,469 - ui.gui_main - DEBUG - Opening Testing Suite window.
+2025-10-20 18:11:17,011 - ui.gui_main - DEBUG - Opening Documentation window.
+2025-10-20 18:12:14,214 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 18:12:14,214 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 18:12:14
+2025-10-20 18:12:14,215 - core.data_manager - INFO - DataManager: Aggregated data for 10 IP-minute entries.
+2025-10-20 18:12:14,298 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 18:13:14,301 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 18:13:14,302 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 18:13:14
+2025-10-20 18:13:14,303 - core.data_manager - INFO - DataManager: Aggregated data for 38 IP-minute entries.
+2025-10-20 18:13:14,342 - core.data_manager - WARNING - Host Scan DETECTED from 2a02:810d:b110:7400:85ce:72bb:36e:d992
+2025-10-20 18:13:14,344 - core.data_manager - WARNING - DGA DETECTED for 2a02:810d:b110:7400:85ce:72bb:36e:d992: optimizationguide-pa.googleapis.com (length: 35, entropy: 3.52)
+2025-10-20 18:13:14,481 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 18:14:13,152 - ui.gui_main - DEBUG - Clearing reference for window: .!documentationwindow, attr: documentation_window_ref, list: None, item: None
+2025-10-20 18:14:13,153 - ui.gui_main - DEBUG - Cleared attribute reference: documentation_window_ref
+2025-10-20 18:14:14,570 - ui.gui_main - INFO - Main application on_close triggered.
+2025-10-20 18:14:14,570 - ui.gui_main - DEBUG - Main GUI update loop cancelled.
+2025-10-20 18:14:14,571 - ui.gui_main - INFO - Destroying main application window.
+2025-10-20 18:14:14,603 - ui.gui_main - INFO - Main application window destroyed.
+2025-10-20 18:14:14,604 - __main__ - INFO - Tkinter mainloop finished.
+2025-10-20 18:14:14,604 - __main__ - INFO - Initiating shutdown sequence...
+2025-10-20 18:14:14,604 - core.capture - INFO - Signaling packet capture thread to stop.
+2025-10-20 18:14:14,604 - core.blocklist_integration - INFO - Signaling blocklist auto-update thread to stop.
+2025-10-20 18:14:14,604 - __main__ - INFO - Waiting for capture thread to join...
+2025-10-20 18:14:14,604 - core.blocklist_integration - INFO - Blocklist auto-update thread received stop signal and is exiting.
+2025-10-20 18:14:14,937 - core.capture - INFO - Capture thread received stop signal and is exiting gracefully.
+2025-10-20 18:14:14,938 - __main__ - INFO - Capture thread joined successfully.
+2025-10-20 18:14:14,939 - __main__ - INFO - Shutting down logging system.
+2025-10-20 18:14:19,679 - config.globals - DEBUG - Globals module loaded (most config now in core.config_manager).
+2025-10-20 18:14:20,370 - core.whitelist_manager - DEBUG - Creating singleton Whitelist instance.
+2025-10-20 18:14:20,371 - core.whitelist_manager - INFO - Loading whitelist from whitelist.txt
+2025-10-20 18:14:20,371 - core.whitelist_manager - INFO - Whitelist loading complete. Loaded 0 IP/Network entries and 0 Domain entries.
+2025-10-20 18:14:20,516 - matplotlib - DEBUG - matplotlib data path: C:\Users\kamme\OneDrive\Desktop\uni\Master\PraktikeschProjek\botnet_detection\botnet_detection\.venv\Lib\site-packages\matplotlib\mpl-data
+2025-10-20 18:14:20,523 - matplotlib - DEBUG - CONFIGDIR=C:\Users\kamme\.matplotlib
+2025-10-20 18:14:20,524 - matplotlib - DEBUG - interactive is False
+2025-10-20 18:14:20,524 - matplotlib - DEBUG - platform is win32
+2025-10-20 18:14:20,557 - matplotlib - DEBUG - CACHEDIR=C:\Users\kamme\.matplotlib
+2025-10-20 18:14:20,558 - matplotlib.font_manager - DEBUG - Using fontManager instance from C:\Users\kamme\.matplotlib\fontlist-v390.json
+2025-10-20 18:14:20,751 - __main__ - INFO - Application starting...
+2025-10-20 18:14:20,751 - __main__ - INFO - Whitelist instance created/retrieved.
+2025-10-20 18:14:20,752 - __main__ - INFO - Initializing NetworkDataManager...
+2025-10-20 18:14:20,752 - core.data_manager - INFO - Initializing NetworkDataManager.
+2025-10-20 18:14:20,752 - core.data_manager - INFO - DataManager calculated timestamp deque maxlen: 90000
+2025-10-20 18:14:20,752 - __main__ - INFO - NetworkDataManager initialized.
+2025-10-20 18:14:20,753 - core.capture - INFO - Attempting to list and identify network interfaces...
+2025-10-20 18:14:24,639 - __main__ - INFO - Starting packet capture thread...
+2025-10-20 18:14:24,640 - core.capture - INFO - Packet capture thread started. Sniffing on: \Device\NPF_{07D3FDD8-3D05-452B-831D-96019F9D3D8A}, \Device\NPF_{4907781C-B481-4A25-8DCD-059BBACA9FC2}, \Device\NPF_{611A2DE0-2404-49E2-BBEA-372082D50A48}, \Device\NPF_{4907781C-B481-4A25-8DCD-059BBACA9FC2}
+2025-10-20 18:14:24,640 - __main__ - INFO - Starting periodic blocklist update thread...
+2025-10-20 18:14:24,640 - core.capture - INFO - Using packet filter: "ip or ip6"
+2025-10-20 18:14:24,640 - core.capture - INFO - Sniffing with 1.0s timeout loop for graceful shutdown.
+2025-10-20 18:14:24,641 - core.blocklist_integration - INFO - Blocklist auto-update thread started. Update interval: 24 hours.
+2025-10-20 18:14:24,641 - __main__ - INFO - Initializing GUI...
+2025-10-20 18:14:24,679 - ui.gui_main - INFO - Initializing PacketStatsGUI...
+2025-10-20 18:14:24,680 - ui.gui_main - INFO - Downloading/loading blocklists (if needed)...
+2025-10-20 18:14:24,680 - core.blocklist_integration - INFO - Checking/Downloading 6 blocklists...
+2025-10-20 18:14:24,680 - core.blocklist_integration - DEBUG - Skip download, exists: ip_ipblocklist_aggressive.txt
+2025-10-20 18:14:24,680 - core.blocklist_integration - DEBUG - Skip download, exists: ip_dshield.netset
+2025-10-20 18:14:24,680 - core.blocklist_integration - DEBUG - Skip download, exists: ip_spamhaus_drop.netset
+2025-10-20 18:14:24,681 - core.blocklist_integration - DEBUG - Skip download, exists: ip_spamhaus_edrop.netset
+2025-10-20 18:14:24,681 - core.blocklist_integration - DEBUG - Skip download, exists: dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:14:24,681 - core.blocklist_integration - INFO - Download check finished.
+2025-10-20 18:14:24,681 - core.blocklist_integration - INFO - Loading configured blocklists...
+2025-10-20 18:14:24,681 - core.blocklist_integration - INFO - Loading 4 IP blocklists...
+2025-10-20 18:14:24,681 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_ipblocklist_aggressive.txt
+2025-10-20 18:14:24,728 - core.blocklist_integration - INFO - Loaded 7600 IP entries from ip_ipblocklist_aggressive.txt
+2025-10-20 18:14:24,728 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_dshield.netset
+2025-10-20 18:14:24,728 - core.blocklist_integration - INFO - Loaded 20 IP entries from ip_dshield.netset
+2025-10-20 18:14:24,728 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_spamhaus_drop.netset
+2025-10-20 18:14:24,732 - core.blocklist_integration - INFO - Loaded 1401 IP entries from ip_spamhaus_drop.netset
+2025-10-20 18:14:24,732 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_spamhaus_edrop.netset
+2025-10-20 18:14:24,733 - core.blocklist_integration - INFO - Loaded 336 IP entries from ip_spamhaus_edrop.netset
+2025-10-20 18:14:24,733 - core.blocklist_integration - INFO - Loading 1 DNS blocklists...
+2025-10-20 18:14:24,734 - core.blocklist_integration - DEBUG - Parsing [DNS]: dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:14:24,734 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 15 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:14:24,734 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'local' line 17 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:14:24,734 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'broadcasthost' line 18 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:14:24,734 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 19 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:14:24,734 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-localhost' line 20 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:14:24,734 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-loopback' line 21 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:14:24,734 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 22 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:14:24,734 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-localnet' line 23 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:14:24,735 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-mcastprefix' line 24 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:14:24,735 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allnodes' line 25 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:14:24,735 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allrouters' line 26 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:14:24,735 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allhosts' line 27 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:14:24,772 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'www.zgarniij_vouchher.skroc.pl' line 25218 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:14:24,772 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'zgarniij_vouchher.skroc.pl' line 25220 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:14:24,852 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'philadelphia_cbslocal.us.intellitxt.com' line 71194 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:14:24,882 - core.blocklist_integration - INFO - Loaded 80100 DNS entries from dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:14:24,883 - core.blocklist_integration - INFO - Loading 1 JA3 blocklists...
+2025-10-20 18:14:24,883 - core.blocklist_integration - WARNING - JA3 file not found: blocklists\ip_ja3.csv.
+2025-10-20 18:14:24,883 - core.blocklist_integration - INFO - Loading 0 JA3S blocklists...
+2025-10-20 18:14:24,883 - core.blocklist_integration - INFO - Blocklist loading complete. Files: 5, IPs: 9357, DNS: 80100, JA3: 0, JA3S: 0
+2025-10-20 18:14:24,883 - ui.gui_main - INFO - Blocklists processed.
+2025-10-20 18:14:24,889 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 18:14:24,889 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 18:14:24
+2025-10-20 18:14:24,889 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 18:14:24,889 - ui.gui_main - INFO - PacketStatsGUI initialized.
+2025-10-20 18:14:24,889 - __main__ - INFO - Starting Tkinter mainloop...
+2025-10-20 18:14:28,080 - ui.gui_main - DEBUG - Opening Documentation window.
+2025-10-20 18:15:15,828 - __main__ - INFO - Initiating shutdown sequence...
+2025-10-20 18:15:15,839 - core.capture - INFO - Signaling packet capture thread to stop.
+2025-10-20 18:15:15,839 - core.blocklist_integration - INFO - Signaling blocklist auto-update thread to stop.
+2025-10-20 18:15:15,839 - __main__ - INFO - Waiting for capture thread to join...
+2025-10-20 18:15:15,839 - core.blocklist_integration - INFO - Blocklist auto-update thread received stop signal and is exiting.
+2025-10-20 18:15:15,925 - core.capture - INFO - Capture thread received stop signal and is exiting gracefully.
+2025-10-20 18:15:15,926 - __main__ - INFO - Capture thread joined successfully.
+2025-10-20 18:15:15,926 - __main__ - INFO - Shutting down logging system.
+2025-10-20 18:15:19,525 - config.globals - DEBUG - Globals module loaded (most config now in core.config_manager).
+2025-10-20 18:15:20,162 - core.whitelist_manager - DEBUG - Creating singleton Whitelist instance.
+2025-10-20 18:15:20,162 - core.whitelist_manager - INFO - Loading whitelist from whitelist.txt
+2025-10-20 18:15:20,163 - core.whitelist_manager - INFO - Whitelist loading complete. Loaded 0 IP/Network entries and 0 Domain entries.
+2025-10-20 18:15:20,282 - matplotlib - DEBUG - matplotlib data path: C:\Users\kamme\OneDrive\Desktop\uni\Master\PraktikeschProjek\botnet_detection\botnet_detection\.venv\Lib\site-packages\matplotlib\mpl-data
+2025-10-20 18:15:20,289 - matplotlib - DEBUG - CONFIGDIR=C:\Users\kamme\.matplotlib
+2025-10-20 18:15:20,290 - matplotlib - DEBUG - interactive is False
+2025-10-20 18:15:20,290 - matplotlib - DEBUG - platform is win32
+2025-10-20 18:15:20,319 - matplotlib - DEBUG - CACHEDIR=C:\Users\kamme\.matplotlib
+2025-10-20 18:15:20,320 - matplotlib.font_manager - DEBUG - Using fontManager instance from C:\Users\kamme\.matplotlib\fontlist-v390.json
+2025-10-20 18:15:20,471 - __main__ - INFO - Application starting...
+2025-10-20 18:15:20,471 - __main__ - INFO - Whitelist instance created/retrieved.
+2025-10-20 18:15:20,472 - __main__ - INFO - Initializing NetworkDataManager...
+2025-10-20 18:15:20,472 - core.data_manager - INFO - Initializing NetworkDataManager.
+2025-10-20 18:15:20,472 - core.data_manager - INFO - DataManager calculated timestamp deque maxlen: 90000
+2025-10-20 18:15:20,472 - __main__ - INFO - NetworkDataManager initialized.
+2025-10-20 18:15:20,472 - core.capture - INFO - Attempting to list and identify network interfaces...
+2025-10-20 18:15:22,032 - __main__ - INFO - Starting packet capture thread...
+2025-10-20 18:15:22,033 - core.capture - INFO - Packet capture thread started. Sniffing on: \Device\NPF_{07D3FDD8-3D05-452B-831D-96019F9D3D8A}, \Device\NPF_{4907781C-B481-4A25-8DCD-059BBACA9FC2}, \Device\NPF_{611A2DE0-2404-49E2-BBEA-372082D50A48}, \Device\NPF_{4907781C-B481-4A25-8DCD-059BBACA9FC2}
+2025-10-20 18:15:22,033 - __main__ - INFO - Starting periodic blocklist update thread...
+2025-10-20 18:15:22,033 - core.capture - INFO - Using packet filter: "ip or ip6"
+2025-10-20 18:15:22,033 - core.blocklist_integration - INFO - Blocklist auto-update thread started. Update interval: 24 hours.
+2025-10-20 18:15:22,034 - __main__ - INFO - Initializing GUI...
+2025-10-20 18:15:22,034 - core.capture - INFO - Sniffing with 1.0s timeout loop for graceful shutdown.
+2025-10-20 18:15:22,071 - ui.gui_main - INFO - Initializing PacketStatsGUI...
+2025-10-20 18:15:22,071 - ui.gui_main - INFO - Downloading/loading blocklists (if needed)...
+2025-10-20 18:15:22,071 - core.blocklist_integration - INFO - Checking/Downloading 6 blocklists...
+2025-10-20 18:15:22,071 - core.blocklist_integration - DEBUG - Skip download, exists: ip_ipblocklist_aggressive.txt
+2025-10-20 18:15:22,072 - core.blocklist_integration - DEBUG - Skip download, exists: ip_dshield.netset
+2025-10-20 18:15:22,072 - core.blocklist_integration - DEBUG - Skip download, exists: ip_spamhaus_drop.netset
+2025-10-20 18:15:22,072 - core.blocklist_integration - DEBUG - Skip download, exists: ip_spamhaus_edrop.netset
+2025-10-20 18:15:22,072 - core.blocklist_integration - DEBUG - Skip download, exists: dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:15:22,072 - core.blocklist_integration - INFO - Download check finished.
+2025-10-20 18:15:22,072 - core.blocklist_integration - INFO - Loading configured blocklists...
+2025-10-20 18:15:22,072 - core.blocklist_integration - INFO - Loading 4 IP blocklists...
+2025-10-20 18:15:22,072 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_ipblocklist_aggressive.txt
+2025-10-20 18:15:22,118 - core.blocklist_integration - INFO - Loaded 7600 IP entries from ip_ipblocklist_aggressive.txt
+2025-10-20 18:15:22,118 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_dshield.netset
+2025-10-20 18:15:22,118 - core.blocklist_integration - INFO - Loaded 20 IP entries from ip_dshield.netset
+2025-10-20 18:15:22,119 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_spamhaus_drop.netset
+2025-10-20 18:15:22,122 - core.blocklist_integration - INFO - Loaded 1401 IP entries from ip_spamhaus_drop.netset
+2025-10-20 18:15:22,122 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_spamhaus_edrop.netset
+2025-10-20 18:15:22,123 - core.blocklist_integration - INFO - Loaded 336 IP entries from ip_spamhaus_edrop.netset
+2025-10-20 18:15:22,123 - core.blocklist_integration - INFO - Loading 1 DNS blocklists...
+2025-10-20 18:15:22,123 - core.blocklist_integration - DEBUG - Parsing [DNS]: dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:15:22,123 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 15 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:15:22,123 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'local' line 17 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:15:22,124 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'broadcasthost' line 18 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:15:22,124 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 19 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:15:22,124 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-localhost' line 20 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:15:22,124 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-loopback' line 21 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:15:22,124 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 22 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:15:22,124 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-localnet' line 23 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:15:22,124 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-mcastprefix' line 24 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:15:22,124 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allnodes' line 25 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:15:22,124 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allrouters' line 26 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:15:22,124 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allhosts' line 27 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:15:22,161 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'www.zgarniij_vouchher.skroc.pl' line 25218 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:15:22,162 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'zgarniij_vouchher.skroc.pl' line 25220 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:15:22,240 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'philadelphia_cbslocal.us.intellitxt.com' line 71194 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:15:22,270 - core.blocklist_integration - INFO - Loaded 80100 DNS entries from dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:15:22,270 - core.blocklist_integration - INFO - Loading 1 JA3 blocklists...
+2025-10-20 18:15:22,270 - core.blocklist_integration - WARNING - JA3 file not found: blocklists\ip_ja3.csv.
+2025-10-20 18:15:22,270 - core.blocklist_integration - INFO - Loading 0 JA3S blocklists...
+2025-10-20 18:15:22,270 - core.blocklist_integration - INFO - Blocklist loading complete. Files: 5, IPs: 9357, DNS: 80100, JA3: 0, JA3S: 0
+2025-10-20 18:15:22,270 - ui.gui_main - INFO - Blocklists processed.
+2025-10-20 18:15:22,276 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 18:15:22,276 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 18:15:22
+2025-10-20 18:15:22,276 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 18:15:22,276 - ui.gui_main - INFO - PacketStatsGUI initialized.
+2025-10-20 18:15:22,276 - __main__ - INFO - Starting Tkinter mainloop...
+2025-10-20 18:15:24,625 - ui.gui_main - DEBUG - Opening Documentation window.
+2025-10-20 18:15:39,587 - ui.gui_main - DEBUG - Clearing reference for window: .!documentationwindow, attr: documentation_window_ref, list: None, item: None
+2025-10-20 18:15:39,588 - ui.gui_main - DEBUG - Cleared attribute reference: documentation_window_ref
+2025-10-20 18:15:40,338 - ui.gui_main - INFO - Main application on_close triggered.
+2025-10-20 18:15:40,339 - ui.gui_main - DEBUG - Main GUI update loop cancelled.
+2025-10-20 18:15:40,339 - ui.gui_main - INFO - Destroying main application window.
+2025-10-20 18:15:40,359 - ui.gui_main - INFO - Main application window destroyed.
+2025-10-20 18:15:40,359 - __main__ - INFO - Tkinter mainloop finished.
+2025-10-20 18:15:40,360 - __main__ - INFO - Initiating shutdown sequence...
+2025-10-20 18:15:40,360 - core.capture - INFO - Signaling packet capture thread to stop.
+2025-10-20 18:15:40,360 - core.blocklist_integration - INFO - Signaling blocklist auto-update thread to stop.
+2025-10-20 18:15:40,360 - __main__ - INFO - Waiting for capture thread to join...
+2025-10-20 18:15:40,360 - core.blocklist_integration - INFO - Blocklist auto-update thread received stop signal and is exiting.
+2025-10-20 18:15:40,606 - core.capture - INFO - Capture thread received stop signal and is exiting gracefully.
+2025-10-20 18:15:40,607 - __main__ - INFO - Capture thread joined successfully.
+2025-10-20 18:15:40,607 - __main__ - INFO - Shutting down logging system.
+2025-10-20 18:17:49,911 - config.globals - DEBUG - Globals module loaded (most config now in core.config_manager).
+2025-10-20 18:17:50,599 - core.whitelist_manager - DEBUG - Creating singleton Whitelist instance.
+2025-10-20 18:17:50,600 - core.whitelist_manager - INFO - Loading whitelist from whitelist.txt
+2025-10-20 18:17:50,600 - core.whitelist_manager - INFO - Whitelist loading complete. Loaded 0 IP/Network entries and 0 Domain entries.
+2025-10-20 18:17:50,736 - matplotlib - DEBUG - matplotlib data path: C:\Users\kamme\OneDrive\Desktop\uni\Master\PraktikeschProjek\botnet_detection\botnet_detection\.venv\Lib\site-packages\matplotlib\mpl-data
+2025-10-20 18:17:50,744 - matplotlib - DEBUG - CONFIGDIR=C:\Users\kamme\.matplotlib
+2025-10-20 18:17:50,745 - matplotlib - DEBUG - interactive is False
+2025-10-20 18:17:50,745 - matplotlib - DEBUG - platform is win32
+2025-10-20 18:17:50,777 - matplotlib - DEBUG - CACHEDIR=C:\Users\kamme\.matplotlib
+2025-10-20 18:17:50,778 - matplotlib.font_manager - DEBUG - Using fontManager instance from C:\Users\kamme\.matplotlib\fontlist-v390.json
+2025-10-20 18:17:50,971 - __main__ - INFO - Application starting...
+2025-10-20 18:17:50,971 - __main__ - INFO - Whitelist instance created/retrieved.
+2025-10-20 18:17:50,971 - __main__ - INFO - Initializing NetworkDataManager...
+2025-10-20 18:17:50,971 - core.data_manager - INFO - Initializing NetworkDataManager.
+2025-10-20 18:17:50,972 - core.data_manager - INFO - DataManager calculated timestamp deque maxlen: 90000
+2025-10-20 18:17:50,972 - __main__ - INFO - NetworkDataManager initialized.
+2025-10-20 18:17:50,972 - core.capture - INFO - Attempting to list and identify network interfaces...
+2025-10-20 18:17:53,524 - __main__ - INFO - Starting packet capture thread...
+2025-10-20 18:17:53,524 - core.capture - INFO - Packet capture thread started. Sniffing on: \Device\NPF_{07D3FDD8-3D05-452B-831D-96019F9D3D8A}, \Device\NPF_{4907781C-B481-4A25-8DCD-059BBACA9FC2}, \Device\NPF_{611A2DE0-2404-49E2-BBEA-372082D50A48}, \Device\NPF_{4907781C-B481-4A25-8DCD-059BBACA9FC2}
+2025-10-20 18:17:53,524 - __main__ - INFO - Starting periodic blocklist update thread...
+2025-10-20 18:17:53,525 - core.capture - INFO - Using packet filter: "ip or ip6"
+2025-10-20 18:17:53,525 - core.blocklist_integration - INFO - Blocklist auto-update thread started. Update interval: 24 hours.
+2025-10-20 18:17:53,525 - __main__ - INFO - Initializing GUI...
+2025-10-20 18:17:53,525 - core.capture - INFO - Sniffing with 1.0s timeout loop for graceful shutdown.
+2025-10-20 18:17:53,562 - ui.gui_main - INFO - Initializing PacketStatsGUI...
+2025-10-20 18:17:53,562 - ui.gui_main - INFO - Downloading/loading blocklists (if needed)...
+2025-10-20 18:17:53,562 - core.blocklist_integration - INFO - Checking/Downloading 6 blocklists...
+2025-10-20 18:17:53,563 - core.blocklist_integration - DEBUG - Skip download, exists: ip_ipblocklist_aggressive.txt
+2025-10-20 18:17:53,563 - core.blocklist_integration - DEBUG - Skip download, exists: ip_dshield.netset
+2025-10-20 18:17:53,563 - core.blocklist_integration - DEBUG - Skip download, exists: ip_spamhaus_drop.netset
+2025-10-20 18:17:53,563 - core.blocklist_integration - DEBUG - Skip download, exists: ip_spamhaus_edrop.netset
+2025-10-20 18:17:53,563 - core.blocklist_integration - DEBUG - Skip download, exists: dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:17:53,564 - core.blocklist_integration - INFO - Download check finished.
+2025-10-20 18:17:53,564 - core.blocklist_integration - INFO - Loading configured blocklists...
+2025-10-20 18:17:53,564 - core.blocklist_integration - INFO - Loading 4 IP blocklists...
+2025-10-20 18:17:53,564 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_ipblocklist_aggressive.txt
+2025-10-20 18:17:53,609 - core.blocklist_integration - INFO - Loaded 7600 IP entries from ip_ipblocklist_aggressive.txt
+2025-10-20 18:17:53,610 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_dshield.netset
+2025-10-20 18:17:53,610 - core.blocklist_integration - INFO - Loaded 20 IP entries from ip_dshield.netset
+2025-10-20 18:17:53,610 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_spamhaus_drop.netset
+2025-10-20 18:17:53,614 - core.blocklist_integration - INFO - Loaded 1401 IP entries from ip_spamhaus_drop.netset
+2025-10-20 18:17:53,614 - core.blocklist_integration - DEBUG - Parsing [IP]: ip_spamhaus_edrop.netset
+2025-10-20 18:17:53,615 - core.blocklist_integration - INFO - Loaded 336 IP entries from ip_spamhaus_edrop.netset
+2025-10-20 18:17:53,615 - core.blocklist_integration - INFO - Loading 1 DNS blocklists...
+2025-10-20 18:17:53,615 - core.blocklist_integration - DEBUG - Parsing [DNS]: dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:17:53,615 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 15 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:17:53,615 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'local' line 17 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:17:53,615 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'broadcasthost' line 18 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:17:53,615 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 19 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:17:53,615 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-localhost' line 20 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:17:53,615 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-loopback' line 21 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:17:53,615 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'localhost' line 22 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:17:53,616 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-localnet' line 23 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:17:53,616 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-mcastprefix' line 24 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:17:53,616 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allnodes' line 25 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:17:53,616 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allrouters' line 26 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:17:53,616 - core.blocklist_integration - DEBUG - Skip invalid DNS structure 'ip6-allhosts' line 27 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:17:53,652 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'www.zgarniij_vouchher.skroc.pl' line 25218 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:17:53,652 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'zgarniij_vouchher.skroc.pl' line 25220 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:17:53,733 - core.blocklist_integration - DEBUG - Skip invalid DNS format 'philadelphia_cbslocal.us.intellitxt.com' line 71194 in blocklists\dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:17:53,763 - core.blocklist_integration - INFO - Loaded 80100 DNS entries from dns_raw_githubusercontent_com_stevenblack_hosts_master_hosts
+2025-10-20 18:17:53,763 - core.blocklist_integration - INFO - Loading 1 JA3 blocklists...
+2025-10-20 18:17:53,763 - core.blocklist_integration - WARNING - JA3 file not found: blocklists\ip_ja3.csv.
+2025-10-20 18:17:53,763 - core.blocklist_integration - INFO - Loading 0 JA3S blocklists...
+2025-10-20 18:17:53,763 - core.blocklist_integration - INFO - Blocklist loading complete. Files: 5, IPs: 9357, DNS: 80100, JA3: 0, JA3S: 0
+2025-10-20 18:17:53,763 - ui.gui_main - INFO - Blocklists processed.
+2025-10-20 18:17:53,770 - ui.gui_main - DEBUG - Scheduling next data aggregation...
+2025-10-20 18:17:53,770 - core.data_manager - INFO - DataManager: Running aggregate_minute_data cycle @ 2025-10-20 18:17:53
+2025-10-20 18:17:53,771 - core.data_manager - DEBUG - DataManager: Aggregation and pruning cycle finished.
+2025-10-20 18:17:53,772 - ui.gui_main - INFO - PacketStatsGUI initialized.
+2025-10-20 18:17:53,772 - __main__ - INFO - Starting Tkinter mainloop...
+2025-10-20 18:17:55,544 - ui.gui_main - DEBUG - Opening Documentation window.
+2025-10-20 18:18:41,347 - ui.gui_main - DEBUG - Clearing reference for window: .!documentationwindow, attr: documentation_window_ref, list: None, item: None
+2025-10-20 18:18:41,347 - ui.gui_main - DEBUG - Cleared attribute reference: documentation_window_ref
+2025-10-20 18:18:41,791 - ui.gui_main - INFO - Main application on_close triggered.
+2025-10-20 18:18:41,791 - ui.gui_main - DEBUG - Main GUI update loop cancelled.
+2025-10-20 18:18:41,791 - ui.gui_main - INFO - Destroying main application window.
+2025-10-20 18:18:41,816 - ui.gui_main - INFO - Main application window destroyed.
+2025-10-20 18:18:41,816 - __main__ - INFO - Tkinter mainloop finished.
+2025-10-20 18:18:41,816 - __main__ - INFO - Initiating shutdown sequence...
+2025-10-20 18:18:41,816 - core.capture - INFO - Signaling packet capture thread to stop.
+2025-10-20 18:18:41,816 - core.blocklist_integration - INFO - Signaling blocklist auto-update thread to stop.
+2025-10-20 18:18:41,816 - __main__ - INFO - Waiting for capture thread to join...
+2025-10-20 18:18:41,816 - core.blocklist_integration - INFO - Blocklist auto-update thread received stop signal and is exiting.
+2025-10-20 18:18:42,409 - core.capture - INFO - Capture thread received stop signal and is exiting gracefully.
+2025-10-20 18:18:42,410 - __main__ - INFO - Capture thread joined successfully.
+2025-10-20 18:18:42,410 - __main__ - INFO - Shutting down logging system.

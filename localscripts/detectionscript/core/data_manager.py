@@ -340,29 +340,30 @@ class NetworkDataManager:
         if not self.enable_dns_analysis:
             return
 
-        ip_entry["dga_detected"] = False
-        ip_entry["dns_tunneling_detected"] = False
-        total_queries = 0
-        total_nxdomain = 0
+        # DGA detection
+        if not ip_entry.get("dga_detected"):
+            for qname, stats in ip_entry["dns_queries"].items():
+                entropy = self._calculate_entropy(qname.split('.')[0])
+                if len(qname) > self.dga_length_threshold and entropy > self.dga_entropy_threshold:
+                    ip_entry["dga_detected"] = True
+                    reason = f"DGA Detected (length: {len(qname)}, entropy: {entropy:.2f})"
+                    ip_entry["suspicious_dns"].append({"timestamp": time.time(), "qname": qname, "reason": reason})
+                    logger.warning(f"DGA DETECTED for {ip}: {qname} (length: {len(qname)}, entropy: {entropy:.2f})")
+                    break
 
-        for qname, stats in ip_entry["dns_queries"].items():
-            # DGA Detection
-            entropy = self._calculate_entropy(qname.split('.')[0])
-            if len(qname) > self.dga_length_threshold and entropy > self.dga_entropy_threshold:
-                ip_entry["dga_detected"] = True
-                reason = f"DGA Detected (length: {len(qname)}, entropy: {entropy:.2f})"
-                ip_entry["suspicious_dns"].append({"timestamp": time.time(), "qname": qname, "reason": reason})
-                logger.warning(f"DGA DETECTED for {ip}: {qname} (length: {len(qname)}, entropy: {entropy:.2f})")
+        # DNS Tunneling detection
+        if not ip_entry.get("dns_tunneling_detected"):
+            total_queries = 0
+            total_nxdomain = 0
+            for qname, stats in ip_entry["dns_queries"].items():
+                total_queries += stats["count"]
+                total_nxdomain += stats["nxdomain_count"]
 
-            total_queries += stats["count"]
-            total_nxdomain += stats["nxdomain_count"]
-
-        # DNS Tunneling Detection
-        if total_queries > self.nxdomain_min_count:
-            nxdomain_rate = total_nxdomain / total_queries
-            if nxdomain_rate > self.nxdomain_rate_threshold:
-                ip_entry["dns_tunneling_detected"] = True
-                logger.warning(f"DNS Tunneling (High NXDOMAIN rate) DETECTED for {ip}: {nxdomain_rate:.2f}")
+            if total_queries > self.nxdomain_min_count:
+                nxdomain_rate = total_nxdomain / total_queries
+                if nxdomain_rate > self.nxdomain_rate_threshold:
+                    ip_entry["dns_tunneling_detected"] = True
+                    logger.warning(f"DNS Tunneling (High NXDOMAIN rate) DETECTED for {ip}: {nxdomain_rate:.2f}")
 
     def _check_for_arp_spoofing(self, ip, mac):
         if ip in self.arp_table and self.arp_table[ip] != mac:

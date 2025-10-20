@@ -331,10 +331,10 @@ class PacketStatsGUI:
         if self.testing_suite_window_ref and self.testing_suite_window_ref.winfo_exists():
             self.testing_suite_window_ref.lift()
             return
-        top = tk.Toplevel(self.master)
-        self.testing_suite_window_ref = top
-        testing_suite_instance = TestingSuiteWindow(top)
-        top.protocol("WM_DELETE_WINDOW", lambda t=top, ti=testing_suite_instance: (ti.on_close(), self._clear_window_reference(t, "testing_suite_window_ref")))
+        
+        testing_suite_instance = TestingSuiteWindow(self.master)
+        self.testing_suite_window_ref = testing_suite_instance
+        testing_suite_instance.protocol("WM_DELETE_WINDOW", lambda t=testing_suite_instance: (t.on_close(), self._clear_window_reference(t, "testing_suite_window_ref")))
 
     def get_flag_unsafe(self): return self.flag_unsafe_var.get()
     def get_flag_malicious(self): return self.flag_malicious_var.get()

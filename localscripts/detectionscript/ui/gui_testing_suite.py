@@ -117,7 +117,7 @@ class TestingSuiteWindow(tk.Toplevel):
 
     def trigger_unsafe_protocol(self):
         self.log("--- Triggering Unsafe Protocol (FTP) ---")
-        packet = IP(src=SOURCE_IP, dst=TARGET_IP) / TCP(dport=21, flags="S")
+        packet = IP(src=SOURCE_IP, dst=TARGET_IP) / TCP(dport=23, flags="S")
         send(packet, verbose=False)
         self.log("Unsafe protocol finished.")
 
@@ -150,6 +150,7 @@ class TestingSuiteWindow(tk.Toplevel):
     def trigger_dns_tunneling(self):
         self.log("--- Triggering DNS Tunneling (High NXDOMAIN Rate) ---")
         for _ in range(20):
+            # This domain should not exist and will likely result in an NXDOMAIN response
             domain = "nonexistentdomain" + ''.join(random.choice(string.ascii_lowercase) for _ in range(10)) + ".com"
             packet = IP(src=SOURCE_IP, dst="8.8.8.8") / UDP(dport=53) / DNS(rd=1, qd=DNSQR(qname=domain))
             send(packet, verbose=False)

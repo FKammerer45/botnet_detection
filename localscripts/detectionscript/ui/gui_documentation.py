@@ -57,6 +57,11 @@ class DocumentationWindow(tk.Toplevel):
         try:
             with open(filepath, "r", encoding="utf-8") as f:
                 md_content = f.read()
+            
+            # The tkhtmlview library does not support local image rendering, so we'll replace image tags with a placeholder.
+            import re
+            md_content = re.sub(r'!\[(.*?)\]\((.*?)\)', r'[Image: \1]', md_content)
+
             html_content = markdown2.markdown(md_content, extras=["fenced-code-blocks", "tables", "cuddled-lists", "markdown-in-html", "smarty-pants"])
             self.html_label.set_html(html_content)
         except Exception as e:

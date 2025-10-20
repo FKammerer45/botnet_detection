@@ -5,7 +5,8 @@ import logging
 from collections import deque, defaultdict
 import ipaddress
 import math
-from scapy.all import DNS, DNSQR, ARP, ICMP
+from scapy.all import DNS, DNSQR, ARP, ICMP, IP, TCP, UDP, Ether, IPv6
+from scapy.layers.tls.all import *
 import ipaddress
 
 from .config_manager import config
@@ -74,63 +75,74 @@ class NetworkDataManager:
             logger.error(f"DataManager: Error calculating deque maxlen: {e}. Using default: {_DEFAULT_DEQUE_MAXLEN}")
             self._packet_deque_maxlen = _DEFAULT_DEQUE_MAXLEN
 
+    def _ensure_ip_entry_exists(self, ip):
+        """Creates a new, empty data structure for an IP if it doesn't exist."""
+        if ip not in self.ip_data:
+            self.ip_data[ip] = {
+                "total": 0, "timestamps": deque(maxlen=self._packet_deque_maxlen),
+                "last_seen": 0.0, "max_per_sec": 0,
+                "destinations": defaultdict(lambda: {"total": 0, "timestamps": deque(maxlen=self._packet_deque_maxlen), "max_per_sec": 0}),
+                "protocols": defaultdict(lambda: {"total": 0, "timestamps": deque(maxlen=self._packet_deque_maxlen), "max_per_sec": 0}),
+                "malicious_hits": {}, "contacted_malicious_ip": False,
+                "suspicious_dns": [],
+                "scan_targets": defaultdict(lambda: {"ports": set(), "first_seen": 0.0, "scan_types": set()}),
+                "last_scan_check_time": 0.0,
+                "detected_scan_ports": False, "detected_scan_hosts": False,
+                "rate_anomaly_detected": False,
+                "protocol_stats": defaultdict(lambda: {"mean": 0, "std": 0, "count": 0}),
+                "beaconing_detected": False,
+                "malicious_ja3": None,
+                "malicious_ja3s": None,
+                "is_malicious_source": False,
+                "dns_queries": defaultdict(lambda: {"count": 0, "nxdomain_count": 0}),
+                "dga_detected": False,
+                "dns_tunneling_detected": False,
+                "arp_spoof_detected": False,
+                "ping_sweep_detected": False,
+                "icmp_tunneling_detected": False,
+                "icmp_echo_requests": set(),
+                "score": 0,
+                "score_components": {}
+            }
+
     def process_packet_data(self, src_ip, dst_ip, proto_name, port_used, pkt_time, tcp_flags, is_dns_traffic, ja3, ja3s, raw_pkt):
         if self.whitelist.is_ip_whitelisted(src_ip) or self.whitelist.is_ip_whitelisted(dst_ip):
             return
 
         with self.lock:
-            if src_ip not in self.ip_data:
-                 self.ip_data[src_ip] = {
-                     "total": 0, "timestamps": deque(maxlen=self._packet_deque_maxlen),
-                     "last_seen": 0.0, "max_per_sec": 0,
-                     "destinations": defaultdict(lambda: {"total": 0, "timestamps": deque(maxlen=self._packet_deque_maxlen), "max_per_sec": 0}),
-                     "protocols": defaultdict(lambda: {"total": 0, "timestamps": deque(maxlen=self._packet_deque_maxlen), "max_per_sec": 0}),
-                     "malicious_hits": {}, "contacted_malicious_ip": False,
-                     "suspicious_dns": [],
-                     "scan_targets": defaultdict(lambda: {"ports": set(), "first_seen": 0.0, "scan_types": set()}),
-                     "last_scan_check_time": 0.0,
-                     "detected_scan_ports": False, "detected_scan_hosts": False,
-                     "rate_anomaly_detected": False,
-                     "protocol_stats": defaultdict(lambda: {"mean": 0, "std": 0, "count": 0}),
-                     "beaconing_detected": False,
-                     "malicious_ja3": None,
-                     "malicious_ja3s": None,
-                     "is_malicious_source": False,
-                     "dns_queries": defaultdict(lambda: {"count": 0, "nxdomain_count": 0}),
-                     "dga_detected": False,
-                     "dns_tunneling_detected": False,
-                     "arp_spoof_detected": False,
-                     "ping_sweep_detected": False,
-                     "icmp_tunneling_detected": False,
-                     "icmp_echo_requests": set(),
-                     "score": 0,
-                     "score_components": {}
-                 }
-            
-            ip_entry = self.ip_data[src_ip]
-            ip_entry["total"] += 1
-            ip_entry["timestamps"].append(pkt_time)
-            ip_entry["last_seen"] = pkt_time
+            self._ensure_ip_entry_exists(src_ip)
+            self._ensure_ip_entry_exists(dst_ip)
 
+            src_entry = self.ip_data[src_ip]
+            dst_entry = self.ip_data[dst_ip]
+
+            src_entry["total"] += 1
+            src_entry["timestamps"].append(pkt_time)
+            src_entry["last_seen"] = pkt_time
+            
+            dst_entry["total"] += 1
+            dst_entry["timestamps"].append(pkt_time)
+            dst_entry["last_seen"] = pkt_time
+            
             one_second_ago = pkt_time - 1.0
-            while ip_entry["timestamps"] and ip_entry["timestamps"][0] < one_second_ago:
-                ip_entry["timestamps"].popleft()
+            while src_entry["timestamps"] and src_entry["timestamps"][0] < one_second_ago:
+                src_entry["timestamps"].popleft()
             
-            packets_per_second = len(ip_entry["timestamps"])
-            if packets_per_second > ip_entry["max_per_sec"]:
-                ip_entry["max_per_sec"] = packets_per_second
+            packets_per_second = len(src_entry["timestamps"])
+            if packets_per_second > src_entry["max_per_sec"]:
+                src_entry["max_per_sec"] = packets_per_second
 
-            dest_entry = ip_entry["destinations"][dst_ip]
-            dest_entry["total"] += 1
-            dest_entry["timestamps"].append(pkt_time)
+            dest_entry_for_src = src_entry["destinations"][dst_ip]
+            dest_entry_for_src["total"] += 1
+            dest_entry_for_src["timestamps"].append(pkt_time)
 
             proto_key = (proto_name, port_used)
-            proto_entry = ip_entry["protocols"][proto_key]
+            proto_entry = src_entry["protocols"][proto_key]
             proto_entry["total"] += 1
             proto_entry["timestamps"].append(pkt_time)
 
             if proto_name == "tcp" and tcp_flags is not None:
-                scan_target_entry = ip_entry["scan_targets"][dst_ip]
+                scan_target_entry = src_entry["scan_targets"][dst_ip]
                 if not scan_target_entry["first_seen"]:
                     scan_target_entry["first_seen"] = pkt_time
                 if port_used is not None:
@@ -148,30 +160,27 @@ class NetworkDataManager:
 
             if is_dns_traffic and raw_pkt.haslayer(DNS):
                 dns_layer = raw_pkt[DNS]
-                if dns_layer.qr == 0 and dns_layer.qdcount > 0:
-                    for i in range(dns_layer.qdcount):
-                        if dns_layer.qd and i < len(dns_layer.qd) and dns_layer.qd[i] is not None:
-                            try:
-                                qname_bytes = dns_layer.qd[i].qname
-                                qname = qname_bytes.decode('utf-8', errors='ignore').rstrip('.').lower()
-                                if self.enable_dns_analysis:
-                                    ip_entry["dns_queries"][qname]["count"] += 1
-                                    if raw_pkt.haslayer(DNS) and raw_pkt[DNS].rcode == 3: # NXDOMAIN
-                                        ip_entry["dns_queries"][qname]["nxdomain_count"] += 1
+                if dns_layer.qr == 0 and dns_layer.qd:
+                    try:
+                        qname = dns_layer.qd.qname.decode('utf-8', errors='ignore').rstrip('.').lower()
+                        if self.enable_dns_analysis:
+                            src_entry["dns_queries"][qname]["count"] += 1
+                            if dns_layer.rcode == 3: # NXDOMAIN
+                                src_entry["dns_queries"][qname]["nxdomain_count"] += 1
 
-                                malicious_domain_info = is_domain_malicious(qname)
-                                if malicious_domain_info:
-                                    for list_url, description in malicious_domain_info.items():
-                                        reason = f"Blocklist Hit: {description}" if description else "Blocklist Hit"
-                                        ip_entry["suspicious_dns"].append({"timestamp": pkt_time, "qname": qname, "reason": reason})
-                            except Exception as dns_ex:
-                                logger.error(f"Error processing DNS query: {dns_ex}", exc_info=False)
+                        malicious_domain_info = is_domain_malicious(qname)
+                        if malicious_domain_info:
+                            for list_url, description in malicious_domain_info.items():
+                                reason = f"Blocklist Hit: {description}" if description else "Blocklist Hit"
+                                src_entry["suspicious_dns"].append({"timestamp": pkt_time, "qname": qname, "reason": reason})
+                    except Exception as dns_ex:
+                        logger.error(f"Error processing DNS query: {dns_ex}", exc_info=False)
             
             if self.enable_ja3_detection:
                 if ja3 and is_ja3_malicious(ja3):
-                    ip_entry["malicious_ja3"] = ja3
+                    src_entry["malicious_ja3"] = ja3
                 if ja3s and is_ja3s_malicious(ja3s):
-                    ip_entry["malicious_ja3s"] = ja3s
+                    src_entry["malicious_ja3s"] = ja3s
 
             minute_start = int(pkt_time // 60) * 60
             if src_ip not in self.current_minute_data:
@@ -179,8 +188,6 @@ class NetworkDataManager:
             
             cdata = self.current_minute_data[src_ip]
             if cdata["start_time"] != minute_start:
-                # Previous minute's data for this IP (in cdata) will be aggregated by aggregate_minute_data.
-                # Re-initialize for the new current minute.
                 self.current_minute_data[src_ip] = {"start_time": minute_start, "count": 0, "protocol_count": defaultdict(int)}
                 cdata = self.current_minute_data[src_ip]
 
@@ -202,27 +209,24 @@ class NetworkDataManager:
         if self.enable_icmp_anomaly_detection and raw_pkt.haslayer(ICMP):
             icmp_layer = raw_pkt[ICMP]
             if icmp_layer.type == 8: # echo-request
-                ip_entry["icmp_echo_requests"].add(dst_ip)
+                self.ip_data[src_ip]["icmp_echo_requests"].add(dst_ip)
             if len(icmp_layer.payload) > self.icmp_large_payload_threshold:
-                ip_entry["icmp_tunneling_detected"] = True
+                self.ip_data[src_ip]["icmp_tunneling_detected"] = True
                 logger.warning(f"ICMP Tunneling (Large Payload) DETECTED from {src_ip} to {dst_ip}: {len(icmp_layer.payload)} bytes")
+                self._calculate_threat_score(src_ip, self.ip_data[src_ip])
 
     def _is_internal_ip(self, ip_str):
         try:
             ip_obj = ipaddress.ip_address(ip_str)
             for net in self.local_networks:
                 if ip_obj in net:
-
                     return True
         except ValueError:
             logger.debug(f"Could not parse IP: {ip_str}")
             return False
-
         return False
 
     def _check_for_scans(self, ip, ip_entry, now):
-        ip_entry["detected_scan_ports"] = False
-        ip_entry["detected_scan_hosts"] = False
         if self.whitelist.is_ip_whitelisted(ip):
             ip_entry["scan_targets"].clear()
             return False
@@ -257,13 +261,16 @@ class NetworkDataManager:
         if unique_targets_in_window_count > self.scan_distinct_hosts_threshold:
             detected_host_scan_flag = True
             
-        if detected_port_scan_flag: logger.warning(f"Port Scan DETECTED from {ip}")
-        if detected_host_scan_flag: logger.warning(f"Host Scan DETECTED from {ip}")
+        if detected_port_scan_flag and not ip_entry.get("detected_scan_ports"):
+            logger.warning(f"Port Scan DETECTED from {ip}")
+            ip_entry["detected_scan_ports"] = True
+        
+        if detected_host_scan_flag and not ip_entry.get("detected_scan_hosts"):
+            logger.warning(f"Host Scan DETECTED from {ip}")
+            ip_entry["detected_scan_hosts"] = True
 
-        ip_entry["detected_scan_ports"] = detected_port_scan_flag
-        ip_entry["detected_scan_hosts"] = detected_host_scan_flag
         ip_entry["last_scan_check_time"] = now
-        return detected_port_scan_flag or detected_host_scan_flag
+        return ip_entry["detected_scan_ports"] or ip_entry["detected_scan_hosts"]
 
     def _check_for_beaconing(self, ip, ip_entry, now):
         if not self.enable_beaconing_detection:
@@ -452,7 +459,7 @@ class NetworkDataManager:
             for ip, data_entry in self.ip_data.items():
                 entry_copy = {
                     "total": data_entry.get("total", 0),
-                    "timestamps": deque(data_entry.get("timestamps", deque())), 
+                    "timestamps": deque(data_entry.get("timestamps", deque())),
                     "max_per_sec": data_entry.get("max_per_sec", 0),
                     "protocols": defaultdict(lambda: {"total": 0, "timestamps": deque(maxlen=self._packet_deque_maxlen), "max_per_sec": 0}, 
                                              {k: v.copy() for k,v in data_entry.get("protocols", {}).items()}),

@@ -25,6 +25,7 @@ from ui.gui_dns_config import DnsConfigWindow
 from ui.gui_local_network_config import LocalNetworkConfigWindow
 from ui.gui_scoring_config import ScoringConfigWindow
 from ui.gui_documentation import DocumentationWindow
+from ui.gui_testing_suite import TestingSuiteWindow
 from ui.gui_tooltip import Tooltip
 from ui.components.configuration_frame import ConfigurationFrame
 
@@ -61,6 +62,7 @@ class PacketStatsGUI:
         self.local_network_config_window_ref = None
         self.scoring_config_window_ref = None
         self.documentation_window_ref = None
+        self.testing_suite_window_ref = None
 
         try:
             logger.info("Downloading/loading blocklists (if needed)...")
@@ -324,6 +326,16 @@ class PacketStatsGUI:
         self.documentation_window_ref = doc_instance
         doc_instance.protocol("WM_DELETE_WINDOW", lambda t=doc_instance: self._clear_window_reference(t, "documentation_window_ref"))
 
+    def open_testing_suite(self):
+        logger.debug("Opening Testing Suite window.")
+        if self.testing_suite_window_ref and self.testing_suite_window_ref.winfo_exists():
+            self.testing_suite_window_ref.lift()
+            return
+        top = tk.Toplevel(self.master)
+        self.testing_suite_window_ref = top
+        testing_suite_instance = TestingSuiteWindow(top)
+        top.protocol("WM_DELETE_WINDOW", lambda t=top, ti=testing_suite_instance: (ti.on_close(), self._clear_window_reference(t, "testing_suite_window_ref")))
+
     def get_flag_unsafe(self): return self.flag_unsafe_var.get()
     def get_flag_malicious(self): return self.flag_malicious_var.get()
     def get_flag_dns(self): return self.flag_dns_var.get()
@@ -391,14 +403,18 @@ class PacketStatsGUI:
                     continue
 
                 total_packets = data.get("total", 0)
-                packets_per_minute = len(data.get("timestamps", [])) 
+                
+                # Correctly calculate packets in the last 60 seconds for pkts/min
+                one_minute_ago = now - 60.0
+                packets_per_minute = sum(1 for t in data.get("timestamps", []) if t >= one_minute_ago)
+
                 one_second_ago = now - 1.0
                 packets_per_second = sum(1 for t in data.get("timestamps", []) if t >= one_second_ago)
                 max_packets_sec = data.get("max_per_sec", 0) 
                 score = data.get("score", 0)
                 ip_type = "Internal" if self.data_manager._is_internal_ip(ip) else "External"
 
-                is_over_threshold = packets_per_minute > threshold
+                is_over_score_threshold = score > config.score_threshold
                 is_unsafe_triggered = False
                 if flag_unsafe_enabled:
                     ports_used = set(p[1] for p in data.get("protocols", {}).keys() if p[1] is not None)
@@ -415,9 +431,8 @@ class PacketStatsGUI:
                 is_dns_analysis_detected = self.flag_dns_analysis_var.get() and (data.get("dga_detected") or data.get("dns_tunneling_detected"))
                 is_local_threat_detected = self.flag_local_threat_var.get() and (data.get("arp_spoof_detected") or data.get("ping_sweep_detected") or data.get("icmp_tunneling_detected"))
                 
-                should_flag_row = (is_over_threshold or is_unsafe_triggered or
-                                   is_malicious_triggered or is_dns_triggered or is_scan_detected or is_rate_anomaly_detected or is_ja3_detected or is_dns_analysis_detected or is_local_threat_detected)
-                
+                should_flag_row = is_over_score_threshold
+
                 row_data = (ip, score, total_packets, packets_per_minute,
                                        packets_per_second, max_packets_sec, should_flag_row)
 

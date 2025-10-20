@@ -17,6 +17,13 @@ class ScoringConfigWindow:
         main_frame = ttk.Frame(self.master, padding="10")
         main_frame.pack(fill=tk.BOTH, expand=True)
 
+        # Add description
+        description_text = ("Configure the points assigned for various threat indicators. "
+                            "The total score determines the threat level of an IP. "
+                            "Set the threshold for when an IP should be flagged as high risk.")
+        description_label = ttk.Label(main_frame, text=description_text, wraplength=550, justify=tk.LEFT)
+        description_label.pack(pady=(0, 10), fill=tk.X)
+
         self.scoring_vars = {}
         self.create_widgets(main_frame)
 
@@ -32,13 +39,19 @@ class ScoringConfigWindow:
         self.master.protocol("WM_DELETE_WINDOW", lambda: (logger.info("ScoringConfigWindow closed."), self.master.destroy()))
 
     def create_widgets(self, parent_frame):
+        # Frame for the grid
+        grid_frame = ttk.Frame(parent_frame)
+        grid_frame.pack(fill=tk.X)
+
         # This is a bit repetitive, but it's clear and easy to maintain
         # A more advanced implementation could generate this from a dictionary
         row = 0
         for score_attr, label_text, tooltip_text in self.get_score_attributes():
-            ttk.Label(parent_frame, text=label_text).grid(row=row, column=0, sticky=tk.W, pady=2, padx=5)
-            var = tk.StringVar(value=str(getattr(config, score_attr)))
-            entry = ttk.Entry(parent_frame, textvariable=var, width=10)
+            ttk.Label(grid_frame, text=label_text).grid(row=row, column=0, sticky=tk.W, pady=2, padx=5)
+            # Use hasattr to safely get the attribute, with a default
+            current_value = getattr(config, score_attr, 0)
+            var = tk.StringVar(value=str(current_value))
+            entry = ttk.Entry(grid_frame, textvariable=var, width=10)
             entry.grid(row=row, column=1, sticky=tk.W, pady=2)
             self.create_tooltip(entry, tooltip_text)
             self.scoring_vars[score_attr] = var
@@ -46,6 +59,7 @@ class ScoringConfigWindow:
 
     def get_score_attributes(self):
         return [
+            ("score_threshold", "Score Threshold:", "If an IP's score exceeds this, it will be flagged."),
             ("score_arp_spoof", "ARP Spoofing:", "Points for detecting ARP spoofing."),
             ("score_icmp_ping_sweep", "ICMP Ping Sweep:", "Points for detecting an ICMP ping sweep."),
             ("score_icmp_tunneling", "ICMP Tunneling:", "Points for detecting ICMP tunneling."),

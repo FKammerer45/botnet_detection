@@ -64,6 +64,7 @@ class ConfigurationFrame(ttk.Frame):
         tk.Button(row2_frame, text="Whitelist", command=self.controller.open_whitelist_manager).pack(side=tk.LEFT, padx=3)
         tk.Button(row2_frame, text="Temporal", command=self.controller.open_temporal_analysis).pack(side=tk.LEFT, padx=3)
         tk.Button(row2_frame, text="Help", command=self.controller.open_documentation).pack(side=tk.LEFT, padx=3)
+        tk.Button(row2_frame, text="Testing Suite", command=self.controller.open_testing_suite).pack(side=tk.LEFT, padx=3)
 
     def create_tooltip(self, widget, text):
         tooltip = Tooltip(widget, text)

@@ -68,6 +68,7 @@ class AppConfig:
         self.icmp_ping_sweep_threshold = 10
         self.icmp_large_payload_threshold = 512
         # Scoring
+        self.score_threshold = 50
         self.score_arp_spoof = 50
         self.score_icmp_ping_sweep = 5
         self.score_icmp_tunneling = 20
@@ -186,6 +187,7 @@ class AppConfig:
             self.icmp_large_payload_threshold = self.parser.getint('LocalNetworkDetection', 'icmp_large_payload_threshold', fallback=self.icmp_large_payload_threshold)
 
             # Scoring
+            self.score_threshold = self.parser.getint('Scoring', 'threshold', fallback=self.score_threshold)
             self.score_arp_spoof = self.parser.getint('Scoring', 'arp_spoof', fallback=self.score_arp_spoof)
             self.score_icmp_ping_sweep = self.parser.getint('Scoring', 'icmp_ping_sweep', fallback=self.score_icmp_ping_sweep)
             self.score_icmp_tunneling = self.parser.getint('Scoring', 'icmp_tunneling', fallback=self.score_icmp_tunneling)
@@ -276,6 +278,7 @@ class AppConfig:
             self.parser.set('LocalNetworkDetection', 'icmp_large_payload_threshold', str(self.icmp_large_payload_threshold))
 
             # Scoring
+            self.parser.set('Scoring', 'threshold', str(self.score_threshold))
             self.parser.set('Scoring', 'arp_spoof', str(self.score_arp_spoof))
             self.parser.set('Scoring', 'icmp_ping_sweep', str(self.score_icmp_ping_sweep))
             self.parser.set('Scoring', 'icmp_tunneling', str(self.score_icmp_tunneling))

@@ -222,7 +222,7 @@ def capture_packets(selected_interfaces, data_manager_instance): # Added data_ma
     
     bound_packet_callback = functools.partial(packet_callback, data_manager_instance)
 
-    packet_filter = "ip or ip6 or (udp port 53) or (tcp port 53)"
+    packet_filter = "ip or ip6"
     logger.info(f"Using packet filter: \"{packet_filter}\"")
     sniff_timeout = 1.0 
     logger.info(f"Sniffing with {sniff_timeout}s timeout loop for graceful shutdown.")
@@ -268,9 +268,13 @@ def select_interfaces():
 
     idx_to_iface_map = {iface['idx']: iface for iface in available_interfaces}
     while True:
-        selected_input = input("Enter the number(s) of the interface(s) to monitor (e.g., 1 or 1,3): ")
+        selected_input = input("Enter the number(s) of the interface(s) to monitor (e.g., 1 or 1,3 or 'all'): ")
         try:
-            selected_indices = [int(i.strip()) for i in selected_input.split(",") if i.strip()]
+            if selected_input.strip().lower() == 'all':
+                selected_indices = list(idx_to_iface_map.keys())
+            else:
+                selected_indices = [int(i.strip()) for i in selected_input.split(",") if i.strip()]
+            
             if not selected_indices:
                 print("No selection made. Please enter interface number(s).")
                 continue
@@ -291,7 +295,7 @@ def select_interfaces():
             if not selected_scapy_names:
                 print("No valid interfaces selected from the input.")
                 continue
-
+            
             print(f"\nYou have selected: {', '.join(map(str,selected_friendly_names))}")
             confirm = input("Start sniffing on these interfaces? (y/n): ").lower().strip()
             if confirm == 'y': return selected_scapy_names
@@ -300,7 +304,7 @@ def select_interfaces():
                 return None 
             else: print("Invalid confirmation input. Please enter 'y' or 'n'.")
         except ValueError:
-            print("Invalid input. Please enter only numbers, separated by commas if multiple.")
+            print("Invalid input. Please enter only numbers, separated by commas if multiple, or 'all'.")
         except Exception as e:
             logger.error(f"Error during interface selection process: {e}", exc_info=True)
             print(f"An unexpected error occurred during selection: {e}")

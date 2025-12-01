@@ -10,8 +10,8 @@ import os # Import os for path joining if needed
 from core.config_manager import config
 
 # Configure logging using the config object
-log_level_str = config.log_level.upper() # Get level string from config
-numeric_level = getattr(logging, log_level_str, logging.INFO) # Convert string to logging level
+log_level_str = "WARNING"  # Force INFO/DEBUG out of the log file to reduce noise
+numeric_level = getattr(logging, log_level_str, logging.WARNING)
 
 # Define log filename (potentially get from config if you add it there)
 # For now, using the default mentioned in config_manager DEFAULTS example
@@ -22,16 +22,15 @@ log_filename = "network_monitor.log"
 logging.basicConfig(
     level=numeric_level,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    # Use filename=log_filepath if you defined a specific path
     filename=log_filename,
-    filemode='a' # Append mode ('w' would overwrite each time)
+    filemode='a'
 )
-# Optional: Add a handler to also print logs to console (useful for debugging)
+# Optional: console handler at INFO if you still want runtime feedback
 console_handler = logging.StreamHandler(sys.stdout)
-console_handler.setLevel(numeric_level) # Use same level or different for console
+console_handler.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 console_handler.setFormatter(formatter)
-logging.getLogger('').addHandler(console_handler) # Add handler to root logger
+logging.getLogger('').addHandler(console_handler)
 
 logger = logging.getLogger(__name__) # Get logger for main module
 

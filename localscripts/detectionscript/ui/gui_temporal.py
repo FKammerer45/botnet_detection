@@ -1,5 +1,6 @@
 # ui/gui_temporal.py
 import datetime
+import time
 import tkinter as tk
 from tkinter import ttk, messagebox
 import logging
@@ -16,8 +17,8 @@ from core.config_manager import config
 logger = logging.getLogger(__name__)
 
 # --- Constants ---
-# Define update interval in milliseconds (e.g., 1 second)
-UPDATE_INTERVAL_MS = 1000
+# Define update interval in milliseconds (less frequent to reduce churn)
+UPDATE_INTERVAL_MS = 5000
 # Define refresh interval for device list (e.g., 10 seconds)
 DEVICE_REFRESH_INTERVAL_MS = 10000
 # --- End Constants ---
@@ -31,6 +32,7 @@ class TemporalAnalysisWindow:
         self.master.geometry("800x650") # Slightly increased height for toolbar
         logger.info("Initializing Temporal Analysis window.")
         self._is_closing = False # Flag to indicate if window is being closed
+        self._last_plot_time = 0
 
         # --- Top Control Frame ---
         top_frame = ttk.Frame(master, padding=(10, 5, 10, 0)) # Use ttk.Frame for consistency
@@ -82,8 +84,9 @@ class TemporalAnalysisWindow:
         self.plotter = TemporalPlotter(self.ax) # Create plotter instance
         self._update_scheduled = None # Handle for periodic plot update
         self._device_refresh_scheduled = None # Handle for periodic device list refresh
+        self._plot_history = {}  # Cache of minutes per IP to avoid losing points
         self.refresh_ip_list() # Populate the combobox initially
-        self.update_plot() # Draw the initial plot (likely empty)
+        self._schedule_plot_update() # Draw soon, with throttling
         self.schedule_periodic_refresh() # Start periodic refreshes
         # Set window close handler
         self.master.protocol("WM_DELETE_WINDOW", self.on_close)
@@ -217,10 +220,9 @@ class TemporalAnalysisWindow:
         except Exception as e:
             logger.error(f"Error refreshing IP list: {e}", exc_info=True)
         finally:
-            # Trigger a plot update after refreshing the list (if selection changed/cleared)
-            # The <<ComboboxSelected>> binding handles user changes, this handles programmatic ones
+            # Trigger a plot update only if selection changed or list is empty
             if self.ip_var.get() != current_selection or not new_values:
-                 self.update_plot()
+                 self._schedule_plot_update()
             # Reschedule the next IP list refresh cycle
             if self.master.winfo_exists() and not self._is_closing: # Check _is_closing before rescheduling
                  self._device_refresh_scheduled = self.master.after(DEVICE_REFRESH_INTERVAL_MS, self.refresh_ip_list)
@@ -239,14 +241,20 @@ class TemporalAnalysisWindow:
                 self._update_scheduled = None
             return
 
-        # --- Cancel previous update if still pending ---
-        if self._update_scheduled: # This specific one is for the *plot* update loop
+        # Avoid cancelling/restarting too aggressively; only clear if we are closing.
+        if self._update_scheduled and self._is_closing:
              try: 
                 self.master.after_cancel(self._update_scheduled)
-                logger.debug("Cancelled previous _update_scheduled for plot.")
-             except (tk.TclError, ValueError): 
-                logger.debug("Error cancelling previous _update_scheduled for plot (already cancelled/invalid).")
-             self._update_scheduled = None # Clear it as we are about to run or reschedule
+             except (tk.TclError, ValueError):
+                pass
+             self._update_scheduled = None
+
+        # Throttle redraws to avoid log spam and churn
+        now = time.time()
+        if (now - self._last_plot_time) < (UPDATE_INTERVAL_MS / 1000.0):
+            self._schedule_plot_update()
+            return
+        self._last_plot_time = now
 
         # --- Basic checks before proceeding ---
         # Moved winfo_exists check to the top with _is_closing
@@ -267,7 +275,7 @@ class TemporalAnalysisWindow:
             self.canvas.draw_idle()
             self.status_var.set("No IP Selected. Select an IP to view data.")
         else:
-            logger.info(f"Updating temporal plot for IP: {ip_to_show}")
+            logger.debug(f"Updating temporal plot for IP: {ip_to_show}")
             data_copy = None
             try:
                 # Get temporal data snapshot from data_manager
@@ -280,13 +288,13 @@ class TemporalAnalysisWindow:
                         "protocol_minutes": device_data_ref.get("protocol_minutes", {})
                     }
                 else:
-                    logger.warning(f"IP {ip_to_show} not found in temporal_data snapshot for plotting.")
+                    logger.debug(f"IP {ip_to_show} not found in temporal_data snapshot for plotting.")
 
-                if data_copy and data_copy.get("minutes"): # Check if minutes list is not empty
-                    self.plotter.plot_data(ip_to_show, data_copy, self.show_protocols_var.get())
+                if data_copy and data_copy.get("minutes"):
+                    merged = self._merge_history(ip_to_show, data_copy)
+                    self.plotter.plot_data(ip_to_show, merged, self.show_protocols_var.get())
                     self.status_var.set(f"Displaying data for {ip_to_show}")
                 else:
-                    logger.info(f"No temporal data found for IP: {ip_to_show}.")
                     self.plotter.plot_no_data_for_ip(ip_to_show)
                     self.status_var.set(f"No temporal data available for {ip_to_show}")
                 
@@ -304,15 +312,56 @@ class TemporalAnalysisWindow:
         
         # Common finally block for rescheduling
         if not self._is_closing and self.master.winfo_exists():
-            self._update_scheduled = self.master.after(UPDATE_INTERVAL_MS, self.update_plot)
+            self._schedule_plot_update()
         else:
             logger.info("Not rescheduling plot update (window closing or master gone).")
             self._update_scheduled = None
+
+    def _schedule_plot_update(self):
+        """Schedule the next plot update if not already pending."""
+        if self._is_closing or not self.master.winfo_exists():
+            return
+        if self._update_scheduled:
+            return
+        self._update_scheduled = self.master.after(UPDATE_INTERVAL_MS, self._clear_and_update_plot)
+
+    def _clear_and_update_plot(self):
+        self._update_scheduled = None
+        self.update_plot()
+
+    def _merge_history(self, ip_to_show, data_copy):
+        """Merge new minutes into cached history to avoid losing earlier points."""
+        hist = self._plot_history.get(ip_to_show, {"minutes": [], "protocol_minutes": {}})
+        # Merge minutes
+        minutes_map = {int(ts): count for ts, count in hist.get("minutes", [])}
+        for ts, count in data_copy.get("minutes", []):
+            minutes_map[int(ts)] = count
+        merged_minutes = sorted(minutes_map.items())
+
+        # Merge protocol minutes
+        proto_hist = hist.get("protocol_minutes", {})
+        proto_new = data_copy.get("protocol_minutes", {})
+        merged_proto = {}
+        for proto_key in set(list(proto_hist.keys()) + list(proto_new.keys())):
+            m = {}
+            for ts, count in proto_hist.get(proto_key, []):
+                m[int(ts)] = count
+            for ts, count in proto_new.get(proto_key, []):
+                m[int(ts)] = count
+            merged_proto[proto_key] = sorted(m.items())
+
+        merged = {
+            "minutes": merged_minutes,
+            "protocol_minutes": merged_proto
+        }
+        self._plot_history[ip_to_show] = merged
+        return merged
 
 
 # --- End of TemporalAnalysisWindow class ---
 # --- TemporalPlotter Class (Handles actual plotting logic) ---
 class TemporalPlotter:
+    MAX_POINTS = 1440  # cap plotted points to avoid UI slowdowns (e.g., 24h at 1/min)
     def __init__(self, ax):
         self.ax = ax
 
@@ -329,6 +378,10 @@ class TemporalPlotter:
 
         minutes_data = data_copy.get("minutes", [])
         valid_minutes_data = [m for m in minutes_data if isinstance(m, (tuple, list)) and len(m) == 2]
+        # Downsample if there are too many points
+        if len(valid_minutes_data) > self.MAX_POINTS:
+            step = max(1, len(valid_minutes_data) // self.MAX_POINTS)
+            valid_minutes_data = valid_minutes_data[::step]
 
         if not valid_minutes_data:
             logger.warning(f"Plotter: No valid total data points found for {ip_to_show}")
@@ -362,6 +415,9 @@ class TemporalPlotter:
                         continue
 
                     valid_pdeque_list = [p for p in pdeque_list if isinstance(p, (tuple, list)) and len(p) == 2]
+                    if len(valid_pdeque_list) > self.MAX_POINTS:
+                        step = max(1, len(valid_pdeque_list) // self.MAX_POINTS)
+                        valid_pdeque_list = valid_pdeque_list[::step]
                     if not valid_pdeque_list:
                         logger.debug(f"Plotter: No valid points for protocol '{label_str}' for {ip_to_show}")
                         continue
@@ -377,25 +433,12 @@ class TemporalPlotter:
             self.ax.set_title(f"Traffic for {ip_to_show} (Packets per Minute)")
             self.ax.set_xlabel("Time (Local)")
             self.ax.set_ylabel("Packets per Minute")
-            self.ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
-            
-            # Dynamic tick locator based on time range
-            if dates:
-                time_range_seconds = (max(times) - min(times)) if len(times) > 1 else 60
-                if time_range_seconds <= 300: # 5 minutes
-                    major_interval = 1
-                    minor_interval = 1
-                elif time_range_seconds <= 1800: # 30 minutes
-                    major_interval = 5
-                    minor_interval = 1
-                elif time_range_seconds <= 3600 * 2: # 2 hours
-                    major_interval = 15
-                    minor_interval = 5
-                else: # More than 2 hours
-                    major_interval = 30
-                    minor_interval = 10
-                self.ax.xaxis.set_major_locator(mdates.MinuteLocator(interval=major_interval))
-                self.ax.xaxis.set_minor_locator(mdates.MinuteLocator(interval=minor_interval))
+            # Use actual local time-of-day formatting
+            formatter = mdates.DateFormatter('%H:%M:%S')
+            locator = mdates.AutoDateLocator(minticks=5, maxticks=10)
+            self.ax.xaxis.set_major_locator(locator)
+            self.ax.xaxis.set_major_formatter(formatter)
+            self.ax.xaxis.set_minor_locator(mdates.AutoDateLocator())
 
             self.ax.grid(True, linestyle=':', alpha=0.7) # Lighter grid
             self.ax.legend(loc='upper left', fontsize='x-small') # Smaller legend

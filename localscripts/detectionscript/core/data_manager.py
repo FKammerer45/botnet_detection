@@ -126,10 +126,7 @@ class NetworkDataManager:
             dst_entry["last_seen"] = pkt_time
             
             one_second_ago = pkt_time - 1.0
-            while src_entry["timestamps"] and src_entry["timestamps"][0] < one_second_ago:
-                src_entry["timestamps"].popleft()
-            
-            packets_per_second = len(src_entry["timestamps"])
+            packets_per_second = sum(1 for t in src_entry["timestamps"] if t >= one_second_ago)
             if packets_per_second > src_entry["max_per_sec"]:
                 src_entry["max_per_sec"] = packets_per_second
             
@@ -458,7 +455,8 @@ class NetworkDataManager:
         aggregated_count = 0
         with self.lock:
             for ip, cdata in list(self.current_minute_data.items()):
-                if cdata["start_time"] < current_minute_start:
+                # Aggregate if the current minute bucket is at least 60s old
+                if (now - cdata.get("start_time", 0)) >= 60:
                     if ip not in self.temporal_data:
                         self.temporal_data[ip] = {"minutes": deque(maxlen=self.MAX_MINUTES_TEMPORAL), 
                                                   "protocol_minutes": defaultdict(lambda: deque(maxlen=self.MAX_MINUTES_TEMPORAL))}
@@ -607,14 +605,29 @@ class NetworkDataManager:
             return None
 
     def get_temporal_data_snapshot(self):
+        # Ensure minute rollover aggregation runs even if GUI calls faster than scheduled aggregation
+        try:
+            self.aggregate_minute_data()
+        except Exception:
+            pass
+
         with self.lock:
             temporal_data_copy = {}
+            # Include aggregated minutes
             for ip, data in self.temporal_data.items():
                 temporal_data_copy[ip] = {
                     "minutes": deque(data.get("minutes", deque())),
                     "protocol_minutes": defaultdict(lambda: deque(), 
                                                     {k: deque(v) for k, v in data.get("protocol_minutes", {}).items()})
                 }
+            # Also include current (unaggregated) minute buckets so the plot isn't empty between aggregations
+            for ip, cdata in self.current_minute_data.items():
+                if ip not in temporal_data_copy:
+                    temporal_data_copy[ip] = {"minutes": deque(), "protocol_minutes": defaultdict(lambda: deque())}
+                start = cdata.get("start_time") or int(time.time() // 60) * 60
+                temporal_data_copy[ip]["minutes"].append((start, cdata.get("count", 0)))
+                for proto_key, count_val in cdata.get("protocol_count", {}).items():
+                    temporal_data_copy[ip]["protocol_minutes"][proto_key].append((start, count_val))
             return temporal_data_copy
 
     def get_active_ips_list(self):

@@ -65,7 +65,11 @@ class ConfigHubWindow:
     def _build_scan_tab(self):
         frame = ttk.Frame(self.notebook, padding=10)
         self.flag_scan_var = self.controller.flag_scan_var
-        ttk.Checkbutton(frame, text="Enable scan detection", variable=self.flag_scan_var).pack(anchor="w")
+        ttk.Checkbutton(frame, text="Flag scans in UI", variable=self.flag_scan_var).pack(anchor="w")
+        self.flag_internal_var = self.controller.flag_internal_scans_var
+        ttk.Checkbutton(frame, text="Flag internal scans (detection)", variable=self.flag_internal_var).pack(anchor="w")
+        self.flag_external_var = self.controller.flag_external_scans_var
+        ttk.Checkbutton(frame, text="Flag external scans (detection)", variable=self.flag_external_var).pack(anchor="w")
 
         ttk.Label(frame, text="Time window (s)").pack(anchor="w", pady=(10,0))
         self.scan_window_var = tk.StringVar(value=str(config.scan_time_window))
@@ -79,17 +83,13 @@ class ConfigHubWindow:
         self.scan_hosts_var = tk.StringVar(value=str(config.scan_distinct_hosts_threshold))
         ttk.Entry(frame, textvariable=self.scan_hosts_var).pack(fill=tk.X)
 
-        self.flag_stealth_var = tk.BooleanVar(value=config.enable_stealth_scan_detection)
+        self.flag_stealth_var = self.controller.flag_stealth_scan_var
         ttk.Checkbutton(frame, text="Enable stealth scan detection", variable=self.flag_stealth_var).pack(anchor="w", pady=(8,0))
-        self.flag_internal_var = tk.BooleanVar(value=config.flag_internal_scans)
-        ttk.Checkbutton(frame, text="Flag internal scans", variable=self.flag_internal_var).pack(anchor="w")
-        self.flag_external_var = tk.BooleanVar(value=config.flag_external_scans)
-        ttk.Checkbutton(frame, text="Flag external scans", variable=self.flag_external_var).pack(anchor="w")
         self.notebook.add(frame, text="Scan")
 
     def _build_beaconing_tab(self):
         frame = ttk.Frame(self.notebook, padding=10)
-        self.flag_beacon_var = tk.BooleanVar(value=config.enable_beaconing_detection)
+        self.flag_beacon_var = self.controller.flag_beacon_enable_var
         ttk.Checkbutton(frame, text="Enable beaconing detection", variable=self.flag_beacon_var).pack(anchor="w")
         ttk.Label(frame, text="Beacon interval (s)").pack(anchor="w", pady=(10,0))
         self.beacon_interval_var = tk.StringVar(value=str(config.beaconing_interval_seconds))
@@ -104,7 +104,7 @@ class ConfigHubWindow:
 
     def _build_dns_tab(self):
         frame = ttk.Frame(self.notebook, padding=10)
-        self.flag_dns_analysis_var = self.controller.flag_dns_analysis_var
+        self.flag_dns_analysis_var = self.controller.flag_dns_analysis_enable_var
         ttk.Checkbutton(frame, text="Enable DNS analysis", variable=self.flag_dns_analysis_var).pack(anchor="w")
         ttk.Label(frame, text="DGA entropy threshold").pack(anchor="w", pady=(10,0))
         self.dga_entropy_var = tk.StringVar(value=str(config.dga_entropy_threshold))
@@ -122,9 +122,9 @@ class ConfigHubWindow:
 
     def _build_local_tab(self):
         frame = ttk.Frame(self.notebook, padding=10)
-        self.flag_arp_var = tk.BooleanVar(value=config.enable_arp_spoof_detection)
+        self.flag_arp_var = self.controller.flag_arp_enable_var
         ttk.Checkbutton(frame, text="Enable ARP spoof detection", variable=self.flag_arp_var).pack(anchor="w")
-        self.flag_icmp_var = tk.BooleanVar(value=config.enable_icmp_anomaly_detection)
+        self.flag_icmp_var = self.controller.flag_icmp_enable_var
         ttk.Checkbutton(frame, text="Enable ICMP anomaly detection", variable=self.flag_icmp_var).pack(anchor="w")
         self.flag_local_threat_var = self.controller.flag_local_threat_var
         ttk.Checkbutton(frame, text="Flag local threats in UI", variable=self.flag_local_threat_var).pack(anchor="w", pady=(6,0))
@@ -267,24 +267,36 @@ class ConfigHubWindow:
             config.flag_external_scans = self.flag_external_var.get()
             # Beaconing
             config.enable_beaconing_detection = self.flag_beacon_var.get()
+            # Keep controller vars in sync
+            self.controller.flag_beacon_enable_var.set(config.enable_beaconing_detection)
             config.beaconing_interval_seconds = int(float(self.beacon_interval_var.get()))
             config.beaconing_tolerance_seconds = int(float(self.beacon_tolerance_var.get()))
             config.beaconing_min_occurrences = int(self.beacon_min_var.get())
             # DNS
             config.enable_dns_analysis = self.flag_dns_analysis_var.get()
+            self.controller.flag_dns_analysis_enable_var.set(config.enable_dns_analysis)
             config.dga_entropy_threshold = float(self.dga_entropy_var.get())
             config.dga_length_threshold = int(self.dga_length_var.get())
             config.nxdomain_rate_threshold = float(self.nx_rate_var.get())
             config.nxdomain_min_count = int(self.nx_min_var.get())
             # Local
             config.enable_arp_spoof_detection = self.flag_arp_var.get()
+            self.controller.flag_arp_enable_var.set(config.enable_arp_spoof_detection)
             config.enable_icmp_anomaly_detection = self.flag_icmp_var.get()
+            self.controller.flag_icmp_enable_var.set(config.enable_icmp_anomaly_detection)
             config.icmp_ping_sweep_threshold = int(self.icmp_ping_var.get())
             config.icmp_large_payload_threshold = int(self.icmp_large_var.get())
             # Scoring
             config.score_threshold = int(self.score_threshold_var.get())
             for attr, var in self.score_vars.items():
                 setattr(config, attr, int(var.get()))
+            # Scan flags
+            config.enable_stealth_scan_detection = self.flag_stealth_var.get()
+            config.flag_internal_scans = self.flag_internal_var.get()
+            config.flag_external_scans = self.flag_external_var.get()
+            self.controller.flag_stealth_scan_var.set(config.enable_stealth_scan_detection)
+            self.controller.flag_internal_scans_var.set(config.flag_internal_scans)
+            self.controller.flag_external_scans_var.set(config.flag_external_scans)
             # Blocklists
             new_ip = {}
             new_dns = {}

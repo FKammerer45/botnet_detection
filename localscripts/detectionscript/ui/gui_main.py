@@ -59,6 +59,14 @@ class PacketStatsGUI:
         self.flag_ja3_var = tk.BooleanVar(value=True)
         self.flag_dns_analysis_var = tk.BooleanVar(value=True)
         self.flag_local_threat_var = tk.BooleanVar(value=True)
+        # Detection enable toggles mirrored from config (persist within session and saved via hub)
+        self.flag_beacon_enable_var = tk.BooleanVar(value=config.enable_beaconing_detection)
+        self.flag_dns_analysis_enable_var = tk.BooleanVar(value=config.enable_dns_analysis)
+        self.flag_arp_enable_var = tk.BooleanVar(value=config.enable_arp_spoof_detection)
+        self.flag_icmp_enable_var = tk.BooleanVar(value=config.enable_icmp_anomaly_detection)
+        self.flag_internal_scans_var = tk.BooleanVar(value=config.flag_internal_scans)
+        self.flag_external_scans_var = tk.BooleanVar(value=config.flag_external_scans)
+        self.flag_stealth_scan_var = tk.BooleanVar(value=config.enable_stealth_scan_detection)
 
         # References to open Toplevel windows
         self.temporal_window_ref = None

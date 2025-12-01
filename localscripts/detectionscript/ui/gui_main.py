@@ -431,7 +431,17 @@ class PacketStatsGUI:
                 is_dns_analysis_detected = self.flag_dns_analysis_var.get() and (data.get("dga_detected") or data.get("dns_tunneling_detected"))
                 is_local_threat_detected = self.flag_local_threat_var.get() and (data.get("arp_spoof_detected") or data.get("ping_sweep_detected") or data.get("icmp_tunneling_detected"))
                 
-                should_flag_row = is_over_score_threshold
+                should_flag_row = (
+                    is_over_score_threshold or
+                    is_unsafe_triggered or
+                    is_malicious_triggered or
+                    is_dns_triggered or
+                    is_scan_detected or
+                    is_rate_anomaly_detected or
+                    is_ja3_detected or
+                    is_dns_analysis_detected or
+                    is_local_threat_detected
+                )
 
                 row_data = (ip, score, total_packets, packets_per_minute,
                                        packets_per_second, max_packets_sec, should_flag_row)

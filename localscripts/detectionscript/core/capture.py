@@ -85,9 +85,10 @@ def packet_callback(data_manager, pkt): # Added data_manager argument
                 except Exception as e:
                     logger.debug(f"Could not process JA3 hash: {e}")
             elif pkt.haslayer(TLSServerHello):
-                # Note: The provided script does not include JA3S logic.
-                # This will need to be added if JA3S support is required.
-                pass
+                try:
+                    ja3s = JA3(pkt[TLS][TLSServerHello]).ja3_fingerprint()
+                except Exception as e:
+                    logger.debug(f"Could not process JA3S hash: {e}")
 
         # Pass extracted data to the NetworkDataManager instance
         data_manager.process_packet_data(

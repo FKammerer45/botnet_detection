@@ -114,6 +114,7 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
         context = ToolkitContext(base_url=base_url, session=session, config=config)
 
         runner = ToolkitRunner(checks)
+        logger.warning("Security toolkit modules are currently placeholders; findings may be informational only.")
         findings = runner.run(context)
 
         reporter = MarkdownReporter(args.output_dir)

@@ -160,21 +160,27 @@ class NetworkDataManager:
 
             if is_dns_traffic and raw_pkt.haslayer(DNS):
                 dns_layer = raw_pkt[DNS]
-                if dns_layer.qr == 0 and dns_layer.qd:
-                    try:
+                try:
+                    if dns_layer.qd:
                         qname = dns_layer.qd.qname.decode('utf-8', errors='ignore').rstrip('.').lower()
-                        if self.enable_dns_analysis:
-                            src_entry["dns_queries"][qname]["count"] += 1
-                            if dns_layer.rcode == 3: # NXDOMAIN
-                                src_entry["dns_queries"][qname]["nxdomain_count"] += 1
+                    else:
+                        qname = None
 
+                    # Attribute DNS stats to the querying host (src for queries, dst for responses)
+                    target_entry = src_entry if dns_layer.qr == 0 else dst_entry
+                    if self.enable_dns_analysis and qname:
+                        target_entry["dns_queries"][qname]["count"] += 1
+                        if dns_layer.qr == 1 and dns_layer.rcode == 3: # NXDOMAIN response
+                            target_entry["dns_queries"][qname]["nxdomain_count"] += 1
+
+                    if dns_layer.qr == 0 and qname:
                         malicious_domain_info = is_domain_malicious(qname)
                         if malicious_domain_info:
                             for list_url, description in malicious_domain_info.items():
                                 reason = f"Blocklist Hit: {description}" if description else "Blocklist Hit"
-                                src_entry["suspicious_dns"].append({"timestamp": pkt_time, "qname": qname, "reason": reason})
-                    except Exception as dns_ex:
-                        logger.error(f"Error processing DNS query: {dns_ex}", exc_info=False)
+                                target_entry["suspicious_dns"].append({"timestamp": pkt_time, "qname": qname, "reason": reason})
+                except Exception as dns_ex:
+                    logger.error(f"Error processing DNS query/response: {dns_ex}", exc_info=False)
             
             if self.enable_ja3_detection:
                 if ja3 and is_ja3_malicious(ja3):
@@ -282,6 +288,9 @@ class NetworkDataManager:
                 continue
 
             timestamps = sorted(list(dest_data["timestamps"]))
+            prune_before = now - max(self.beaconing_interval_seconds * (self.beaconing_min_occurrences + 2), 300)
+            timestamps = [t for t in timestamps if t >= prune_before]
+            dest_data["timestamps"] = deque(timestamps, maxlen=self._packet_deque_maxlen)
             if len(timestamps) < self.beaconing_min_occurrences:
                 continue
 
@@ -314,12 +323,18 @@ class NetworkDataManager:
                 continue
 
             stats = ip_entry["protocol_stats"][proto_name]
-            
-            # Welford's algorithm for running variance
+            # Prune timestamps to a 60-second window for rate analysis
+            window_start = now - 60.0
+            timestamps_deque = cdata.get("timestamps", deque())
+            while timestamps_deque and timestamps_deque[0] < window_start:
+                timestamps_deque.popleft()
+            current_count = len(timestamps_deque)
+
+            # Welford's algorithm for running variance on per-window counts
             new_count = stats["count"] + 1
-            delta = cdata["total"] - stats["mean"]
+            delta = current_count - stats["mean"]
             new_mean = stats["mean"] + delta / new_count
-            delta2 = cdata["total"] - new_mean
+            delta2 = current_count - new_mean
             new_m2 = stats.get("m2", 0) + delta * delta2
             
             stats["count"] = new_count
@@ -330,11 +345,11 @@ class NetworkDataManager:
                 variance = new_m2 / (new_count -1)
                 stats["std"] = variance ** 0.5
             
-            if stats["count"] > 1 and cdata["total"] > self.rate_anomaly_min_packets:
+            if stats["count"] > 1 and current_count > self.rate_anomaly_min_packets:
                 threshold = stats["mean"] + (stats["std"] * self.rate_anomaly_sensitivity)
-                if cdata["total"] > threshold:
+                if current_count > threshold:
                     ip_entry["rate_anomaly_detected"] = True
-                    logger.warning(f"Rate anomaly DETECTED for {ip} on protocol {proto_name}: {cdata['total']} packets > threshold {threshold:.2f}")
+                    logger.warning(f"Rate anomaly DETECTED for {ip} on protocol {proto_name}: {current_count} pkts/min > threshold {threshold:.2f}")
 
     def _check_for_dga_and_tunneling(self, ip, ip_entry):
         if not self.enable_dns_analysis:
@@ -366,12 +381,14 @@ class NetworkDataManager:
                     logger.warning(f"DNS Tunneling (High NXDOMAIN rate) DETECTED for {ip}: {nxdomain_rate:.2f}")
 
     def _check_for_arp_spoofing(self, ip, mac):
-        if ip in self.arp_table and self.arp_table[ip] != mac:
-            logger.warning(f"ARP Spoofing DETECTED for IP {ip}: MAC changed from {self.arp_table[ip]} to {mac}")
-            # To prevent flagging every packet, we can set a flag in the ip_data
+        """Track ARP mappings with timestamps and flag changes."""
+        now = time.time()
+        entry = self.arp_table.get(ip)
+        if entry and entry.get("mac") != mac:
+            logger.warning(f"ARP Spoofing DETECTED for IP {ip}: MAC changed from {entry.get('mac')} to {mac}")
             if ip in self.ip_data:
                 self.ip_data[ip]["arp_spoof_detected"] = True
-        self.arp_table[ip] = mac
+        self.arp_table[ip] = {"mac": mac, "last_seen": now}
 
     def _check_for_icmp_anomalies(self, ip, ip_entry):
         if not self.enable_icmp_anomaly_detection:
@@ -411,10 +428,11 @@ class NetworkDataManager:
                     aggregated_count +=1
             if aggregated_count > 0: logger.info(f"DataManager: Aggregated data for {aggregated_count} IP-minute entries.")
 
+            prune_enabled = self.ip_data_prune_timeout and self.ip_data_prune_timeout > 0
+            prune_threshold_time = now - self.ip_data_prune_timeout if prune_enabled else None
             ips_to_prune = []
-            prune_threshold_time = now - self.ip_data_prune_timeout
             for ip, ip_entry in list(self.ip_data.items()):
-                if ip_entry.get("last_seen", 0) < prune_threshold_time:
+                if prune_enabled and ip_entry.get("last_seen", 0) < prune_threshold_time:
                     ips_to_prune.append(ip)
                     continue
                 if (now - ip_entry.get("last_scan_check_time", 0)) > self.scan_check_interval:
@@ -445,12 +463,21 @@ class NetworkDataManager:
                         if dst_ip in ip_entry.get("destinations", {}):
                             hit_entry["count"] = ip_entry["destinations"][dst_ip].get("total", hit_entry["count"])
             
-            if ips_to_prune:
+            if prune_enabled and ips_to_prune:
                 for ip_to_prune in ips_to_prune:
                     if ip_to_prune in self.ip_data: del self.ip_data[ip_to_prune]
                     if ip_to_prune in self.temporal_data: del self.temporal_data[ip_to_prune]
                     if ip_to_prune in self.current_minute_data: del self.current_minute_data[ip_to_prune]
                 logger.info(f"DataManager: Pruned {len(ips_to_prune)} inactive IP data entries.")
+            # Prune stale ARP entries to avoid unbounded growth (respect prune_enabled)
+            if prune_enabled and self.arp_table:
+                arp_prune_before = len(self.arp_table)
+                for arp_ip in list(self.arp_table.keys()):
+                    if self.arp_table[arp_ip].get("last_seen", 0) < prune_threshold_time:
+                        del self.arp_table[arp_ip]
+                arp_pruned = arp_prune_before - len(self.arp_table)
+                if arp_pruned > 0:
+                    logger.info(f"DataManager: Pruned {arp_pruned} stale ARP entries.")
         logger.debug("DataManager: Aggregation and pruning cycle finished.")
 
     def get_data_for_main_table_snapshot(self, current_time, prune_seconds):
@@ -465,6 +492,9 @@ class NetworkDataManager:
                     "protocols": defaultdict(lambda: {"total": 0, "timestamps": deque(maxlen=self._packet_deque_maxlen), "max_per_sec": 0}, 
                                              {k: v.copy() for k,v in data_entry.get("protocols", {}).items()}),
                     "contacted_malicious_ip": data_entry.get("contacted_malicious_ip", False),
+                    "is_malicious_source": data_entry.get("is_malicious_source", False),
+                    "malicious_ja3": data_entry.get("malicious_ja3"),
+                    "malicious_ja3s": data_entry.get("malicious_ja3s"),
                     "suspicious_dns": list(data_entry.get("suspicious_dns", [])), 
                     "detected_scan_ports": data_entry.get("detected_scan_ports", False),
                     "detected_scan_hosts": data_entry.get("detected_scan_hosts", False),
@@ -503,6 +533,9 @@ class NetworkDataManager:
                                               for proto_key, proto_data in original_entry.get("protocols", {}).items()}),
                     "malicious_hits": {k: v.copy() for k, v in original_entry.get("malicious_hits", {}).items()}, 
                     "contacted_malicious_ip": original_entry.get("contacted_malicious_ip", False),
+                    "is_malicious_source": original_entry.get("is_malicious_source", False),
+                    "malicious_ja3": original_entry.get("malicious_ja3"),
+                    "malicious_ja3s": original_entry.get("malicious_ja3s"),
                     "suspicious_dns": list(original_entry.get("suspicious_dns", [])),
                     "scan_targets": defaultdict(lambda: {"ports": set(), "first_seen": 0.0, "scan_types": set()},
                                                {dst_ip: {"ports": set(details.get("ports", set())),

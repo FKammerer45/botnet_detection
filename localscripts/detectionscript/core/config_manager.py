@@ -25,7 +25,8 @@ class AppConfig:
         """Set default values before loading from file."""
         # General
         self.log_level = "INFO"
-        self.ip_data_prune_timeout = 3600
+        # Set <=0 to disable pruning (retain history for long-running sessions)
+        self.ip_data_prune_timeout = -1
 
         # Thresholds
         self.max_packets_per_second = 1000
@@ -68,7 +69,7 @@ class AppConfig:
         self.icmp_ping_sweep_threshold = 10
         self.icmp_large_payload_threshold = 512
         # Scoring
-        self.score_threshold = 50
+        self.score_threshold = 5
         self.score_arp_spoof = 50
         self.score_icmp_ping_sweep = 5
         self.score_icmp_tunneling = 20

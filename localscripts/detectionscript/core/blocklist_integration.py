@@ -20,17 +20,24 @@ whitelist = get_whitelist() # Get the singleton instance
 # Data storage (populated by load_blocklists)
 blocklist_info = {}
 malicious_networks = []
-malicious_domains = set()
+# Map domain -> set(blocklist identifiers)
+malicious_domains = {}
 malicious_ja3 = set()
 malicious_ja3s = set()
 
 # --- Utility Functions ---
 def get_local_filename(url, list_type="ip"):
+    prefix = "ip_"
+    if list_type == "dns":
+        prefix = "dns_"
+    elif list_type == "ja3":
+        prefix = "ja3_"
+    elif list_type == "ja3s":
+        prefix = "ja3s_"
     try:
         path_parts = [p for p in url.split('/') if p]
         base_name = path_parts[-1] if path_parts else url
         if not base_name or '.' not in base_name: base_name = url.split('//')[-1].replace('.', '_').replace('/', '_')
-        prefix = "dns_" if list_type == "dns" else "ip_"
         filename = f"{prefix}{base_name}"
         filename = "".join(c if c.isalnum() or c in ['.', '-', '_'] else '_' for c in filename)
         max_len = 80
@@ -55,12 +62,12 @@ def download_blocklists(force_download=False):
         blocklist_info[url] = {"type": "ip", "description": desc}
     for url, desc in dns_blocklist_dict.items():
         blocklist_info[url] = {"type": "dns", "description": desc}
+    for url, desc in config.ja3_blocklist_urls.items():
+        blocklist_info[url] = {"type": "ja3", "description": desc}
+    for url, desc in config.ja3s_blocklist_urls.items():
+        blocklist_info[url] = {"type": "ja3s", "description": desc}
 
-    all_urls = set(blocklist_info.keys())
-    all_urls.update(config.ja3_blocklist_urls.keys())
-    all_urls.update(config.ja3s_blocklist_urls.keys())
-    
-    logger.info(f"Checking/Downloading {len(all_urls)} blocklists...")
+    logger.info(f"Checking/Downloading {len(blocklist_info)} blocklists...")
     for url, info in blocklist_info.items():
         list_type = info["type"]
         local_path = os.path.join(DOWNLOAD_DIR, get_local_filename(url, list_type))
@@ -80,7 +87,8 @@ def download_blocklists(force_download=False):
 # --- Loading ---
 def load_blocklists():
     global malicious_networks, malicious_domains
-    new_network_list = []; new_domain_set = set()
+    new_network_list = []
+    new_domain_map = {}
     loaded_files = 0; total_ip_entries = 0; total_dns_entries = 0
     logger.info("Loading configured blocklists...")
     # Load IP Lists
@@ -104,12 +112,12 @@ def load_blocklists():
          if os.path.exists(local_path):
             logger.debug(f"Parsing [DNS]: {os.path.basename(local_path)}")
             try:
-                count = _parse_dns_file_to_set(new_domain_set, local_path, url)
+                count = _parse_dns_file_to_map(new_domain_map, local_path, url)
                 if count > 0: logger.info(f"Loaded {count} DNS entries from {os.path.basename(local_path)}"); total_dns_entries += count; loaded_files += 1
                 else: logger.warning(f"No DNS entries loaded from {os.path.basename(local_path)}.")
             except Exception as e: logger.error(f"Parse DNS file error {local_path}: {e}", exc_info=True)
          else: logger.warning(f"DNS file not found: {local_path}.")
-    malicious_networks = new_network_list; malicious_domains = new_domain_set
+    malicious_networks = new_network_list; malicious_domains = new_domain_map
     
     # Load JA3 Lists
     logger.info(f"Loading {len(config.ja3_blocklist_urls)} JA3 blocklists...")
@@ -118,7 +126,7 @@ def load_blocklists():
         if os.path.exists(local_path):
             logger.debug(f"Parsing [JA3]: {os.path.basename(local_path)}")
             try:
-                count = _parse_dns_file_to_set(malicious_ja3, local_path, url)
+                count = _parse_hash_file_to_set(malicious_ja3, local_path, url)
                 if count > 0: logger.info(f"Loaded {count} JA3 entries from {os.path.basename(local_path)}"); loaded_files += 1
                 else: logger.warning(f"No JA3 entries loaded from {os.path.basename(local_path)}.")
             except Exception as e: logger.error(f"Parse JA3 file error {local_path}: {e}", exc_info=True)
@@ -131,7 +139,7 @@ def load_blocklists():
         if os.path.exists(local_path):
             logger.debug(f"Parsing [JA3S]: {os.path.basename(local_path)}")
             try:
-                count = _parse_dns_file_to_set(malicious_ja3s, local_path, url)
+                count = _parse_hash_file_to_set(malicious_ja3s, local_path, url)
                 if count > 0: logger.info(f"Loaded {count} JA3S entries from {os.path.basename(local_path)}"); loaded_files += 1
                 else: logger.warning(f"No JA3S entries loaded from {os.path.basename(local_path)}.")
             except Exception as e: logger.error(f"Parse JA3S file error {local_path}: {e}", exc_info=True)
@@ -203,8 +211,8 @@ def _parse_ip_csv_file_to_list(network_list, filepath, list_identifier, ip_colum
     except Exception as e: logger.error(f"Parse IP CSV error {filepath} near line {line_num}: {e}", exc_info=True)
     return count
 
-# --- DNS Parsing Functions ---
-def _parse_dns_file_to_set(domain_set, filepath, list_identifier):
+# --- DNS / Hash Parsing Functions ---
+def _parse_dns_file_to_map(domain_map, filepath, list_identifier):
     count = 0; line_num = 0
     try:
         with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
@@ -224,9 +232,32 @@ def _parse_dns_file_to_set(domain_set, filepath, list_identifier):
                         if re.match(r'^[a-z0-9.-]+$', potential_domain): domain = potential_domain
                         else: logger.debug(f"Skip invalid DNS format '{potential_domain}' line {line_num} in {filepath}")
                     else: logger.debug(f"Skip invalid DNS structure '{potential_domain}' line {line_num} in {filepath}")
-                if domain: domain_set.add(domain); count += 1
+                if domain:
+                    if domain in domain_map:
+                        domain_map[domain].add(list_identifier)
+                    else:
+                        domain_map[domain] = {list_identifier}
+                    count += 1
     except IOError as e: logger.error(f"Read DNS file error {filepath}: {e}", exc_info=True)
     except Exception as e: logger.error(f"Parse DNS file error {filepath} near line {line_num}: {e}", exc_info=True)
+    return count
+
+def _parse_hash_file_to_set(target_set, filepath, list_identifier):
+    """Parse hash lists (JA3/JA3S). Supports CSV or plain lists; first token is the hash."""
+    count = 0; line_num = 0
+    try:
+        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+            for line_num, line in enumerate(f, 1):
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                hash_val = line.split(',')[0].split()[0].strip()
+                if not hash_val:
+                    continue
+                target_set.add(hash_val)
+                count += 1
+    except IOError as e: logger.error(f"Read hash file error {filepath}: {e}", exc_info=True)
+    except Exception as e: logger.error(f"Parse hash file error {filepath} near line {line_num}: {e}", exc_info=True)
     return count
 
 # --- Checking Functions ---

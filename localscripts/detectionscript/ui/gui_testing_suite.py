@@ -10,6 +10,7 @@ from queue import Queue, Empty
 import socket
 import ctypes
 import platform
+from core.config_manager import config
 
 # Suppress Scapy's verbose warnings
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
@@ -58,6 +59,9 @@ class TestingSuiteWindow(tk.Toplevel):
         ttk.Label(target_frame, text="Hosts to scan:").grid(row=2, column=0, sticky="w")
         self.lan_hosts_var = tk.IntVar(value=30)
         ttk.Entry(target_frame, textvariable=self.lan_hosts_var, width=8).grid(row=2, column=1, padx=5, sticky="w")
+        ttk.Label(target_frame, text="Beacon interval (s):").grid(row=3, column=0, sticky="w")
+        self.beacon_interval_var = tk.DoubleVar(value=float(config.beaconing_interval_seconds))
+        ttk.Entry(target_frame, textvariable=self.beacon_interval_var, width=10).grid(row=3, column=1, padx=5, sticky="w")
 
         log_frame = ttk.LabelFrame(main_frame, text="Status Log", padding="5")
         log_frame.pack(fill=tk.BOTH, expand=True, side=tk.BOTTOM, pady=(10, 0))
@@ -179,11 +183,16 @@ class TestingSuiteWindow(tk.Toplevel):
 
     def trigger_beaconing(self):
         self.log("--- Triggering Beaconing ---")
-        for i in range(10):
+        interval = max(0.5, float(self.beacon_interval_var.get() or 5.0))
+        occurrences = max(config.beaconing_min_occurrences, 5)
+        for i in range(occurrences):
+            if self._shutdown:
+                self.log("Beaconing cancelled.")
+                break
             packet = IP(src=SOURCE_IP, dst=self._get_target_ip()) / UDP(dport=53)
             self._safe_send(packet, "beacon UDP/53")
-            self.log(f"  ...sent beacon {i+1}/10")
-            time.sleep(5)
+            self.log(f"  ...sent beacon {i+1}/{occurrences}")
+            time.sleep(interval)
         self.log("Beaconing finished.")
 
     def trigger_dga(self):

@@ -28,6 +28,7 @@ from ui.gui_documentation import DocumentationWindow
 from ui.gui_testing_suite import TestingSuiteWindow
 from ui.gui_tooltip import Tooltip
 from ui.components.configuration_frame import ConfigurationFrame
+from ui.gui_config_hub import ConfigHubWindow
 
 logger = logging.getLogger(__name__)
 whitelist = get_whitelist() # Get the singleton instance
@@ -49,6 +50,16 @@ class PacketStatsGUI:
         self.master.geometry(WINDOW_GEOMETRY)
         logger.info("Initializing PacketStatsGUI...")
 
+        # Flag toggles (now controlled via Config Hub)
+        self.flag_unsafe_var = tk.BooleanVar(value=True)
+        self.flag_malicious_var = tk.BooleanVar(value=True)
+        self.flag_dns_var = tk.BooleanVar(value=True)
+        self.flag_scan_var = tk.BooleanVar(value=True)
+        self.flag_rate_anomaly_var = tk.BooleanVar(value=True)
+        self.flag_ja3_var = tk.BooleanVar(value=True)
+        self.flag_dns_analysis_var = tk.BooleanVar(value=True)
+        self.flag_local_threat_var = tk.BooleanVar(value=True)
+
         # References to open Toplevel windows
         self.temporal_window_ref = None
         # self.dns_monitor_window_ref = None # Removed
@@ -63,6 +74,7 @@ class PacketStatsGUI:
         self.scoring_config_window_ref = None
         self.documentation_window_ref = None
         self.testing_suite_window_ref = None
+        self.config_hub_window_ref = None
 
         try:
             logger.info("Downloading/loading blocklists (if needed)...")
@@ -109,6 +121,8 @@ class PacketStatsGUI:
             self.unsafe_config_window_ref, self.scan_config_window_ref,
             self.blocklist_manager_window_ref, self.whitelist_manager_window_ref
         ]
+        if self.config_hub_window_ref:
+            window_refs_to_close.append(self.config_hub_window_ref)
         # For detail_window_refs, we stored tuples (window, ip), so extract window
         for ref_tuple in self.detail_window_refs:
             if isinstance(ref_tuple, tuple) and len(ref_tuple) > 0 and isinstance(ref_tuple[0], tk.Toplevel):
@@ -185,13 +199,13 @@ class PacketStatsGUI:
         self.external_tree = self.create_treeview(external_frame)
 
     def create_treeview(self, parent_frame):
-        columns = ("ip", "score", "total", "per_minute", "per_second", "max_per_sec")
+        columns = ("ip", "score", "total", "per_minute", "per_second", "max_per_min")
         tree = ttk.Treeview(parent_frame, columns=columns, show="headings")
         headers = {"ip": "IP Address", "score": "Score", "total": "Total Pkts", "per_minute": "Pkts/Min",
-                   "per_second": "Pkts/Sec", "max_per_sec": "Max P/S"}
-        widths = {"ip": 150, "score": 50, "total": 100, "per_minute": 100, "per_second": 100, "max_per_sec": 100}
+                   "per_second": "Pkts/Sec", "max_per_min": "Max P/Min"}
+        widths = {"ip": 150, "score": 50, "total": 100, "per_minute": 100, "per_second": 100, "max_per_min": 100}
         anchors = {"ip": tk.W, "score": tk.CENTER, "total": tk.CENTER, "per_minute": tk.CENTER,
-                   "per_second": tk.CENTER, "max_per_sec": tk.CENTER}
+                   "per_second": tk.CENTER, "max_per_min": tk.CENTER}
         for col in columns:
             tree.heading(col, text=headers[col], anchor=tk.CENTER,
                               command=lambda c=col: self.sort_column(c))
@@ -336,6 +350,16 @@ class PacketStatsGUI:
         self.testing_suite_window_ref = testing_suite_instance
         testing_suite_instance.protocol("WM_DELETE_WINDOW", lambda t=testing_suite_instance: (t.on_close(), self._clear_window_reference(t, "testing_suite_window_ref")))
 
+    def open_config_hub(self):
+        logger.debug("Opening Config Hub window.")
+        if self.config_hub_window_ref and self.config_hub_window_ref.winfo_exists():
+            self.config_hub_window_ref.lift()
+            return
+        top = tk.Toplevel(self.master)
+        self.config_hub_window_ref = top
+        hub_instance = ConfigHubWindow(top, self)
+        top.protocol("WM_DELETE_WINDOW", lambda t=top, h=hub_instance: (hub_instance.on_close(), self._clear_window_reference(t, "config_hub_window_ref")))
+
     def get_flag_unsafe(self): return self.flag_unsafe_var.get()
     def get_flag_malicious(self): return self.flag_malicious_var.get()
     def get_flag_dns(self): return self.flag_dns_var.get()
@@ -404,13 +428,13 @@ class PacketStatsGUI:
 
                 total_packets = data.get("total", 0)
                 
-                # Correctly calculate packets in the last 60 seconds for pkts/min
+                # packets/second and packets/minute from recent timestamps
                 one_minute_ago = now - 60.0
-                packets_per_minute = sum(1 for t in data.get("timestamps", []) if t >= one_minute_ago)
-
                 one_second_ago = now - 1.0
-                packets_per_second = sum(1 for t in data.get("timestamps", []) if t >= one_second_ago)
-                max_packets_sec = data.get("max_per_sec", 0) 
+                timestamps_recent = data.get("timestamps", [])
+                packets_per_minute = sum(1 for t in timestamps_recent if t >= one_minute_ago)
+                packets_per_second = sum(1 for t in timestamps_recent if t >= one_second_ago)
+                max_packets_min = data.get("max_per_min", packets_per_minute)
                 score = data.get("score", 0)
                 ip_type = "Internal" if self.data_manager._is_internal_ip(ip) else "External"
 
@@ -444,7 +468,7 @@ class PacketStatsGUI:
                 )
 
                 row_data = (ip, score, total_packets, packets_per_minute,
-                                       packets_per_second, max_packets_sec, should_flag_row)
+                                       packets_per_second, max_packets_min, should_flag_row)
 
                 if ip_type == "Internal":
                     internal_data.append(row_data)
@@ -488,7 +512,7 @@ class PacketStatsGUI:
         tree.yview_moveto(scroll_position[0])
 
     def sort_data(self, data, column, ascending):
-        column_map = {"ip": 0, "score": 1, "total": 2, "per_minute": 3, "per_second": 4, "max_per_sec": 5}
+        column_map = {"ip": 0, "score": 1, "total": 2, "per_minute": 3, "per_second": 4, "max_per_min": 5}
         try:
             col_index = column_map[column]
             reverse_sort = not ascending

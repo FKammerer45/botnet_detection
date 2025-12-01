@@ -52,6 +52,7 @@ class NetworkDataManager:
         self.dga_length_threshold = config.dga_length_threshold
         self.nxdomain_rate_threshold = config.nxdomain_rate_threshold
         self.nxdomain_min_count = config.nxdomain_min_count
+        self.dga_safe_suffixes = {".sharepoint.com", ".googleapis.com", ".storage.googleapis.com"}
         # Local Network Detection attributes
         self.enable_arp_spoof_detection = config.enable_arp_spoof_detection
         self.enable_icmp_anomaly_detection = config.enable_icmp_anomaly_detection
@@ -80,7 +81,7 @@ class NetworkDataManager:
         if ip not in self.ip_data:
             self.ip_data[ip] = {
                 "total": 0, "timestamps": deque(maxlen=self._packet_deque_maxlen),
-                "last_seen": 0.0, "max_per_sec": 0,
+                "last_seen": 0.0, "max_per_sec": 0, "max_per_min": 0,
                 "destinations": defaultdict(lambda: {"total": 0, "timestamps": deque(maxlen=self._packet_deque_maxlen), "max_per_sec": 0}),
                 "protocols": defaultdict(lambda: {"total": 0, "timestamps": deque(maxlen=self._packet_deque_maxlen), "max_per_sec": 0}),
                 "malicious_hits": {}, "contacted_malicious_ip": False,
@@ -131,6 +132,12 @@ class NetworkDataManager:
             packets_per_second = len(src_entry["timestamps"])
             if packets_per_second > src_entry["max_per_sec"]:
                 src_entry["max_per_sec"] = packets_per_second
+            
+            # Track packets per minute for UI display
+            one_minute_ago = pkt_time - 60.0
+            packets_per_minute_now = sum(1 for t in src_entry["timestamps"] if t >= one_minute_ago)
+            if packets_per_minute_now > src_entry["max_per_min"]:
+                src_entry["max_per_min"] = packets_per_minute_now
 
             dest_entry_for_src = src_entry["destinations"][dst_ip]
             dest_entry_for_src["total"] += 1
@@ -283,7 +290,18 @@ class NetworkDataManager:
             return
 
         ip_entry["beaconing_detected"] = False
+        ip_entry["beaconing_hits"] = []
+        source_internal = self._is_internal_ip(ip)
+        if not source_internal:
+            # Suppress beaconing alerts for external sources to reduce false positives
+            return
         for dest_ip, dest_data in ip_entry["destinations"].items():
+            try:
+                dest_ip_obj = ipaddress.ip_address(dest_ip)
+                if dest_ip_obj.is_multicast or dest_ip_obj.is_unspecified:
+                    continue
+            except Exception:
+                pass
             if self._is_internal_ip(dest_ip) or self.whitelist.is_ip_whitelisted(dest_ip):
                 continue
 
@@ -299,18 +317,37 @@ class NetworkDataManager:
                 continue
 
             mean_interval = sum(intervals) / len(intervals)
-            
-            if abs(mean_interval - self.beaconing_interval_seconds) <= self.beaconing_tolerance_seconds:
-                # Check for consistency
-                consistent_beacons = 0
-                for interval in intervals:
-                    if abs(interval - self.beaconing_interval_seconds) <= self.beaconing_tolerance_seconds:
-                        consistent_beacons += 1
-                
-                if consistent_beacons + 1 >= self.beaconing_min_occurrences:
-                    ip_entry["beaconing_detected"] = True
-                    logger.warning(f"Beaconing DETECTED from {ip} to {dest_ip} at interval ~{mean_interval:.2f}s")
-                    return # Found beaconing, no need to check other destinations
+            std_interval = 0.0
+            if len(intervals) > 1:
+                variance = sum((x - mean_interval) ** 2 for x in intervals) / (len(intervals) - 1)
+                std_interval = variance ** 0.5
+
+            # Primary: expect configured interval/tolerance
+            consistent_beacons = sum(
+                1 for interval in intervals
+                if abs(interval - self.beaconing_interval_seconds) <= self.beaconing_tolerance_seconds
+            )
+            meets_config_pattern = (
+                abs(mean_interval - self.beaconing_interval_seconds) <= self.beaconing_tolerance_seconds
+                and (consistent_beacons + 1) >= self.beaconing_min_occurrences
+            )
+
+            # Fallback: detect strongly periodic traffic even if interval differs from config
+            # Use coefficient of variation threshold (<= 0.2) and enough occurrences
+            cov = (std_interval / mean_interval) if mean_interval > 0 else 1
+            meets_periodic_pattern = cov <= 0.2 and (len(intervals) + 1) >= self.beaconing_min_occurrences
+
+            if meets_config_pattern or meets_periodic_pattern:
+                ip_entry["beaconing_detected"] = True
+                reason = "config interval match" if meets_config_pattern else "stable periodic interval"
+                ip_entry["beaconing_hits"].append({
+                    "dest": dest_ip,
+                    "mean_interval": mean_interval,
+                    "occurrences": len(timestamps),
+                    "reason": reason
+                })
+                logger.warning(f"Beaconing DETECTED from {ip} to {dest_ip} (~{mean_interval:.2f}s, {reason})")
+                # Continue scanning other destinations to collect all hits
 
     def _check_for_rate_anomalies(self, ip, ip_entry, now):
         if not self.enable_rate_anomaly_detection:
@@ -358,6 +395,10 @@ class NetworkDataManager:
         # DGA detection
         if not ip_entry.get("dga_detected"):
             for qname, stats in ip_entry["dns_queries"].items():
+                if self.whitelist.is_domain_whitelisted(qname):
+                    continue
+                if any(qname.endswith(sfx) for sfx in self.dga_safe_suffixes):
+                    continue
                 entropy = self._calculate_entropy(qname.split('.')[0])
                 if len(qname) > self.dga_length_threshold and entropy > self.dga_entropy_threshold:
                     ip_entry["dga_detected"] = True
@@ -489,6 +530,7 @@ class NetworkDataManager:
                     "total": data_entry.get("total", 0),
                     "timestamps": deque(data_entry.get("timestamps", deque())),
                     "max_per_sec": data_entry.get("max_per_sec", 0),
+                    "max_per_min": data_entry.get("max_per_min", 0),
                     "protocols": defaultdict(lambda: {"total": 0, "timestamps": deque(maxlen=self._packet_deque_maxlen), "max_per_sec": 0}, 
                                              {k: v.copy() for k,v in data_entry.get("protocols", {}).items()}),
                     "contacted_malicious_ip": data_entry.get("contacted_malicious_ip", False),
@@ -521,6 +563,7 @@ class NetworkDataManager:
                     "timestamps": deque(original_entry.get("timestamps", deque())),
                     "last_seen": original_entry.get("last_seen", 0.0),
                     "max_per_sec": original_entry.get("max_per_sec", 0),
+                    "max_per_min": original_entry.get("max_per_min", 0),
                     "destinations": defaultdict(lambda: {"total": 0, "timestamps": deque(maxlen=self._packet_deque_maxlen), "max_per_sec": 0},
                                                 {dst_ip: {"total": dst_data.get("total",0), 
                                                           "timestamps": deque(dst_data.get("timestamps", deque())),
@@ -542,6 +585,7 @@ class NetworkDataManager:
                                                          "first_seen": details.get("first_seen", 0.0),
                                                          "scan_types": set(details.get("scan_types", set()))}
                                                 for dst_ip, details in original_entry.get("scan_targets", {}).items()}),
+                    "beaconing_hits": list(original_entry.get("beaconing_hits", [])),
                     "last_scan_check_time": original_entry.get("last_scan_check_time", 0.0),
                     "detected_scan_ports": original_entry.get("detected_scan_ports", False),
                     "rate_anomaly_detected": original_entry.get("rate_anomaly_detected", False),

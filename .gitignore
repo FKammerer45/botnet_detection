@@ -29,3 +29,4 @@ Thumbs.db
 .vscode/
 localscripts/detectionscript/network_monitor.log
 .log
+network_monitor.log

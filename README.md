@@ -4,12 +4,13 @@ Welcome to the **Botnet Detection Project** repository! This project provides a 
 
 ## About the Project
 
-This tool is designed to analyze network traffic passing through the machine it runs on. To effectively monitor network devices (e.g., IoT devices, other computers), you can:
+This tool analyzes network traffic on the machine it runs on. Typical deployments:
 
-1.  **Set up an Access Point (AP) on your PC**: Use your operating system's built-in features (e.g., Windows Mobile Hotspot) to create an AP. Connect your target devices to this AP. All traffic from these devices will then route through your PC.
-2.  **Use a Network Tap or Port Mirroring**: For more comprehensive network visibility, configure a managed switch or router to mirror traffic from specific ports (or the entire network) to the network interface of the PC running this tool.
+1. **PC as Access Point (AP)**: Use Windows Mobile Hotspot or similar; connect target devices so their traffic passes through your PC.
+2. **Port Mirroring/TAP**: Mirror switch/router traffic to the PC running this tool.
+3. **Local Inspection**: Run on a workstation/server to monitor local traffic (requires admin/root and Npcap on Windows).
 
-This setup allows the tool to capture and analyze traffic, helping to identify suspicious patterns and potential threats.
+The app captures traffic (Scapy), applies multiple detections, scores each IP, and provides a Tkinter GUI to review and drill into threats.
 
 ## Prerequisites
 
@@ -22,111 +23,101 @@ Before running the detection tool, ensure you have the following:
 *   **Pip**: Python package installer, usually included with Python.
 *   **Git**: For cloning the repository.
 
-## Code Structure (Detection Tool)
+## Code Structure
 
 The Python-based detection tool is primarily located within the `localscripts/detectionscript/` directory:
-
 ```
 botnet_detection/
-|-- localscripts/
-|   |-- detectionscript/
-|       |-- main.py              # Main entry point for the application
-|       |-- config.ini           # Configuration file for thresholds, blocklists, etc.
-|       |-- whitelist.txt        # User-managed whitelist for IPs and domains
-|       |-- network_monitor.log  # Log file for application events
-|       |-- blocklists/          # Directory where downloaded blocklist files are stored
-|       |-- config/
-|       |   |-- globals.py       # Defines global constants like filenames
-|       |-- core/                # Core backend logic
-|       |   |-- capture.py       # Packet capture, processing, and data aggregation
-|       |   |-- config_manager.py # Handles loading and saving config.ini
-|       |   |-- whitelist_manager.py # Manages whitelist operations
-|       |   |-- blocklist_integration.py # Handles downloading and querying IP/DNS blocklists
-|       |-- ui/                  # Tkinter-based Graphical User Interface components
-|           |-- gui_main.py      # Main application window
-|           |-- gui_detail.py    # IP detail view window
-|           |-- (other gui files)
-|-- docs/
-|   |-- (documentation files)
-|-- requirements.txt             # Python package dependencies
-|-- README.md                    # This file
-|-- .gitignore
+├─ localscripts/
+│  ├─ detectionscript/
+│  │  ├─ main.py                 # App entrypoint (GUI + capture thread + blocklist updater)
+│  │  ├─ config.ini              # User-configurable thresholds/flags/blocklists
+│  │  ├─ whitelist.txt           # User-managed whitelist
+│  │  ├─ blocklists/             # Downloaded blocklist files
+│  │  ├─ config/
+│  │  │  ├─ globals.py           # Constants (paths, defaults)
+│  │  ├─ core/
+│  │  │  ├─ capture.py           # Packet capture and callback plumbing
+│  │  │  ├─ data_manager.py      # In-memory state, detections, scoring
+│  │  │  ├─ config_manager.py    # Load/save config.ini
+│  │  │  ├─ blocklist_integration.py # Download/parse/query IP/DNS/JA3/JA3S blocklists
+│  │  │  ├─ whitelist_manager.py # Whitelist handling
+│  │  │  ├─ ja3.py               # JA3 fingerprint helper
+│  │  ├─ ui/
+│  │  │  ├─ gui_main.py          # Main window, tables, event loop
+│  │  │  ├─ gui_detail.py        # IP detail window (tabs)
+│  │  │  ├─ gui_temporal.py      # Temporal view
+│  │  │  ├─ gui_testing_suite.py # Test traffic generator
+│  │  │  ├─ gui_config_hub.py    # Unified configuration window (tabs)
+│  │  │  ├─ tabs/                # Detail tabs (beaconing, DNS, scans, etc.)
+│  │  │  ├─ components/          # Shared UI components (configuration frame)
+│  ├─ detectionscript/config.ini # (same as above, accessible path)
+├─ docs/                         # In-app documentation content
+├─ requirements.txt              # Python dependencies
+├─ README.md
+├─ .gitignore
+└─ src/                          # Optional ESP32 test script (for traffic generation)
 ```
 
-## Features
+## Features (GUI-driven)
 
-*   **Real-time Packet Monitoring**: Captures and analyzes network packets on selected interfaces.
-*   **Threat Scoring:** Each IP address is assigned a threat score from 0 to 100, with higher scores indicating a greater potential threat.
-*   **Threat Intelligence Integration**:
-    *   Utilizes IP blocklists to identify connections to known malicious IP addresses.
-    *   Utilizes DNS blocklists to identify queries for known malicious domains.
-    *   Utilizes JA3/JA3S blocklists to identify connections from known malicious clients/servers.
-*   **Whitelist Management**: Maintain a list of trusted IPs, networks (CIDR), and domains that should not be flagged, manageable via the UI.
-*   **Scan Detection**: Identifies potential port scans and host scans originating from local devices.
-*   **Unsafe Protocol/Port Flagging**: Highlights traffic using commonly exploited or unencrypted protocols/ports (e.g., Telnet, FTP).
-*   **Temporal Traffic Analysis**: Provides a graphical view of traffic volume over time for selected IPs, with protocol breakdown.
-*   **Detailed IP View**: Double-click an IP in the main list to see detailed connection information, malicious hits, and DNS queries associated with it.
-*   **DNS Analysis**:
-    *   **DGA Detection:** Detects randomly generated domain names often used by malware.
-    *   **DNS Tunneling Detection:** Identifies patterns of DNS queries that suggest data exfiltration.
-*   **Local Network Threat Detection**:
-    *   **ARP Spoofing Detection:** Monitors for changes in IP-MAC address mappings.
-    *   **ICMP Anomaly Detection:** Detects ping sweeps and large ICMP payloads.
-*   **User-Friendly GUI**: Tkinter-based interface for easy interaction and configuration.
-*   **In-App Documentation**: A built-in documentation viewer to explain features and detection mechanisms.
-*   **Logging**: Records application events and errors to `network_monitor.log`.
-*   **Testing Suite**: A built-in tool to simulate various network attacks and anomalies to verify that the detection mechanisms are working correctly.
+- **Real-time capture**: Scapy-based sniffing on selected interfaces (admin/root; Npcap on Windows).
+- **Threat scoring (0–100)**: Aggregates detections with per-component breakdown.
+- **Threat intel**: IP/DNS/JA3/JA3S blocklists with auto-download/update.
+- **Whitelist**: IP/CIDR/domain whitelist to suppress known-good traffic.
+- **Scan detection**: Port/host scans, stealth variants.
+- **Unsafe protocol/port flagging**: Legacy/unencrypted protocols and ports.
+- **DNS analysis**: DGA heuristic, DNS tunneling (NXDOMAIN rate), blocklist hits.
+- **Beaconing**: Periodic C2 beaconing detection (configurable interval/tolerance).
+- **Local network**: ARP spoofing, ICMP anomalies (ping sweep, large payload).
+- **JA3/JA3S**: Fingerprint lookups against blocklists.
+- **GUI drill-down**: Main table + detail tabs (destinations, protocols, threat info, DNS, scans, rate anomaly, beaconing, DNS analysis, local network, scoring).
+- **Temporal view**: Packets/min over time with protocol breakdown.
+- **Testing Suite**: Generate test traffic (port/host scan, unsafe protocol, rate anomaly, beaconing, DGA, DNS tunneling, ICMP tunneling).
+- **In-app docs**: Rich Help window covering all features; auto-resizing for readability.
+- **Logging**: Events to `network_monitor.log`.
 
-## Setting Up and Running the Detection Tool
+## Setup & Run
 
-1.  **Clone the Repository**:
-    ```bash
-    git clone https://github.com/FKammerer45/botnet_detection.git
-    cd botnet_detection
-    ```
+1) **Clone**  
+```bash
+git clone https://github.com/FKammerer45/botnet_detection.git
+cd botnet_detection
+```
 
-2.  **Create and Activate Virtual Environment (Recommended)**:
-    It's highly recommended to use a virtual environment to manage project dependencies.
+2) **Create & activate venv (recommended)**  
+```bash
+python -m venv venv
+# Windows PowerShell: .\venv\Scripts\Activate.ps1   (may require: Set-ExecutionPolicy Unrestricted -Scope Process)
+# Windows CMD:       .\venv\Scripts\activate
+# Linux/macOS:       source venv/bin/activate
+```
 
-    *   **Create the virtual environment** (e.g., named `venv`):
-        ```bash
-        python -m venv venv 
-        ```
-        (On some systems, you might need `python3` instead of `python`)
+3) **Install deps**  
+```bash
+pip install -r requirements.txt
+```
 
-    *   **Activate the virtual environment**:
-        *   Windows (Command Prompt):
-            ```bash
-            .\venv\Scripts\activate
-            ```
-        *   Windows (PowerShell):
-            ```bash
-            .\venv\Scripts\Activate.ps1
-            ```
-            (If you get an error about script execution policy, you may need to run: `Set-ExecutionPolicy Unrestricted -Scope Process` first, then try activating again.)
-        *   Linux / macOS (bash/zsh):
-            ```bash
-            source venv/bin/activate
-            ```
-    You should see the virtual environment's name (e.g., `(venv)`) in your terminal prompt once activated. All subsequent `pip install` commands will install packages into this environment.
+4) **Run app**  
+```bash
+python localscripts/detectionscript/main.py
+```
+> Run as **Administrator/Root** for packet capture (Npcap required on Windows).
 
-3.  **Install Dependencies**:
-    Ensure your virtual environment is activated. Navigate to the directory containing `requirements.txt` (likely the project root, where you cloned the repository) and run:
-    ```bash
-    pip install -r requirements.txt
-    ```
+## How to Use (GUI flow)
 
-4.  **Run the Application**:
-    ```bash
-    python localscripts/detectionscript/main.py
-    ```
-    *   **Administrator/Root Privileges**: On most systems (especially Windows and Linux), packet capture requires elevated privileges. Run the script as an administrator (Windows) or with `sudo` (Linux/macOS):
-        *   Windows: Right-click your terminal (CMD, PowerShell) and "Run as administrator", then navigate and run the script.
-        *   Linux/macOS: `sudo python main.py`
+1. Launch the app (admin/root).  
+2. Select network interfaces when prompted.  
+3. Click **Config** to enable/disable detections and set thresholds (unsafe, scans, beaconing, DNS analysis, local net, scoring, blocklists, whitelist).  
+4. Main table: monitor Internal/External IPs, score, totals, pkts/min/sec, max pkts/min.  
+5. Double-click an IP for detail tabs (threat info, DNS, scans, rate anomaly, beaconing, DNS analysis, local network, scoring).  
+6. Use **Temporal** for packets/min over time; **Testing Suite** to generate sample attack traffic; **Help** for full in-app docs.
 
-## How to Use the Tool
-
-For detailed instructions on how to use the tool, please refer to the in-app documentation by clicking the "Help" button on the main window.
+## Tips
+- Install Npcap (WinPcap-compatible) on Windows.
+- Whitelist known-good IPs/domains to reduce noise.
+- Tune DGA entropy/length and NXDOMAIN thresholds for your environment.
+- Set beacon interval/tolerance to match expected beacons; multicast/unspecified destinations are ignored.
 
 ---
 *The following section relates to the optional ESP32 component of the project.*

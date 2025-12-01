@@ -3,3 +3,5 @@ requests
 Pillow
 markdown2
 tkhtmlview
+psutil
+matplotlib

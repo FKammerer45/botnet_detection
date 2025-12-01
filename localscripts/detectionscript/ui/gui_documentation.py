@@ -131,10 +131,12 @@ class DocumentationWindow(tk.Toplevel):
             self.update_idletasks()
             req_w = self.html_label.winfo_reqwidth() + 120  # padding for tree/panes
             req_h = self.html_label.winfo_reqheight() + 80
-            min_w, min_h = 900, 650
-            max_w, max_h = 1400, 1000
-            new_w = min(max(req_w, min_w), max_w)
-            new_h = min(max(req_h, min_h), max_h)
+            current_w = self.winfo_width()
+            current_h = self.winfo_height()
+            min_w, min_h = 1200, 800
+            max_w, max_h = 2000, 1400
+            new_w = min(max(req_w, min_w, current_w), max_w)
+            new_h = min(max(req_h, min_h, current_h), max_h)
             self.geometry(f"{int(new_w)}x{int(new_h)}")
         except Exception:
             pass

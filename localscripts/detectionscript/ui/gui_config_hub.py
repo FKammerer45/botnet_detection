@@ -27,9 +27,14 @@ class ConfigHubWindow:
         self.master.geometry("800x640")
         self.master.minsize(760, 600)
 
+        # Grid layout to keep footer controls visible while notebook content scrolls.
+        self.master.columnconfigure(0, weight=1)
+        self.master.rowconfigure(0, weight=1)  # notebook grows
+        self.master.rowconfigure(1, weight=0)  # status bar
+        self.master.rowconfigure(2, weight=0)  # buttons
+
         self.notebook = ttk.Notebook(self.master)
-        self.notebook.pack(fill=tk.BOTH, expand=True, padx=8, pady=(8, 4))
-        self.notebook.bind("<<NotebookTabChanged>>", lambda e: self._resize_to_tab())
+        self.notebook.grid(row=0, column=0, sticky="nsew", padx=8, pady=(8, 4))
 
         self._build_unsafe_tab()
         self._build_scan_tab()
@@ -42,16 +47,14 @@ class ConfigHubWindow:
 
         btn_frame = ttk.Frame(self.master)
         # Keep controls docked at the bottom so they remain visible even when content is tall.
-        btn_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=8, pady=(4, 4))
+        btn_frame.grid(row=2, column=0, sticky="ew", padx=8, pady=(4, 4))
         ttk.Button(btn_frame, text="Apply & Save", command=self.apply_and_save).pack(side=tk.RIGHT, padx=4)
         ttk.Button(btn_frame, text="Close", command=self.on_close).pack(side=tk.RIGHT, padx=4)
 
         self.status_var = tk.StringVar(value="Ready")
-        ttk.Label(self.master, textvariable=self.status_var, anchor="w").pack(side=tk.BOTTOM, fill=tk.X, padx=8, pady=(0,6))
+        ttk.Label(self.master, textvariable=self.status_var, anchor="w").grid(row=1, column=0, sticky="ew", padx=8, pady=(0,6))
 
         self.master.protocol("WM_DELETE_WINDOW", self.on_close)
-        # Initial resize after widgets are laid out
-        self.master.after(120, self._resize_to_tab)
 
     def _build_unsafe_tab(self):
         frame = ttk.Frame(self.notebook, padding=10)

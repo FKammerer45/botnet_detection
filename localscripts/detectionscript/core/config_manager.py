@@ -54,7 +54,7 @@ class AppConfig:
         # JA3/JA3S Detection
         self.enable_ja3_detection = True
         self.ja3_blocklist_urls = {
-            "https://sslbl.abuse.ch/ja3-fingerprints/ja3.csv": "SSLBL JA3",
+            "https://sslbl.abuse.ch/blacklist/ja3_fingerprints.csv": "SSLBL JA3",
         }
         self.ja3s_blocklist_urls = {}
         # DNS Analysis

@@ -16,7 +16,8 @@ The app captures traffic (Scapy), applies multiple detections, scores each IP, a
 
 Before running the detection tool, ensure you have the following:
 
-*   **Python**: Python 3.8 or newer is recommended.
+*   **Python**: Python 3.13.* is recommended.
+*   **Visual Studio Build Tools (Windows)**: Required to compile some Python dependencies when wheels aren’t available. Install the latest “Build Tools for Visual Studio” (C++ workload) from Microsoft: <https://visualstudio.microsoft.com/visual-cpp-build-tools/>
 *   **Npcap (for Windows users)**: Npcap is required by Scapy for packet capture on Windows.
     *   Download and install Npcap from [https://npcap.com/#download](https://npcap.com/#download).
     *   During installation, it's recommended to select the "Install Npcap in WinPcap API-compatible Mode" option for broader compatibility with tools like Scapy. Also, consider installing the "Support Npcap loopback adapter" if you intend to capture loopback traffic (though not the primary use case here).

@@ -23,10 +23,12 @@ class ConfigHubWindow:
         self.master = master
         self.controller = controller
         self.master.title("Configuration")
-        self.master.geometry("640x520")
+        # Provide a generous default size so footer buttons are visible without manual resize.
+        self.master.geometry("800x640")
+        self.master.minsize(760, 600)
 
         self.notebook = ttk.Notebook(self.master)
-        self.notebook.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
+        self.notebook.pack(fill=tk.BOTH, expand=True, padx=8, pady=(8, 4))
         self.notebook.bind("<<NotebookTabChanged>>", lambda e: self._resize_to_tab())
 
         self._build_unsafe_tab()
@@ -39,12 +41,13 @@ class ConfigHubWindow:
         self._build_whitelist_tab()
 
         btn_frame = ttk.Frame(self.master)
-        btn_frame.pack(fill=tk.X, padx=8, pady=4)
+        # Keep controls docked at the bottom so they remain visible even when content is tall.
+        btn_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=8, pady=(4, 4))
         ttk.Button(btn_frame, text="Apply & Save", command=self.apply_and_save).pack(side=tk.RIGHT, padx=4)
         ttk.Button(btn_frame, text="Close", command=self.on_close).pack(side=tk.RIGHT, padx=4)
 
         self.status_var = tk.StringVar(value="Ready")
-        ttk.Label(self.master, textvariable=self.status_var, anchor="w").pack(fill=tk.X, padx=8, pady=(0,6))
+        ttk.Label(self.master, textvariable=self.status_var, anchor="w").pack(side=tk.BOTTOM, fill=tk.X, padx=8, pady=(0,6))
 
         self.master.protocol("WM_DELETE_WINDOW", self.on_close)
         # Initial resize after widgets are laid out
@@ -134,6 +137,9 @@ class ConfigHubWindow:
         ttk.Label(frame, text="ICMP large payload threshold").pack(anchor="w", pady=(10,0))
         self.icmp_large_var = tk.StringVar(value=str(config.icmp_large_payload_threshold))
         ttk.Entry(frame, textvariable=self.icmp_large_var).pack(fill=tk.X)
+        ttk.Label(frame, text="Local networks (CIDR, comma separated)").pack(anchor="w", pady=(10,0))
+        self.local_networks_var = tk.StringVar(value=", ".join(sorted(config.local_networks)))
+        ttk.Entry(frame, textvariable=self.local_networks_var).pack(fill=tk.X)
         self.notebook.add(frame, text="Local Net")
 
     def _build_scoring_tab(self):
@@ -286,6 +292,7 @@ class ConfigHubWindow:
             self.controller.flag_icmp_enable_var.set(config.enable_icmp_anomaly_detection)
             config.icmp_ping_sweep_threshold = int(self.icmp_ping_var.get())
             config.icmp_large_payload_threshold = int(self.icmp_large_var.get())
+            config.local_networks = _parse_set(self.local_networks_var.get(), str)
             # Scoring
             config.score_threshold = int(self.score_threshold_var.get())
             for attr, var in self.score_vars.items():
@@ -346,9 +353,9 @@ class ConfigHubWindow:
             tab_widget = self.notebook.nametowidget(current)
             req_w = tab_widget.winfo_reqwidth()
             req_h = tab_widget.winfo_reqheight()
-            # Account for notebook chrome, buttons, and padding
-            total_w = max(req_w + 60, 720)
-            total_h = max(req_h + 180, 520)
+            # Account for notebook chrome, buttons, status bar, and padding
+            total_w = max(req_w + 120, 820)
+            total_h = max(req_h + 320, 700)
             self.master.geometry(f"{total_w}x{total_h}")
         except Exception:
             pass
